@@ -215,7 +215,7 @@ class KioskExamActivity : AppCompatActivity() {
         } else {
             Toast.makeText(
                 this,
-                "⚠️ Gestur & tombol kembali DIKUNCI selama ujian! Hubungi pengawas untuk menyelesaikan.",
+                "Gestur dan tombol kembali DIKUNCI selama ujian! Hubungi pengawas untuk menyelesaikan.",
                 Toast.LENGTH_SHORT
             ).show()
         }

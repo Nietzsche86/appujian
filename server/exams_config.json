@@ -1,19 +1,11 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
-  "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
+  "school_tagline": "Madrasah Unggulan",
+  "exam_title": "Ujian Akhir",
   "master_pin": "888999",
   "exam_rules": [
-    "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
-    "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening (Silent), dan koneksi Wi-Fi/Bluetooth mati.",
-    "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras mencoba keluar dari aplikasi.",
-    "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
-    "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
-    "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
-    "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
-    "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
-    "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
-    "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
+    "Aturan 1",
+    "Aturan 2"
   ],
   "exams": [
     {
@@ -39,6 +31,18 @@
       "duration_minutes": 90,
       "token": "DDDD",
       "pdf_filename": "soal_dayum-7-1792776728.pdf"
+    },
+    {
+      "id": "MATEMA-8-1792782240",
+      "subject_name": "Matematika",
+      "short_name": "MTK",
+      "exam_day": "Selasa",
+      "start_time": "07:30",
+      "end_time": "09:00",
+      "grade_level": 8,
+      "duration_minutes": 90,
+      "token": "MTK88",
+      "pdf_filename": "soal_matema-8-1792782240.pdf"
     }
   ]
 }

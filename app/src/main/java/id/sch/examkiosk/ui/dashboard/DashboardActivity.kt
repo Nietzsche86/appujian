@@ -202,7 +202,7 @@ class DashboardActivity : AppCompatActivity() {
             binding.cardDeviceStatusHeader.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_ok_border)
             binding.ivDeviceStatusIcon.setImageResource(R.drawable.ic_check_circle)
             binding.ivDeviceStatusIcon.setColorFilter(ContextCompat.getColor(this, R.color.primary))
-            binding.tvDeviceStatusTitle.text = "✓ Perangkat Siap Ujian"
+            binding.tvDeviceStatusTitle.text = "Perangkat Siap Ujian"
             binding.tvDeviceStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.primary))
             binding.tvDeviceStatusDesc.text = "Semua pengaturan keamanan telah memenuhi standar madrasah."
         } else {
@@ -210,7 +210,7 @@ class DashboardActivity : AppCompatActivity() {
             binding.cardDeviceStatusHeader.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
             binding.ivDeviceStatusIcon.setImageResource(R.drawable.ic_warning)
             binding.ivDeviceStatusIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
-            binding.tvDeviceStatusTitle.text = "⚠️ Pengaturan Belum Sesuai Standar"
+            binding.tvDeviceStatusTitle.text = "Pengaturan Belum Sesuai Standar"
             binding.tvDeviceStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.tvDeviceStatusDesc.text = "Harap sesuaikan pengaturan di bawah sebelum ujian dimulai."
         }
@@ -269,12 +269,14 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     /**
-     * Memperbarui Container 2 (Statistik Ujian).
+     * Memperbarui Container 2 (Statistik Ujian) sesuai angkatan yang dipilih siswa.
      */
     private fun updateExamStatistics() {
         val secureStorage = ExamApp.instance.secureStorage
-        val total = allExams.size
-        val finished = allExams.count { secureStorage.isExamFinished(it.id) }
+        val targetGrade = secureStorage.selectedGrade
+        val gradeExams = allExams.filter { it.gradeLevel == targetGrade }
+        val total = gradeExams.size
+        val finished = gradeExams.count { secureStorage.isExamFinished(it.id) }
         val remaining = (total - finished).coerceAtLeast(0)
 
         binding.tvStatTotalExams.text = total.toString()
@@ -398,14 +400,14 @@ class DashboardActivity : AppCompatActivity() {
             binding.btnTestConnection.isEnabled = true
             result.onSuccess { reachable ->
                 if (reachable) {
-                    binding.tvServerStatus.text = "✓ Server online & dapat diakses"
+                    binding.tvServerStatus.text = "Server online & dapat diakses"
                     binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_ready_text))
                 } else {
-                    binding.tvServerStatus.text = "✗ Server merespons dengan kesalahan"
+                    binding.tvServerStatus.text = "Server merespons dengan kesalahan"
                     binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_danger_text))
                 }
             }.onFailure { err ->
-                binding.tvServerStatus.text = "✗ Gagal terhubung: ${err.localizedMessage}"
+                binding.tvServerStatus.text = "Gagal terhubung: ${err.localizedMessage}"
                 binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_danger_text))
             }
         }
@@ -435,48 +437,51 @@ class DashboardActivity : AppCompatActivity() {
                 currentManifest = manifest
                 allExams = manifest.exams
 
-                // Bersihkan berkas fisik ujian lokal yang sudah dihapus dari server
-                val activeExamIds = manifest.exams.map { it.id }.toSet()
+                // Hanya sinkronkan berkas soal untuk angkatan yang dipilih siswa
+                val targetGrade = secureStorage.selectedGrade
+                val targetExams = manifest.exams.filter { it.gradeLevel == targetGrade }
+
+                // Bersihkan berkas fisik ujian lokal selain angkatan terpilih
+                val activeExamIds = targetExams.map { it.id }.toSet()
                 syncManager.cleanupOrphanedExams(activeExamIds)
 
-                // Otomatis unduh seluruh berkas .enc yang belum ada / berubah
+                // Otomatis unduh seluruh berkas .enc yang belum ada / berubah untuk angkatan tersebut
                 var downloadedCount = 0
-                val totalToDownload = manifest.exams.count { !syncManager.isExamFileValid(it.id, it.fileSha256) }
+                val toDownload = targetExams.filter { !syncManager.isExamFileValid(it.id, it.fileSha256) }
+                val totalToDownload = toDownload.size
 
                 if (totalToDownload > 0) {
-                    binding.tvServerStatus.text = "Mengunduh paket soal (0/$totalToDownload)..."
+                    binding.tvServerStatus.text = "Mengunduh paket soal Kelas $targetGrade (0/$totalToDownload)..."
 
-                    for (exam in manifest.exams) {
-                        if (!syncManager.isExamFileValid(exam.id, exam.fileSha256)) {
-                            val fullUrl = if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
-                                exam.downloadUrl
-                            } else {
-                                val base = url.trimEnd('/')
-                                "$base/${exam.downloadUrl.trimStart('/')}"
-                            }
-                            syncManager.downloadExamFile(
-                                downloadUrl = fullUrl,
-                                examId = exam.id,
-                                expectedSha256 = exam.fileSha256
-                            )
-                            downloadedCount++
-                            binding.tvServerStatus.text = "Mengunduh paket soal ($downloadedCount/$totalToDownload)..."
+                    for (exam in toDownload) {
+                        val fullUrl = if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
+                            exam.downloadUrl
+                        } else {
+                            val base = url.trimEnd('/')
+                            "$base/${exam.downloadUrl.trimStart('/')}"
                         }
+                        syncManager.downloadExamFile(
+                            downloadUrl = fullUrl,
+                            examId = exam.id,
+                            expectedSha256 = exam.fileSha256
+                        )
+                        downloadedCount++
+                        binding.tvServerStatus.text = "Mengunduh paket soal Kelas $targetGrade ($downloadedCount/$totalToDownload)..."
                     }
                 }
 
                 binding.btnSyncExams.isEnabled = true
-                binding.tvServerStatus.text = "✓ Sinkronisasi selesai (${manifest.exams.size} soal siap)"
+                binding.tvServerStatus.text = "Sinkronisasi selesai: ${targetExams.size} soal Kelas $targetGrade siap"
                 binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_ready_text))
                 
                 updateSchoolIdentityUI()
                 refreshExamList()
                 updateExamStatistics()
                 renderRulesList()
-                Toast.makeText(this@DashboardActivity, "Seluruh paket soal berhasil disinkronkan!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DashboardActivity, "Paket soal Kelas $targetGrade berhasil disinkronkan!", Toast.LENGTH_SHORT).show()
             }.onFailure { err ->
                 binding.btnSyncExams.isEnabled = true
-                binding.tvServerStatus.text = "✗ Sinkronisasi gagal: ${err.localizedMessage}"
+                binding.tvServerStatus.text = "Sinkronisasi gagal: ${err.localizedMessage}"
                 binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_danger_text))
                 Toast.makeText(this@DashboardActivity, "Gagal mengunduh manifest: ${err.localizedMessage}", Toast.LENGTH_LONG).show()
             }
@@ -500,24 +505,67 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupGradeFilter() {
+        val storage = ExamApp.instance.secureStorage
+        val currentGrade = storage.selectedGrade
+        selectedGradeFilter = currentGrade
+
+        // Tab 3 Filter Chips (Kelas 7, 8, 9)
+        when (currentGrade) {
+            7 -> binding.chipGrade7.isChecked = true
+            8 -> binding.chipGrade8.isChecked = true
+            9 -> binding.chipGrade9.isChecked = true
+            else -> binding.chipGrade7.isChecked = true
+        }
+
         binding.chipGroupGrade.setOnCheckedStateChangeListener { _, checkedIds ->
-            selectedGradeFilter = when {
+            val grade = when {
                 checkedIds.contains(R.id.chipGrade7) -> 7
                 checkedIds.contains(R.id.chipGrade8) -> 8
                 checkedIds.contains(R.id.chipGrade9) -> 9
-                else -> null
+                else -> storage.selectedGrade
+            }
+            selectedGradeFilter = grade
+            storage.selectedGrade = grade
+            updateSyncGradeChips(grade)
+            refreshExamList()
+            updateExamStatistics()
+        }
+
+        // Tab 4 Settings Sync Target Grade Chips
+        updateSyncGradeChips(currentGrade)
+
+        binding.chipGroupSyncGrade.setOnCheckedStateChangeListener { _, checkedIds ->
+            val grade = when {
+                checkedIds.contains(R.id.chipSyncGrade7) -> 7
+                checkedIds.contains(R.id.chipSyncGrade8) -> 8
+                checkedIds.contains(R.id.chipSyncGrade9) -> 9
+                else -> storage.selectedGrade
+            }
+            storage.selectedGrade = grade
+            selectedGradeFilter = grade
+            when (grade) {
+                7 -> binding.chipGrade7.isChecked = true
+                8 -> binding.chipGrade8.isChecked = true
+                9 -> binding.chipGrade9.isChecked = true
             }
             refreshExamList()
+            updateExamStatistics()
+        }
+    }
+
+    private fun updateSyncGradeChips(grade: Int) {
+        when (grade) {
+            7 -> binding.chipSyncGrade7.isChecked = true
+            8 -> binding.chipSyncGrade8.isChecked = true
+            9 -> binding.chipSyncGrade9.isChecked = true
+            else -> binding.chipSyncGrade7.isChecked = true
         }
     }
 
     private fun refreshExamList() {
         val secureStorage = ExamApp.instance.secureStorage
-        val filtered = if (selectedGradeFilter != null) {
-            allExams.filter { it.gradeLevel == selectedGradeFilter }
-        } else {
-            allExams
-        }
+        val filterGrade = selectedGradeFilter ?: secureStorage.selectedGrade
+        val filtered = allExams.filter { it.gradeLevel == filterGrade }
 
         val uiModels = filtered.map { exam ->
             val isDownloaded = syncManager.isExamFileValid(exam.id, exam.fileSha256)
@@ -581,7 +629,7 @@ class DashboardActivity : AppCompatActivity() {
 
         if (!isAirplaneOn || !isWifiOff || !isBluetoothOff || !isRingerSilentOrVibrate) {
             AlertDialog.Builder(this)
-                .setTitle("⚠️ Pengaturan Belum Sesuai Standar")
+                .setTitle("Pengaturan Belum Sesuai Standar")
                 .setMessage("Sebelum ujian dimulai, pastikan:\n• Mode Pesawat AKTIF\n• Wi-Fi NONAKTIF\n• Bluetooth NONAKTIF\n• Mode Suara HENING / GETAR\n\nSilakan sesuaikan perangkat Anda.")
                 .setPositiveButton("Mengerti", null)
                 .show()

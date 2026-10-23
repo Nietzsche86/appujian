@@ -55,6 +55,10 @@ class SecureStorage(context: Context) {
         get() = prefs.getInt(KEY_LAST_BOOT_COUNT, -1)
         set(value) = prefs.edit().putInt(KEY_LAST_BOOT_COUNT, value).apply()
 
+    var selectedGrade: Int
+        get() = prefs.getInt(KEY_SELECTED_GRADE, 7)
+        set(value) = prefs.edit().putInt(KEY_SELECTED_GRADE, value).apply()
+
     var cachedManifest: String?
         get() = prefs.getString(KEY_CACHED_MANIFEST, null)
         set(value) = prefs.edit().putString(KEY_CACHED_MANIFEST, value).apply()
@@ -97,5 +101,6 @@ class SecureStorage(context: Context) {
         private const val KEY_LAST_BOOT_COUNT = "last_boot_count"
         private const val KEY_FINISHED_EXAMS = "finished_exams"
         private const val KEY_CACHED_MANIFEST = "cached_manifest"
+        private const val KEY_SELECTED_GRADE = "selected_grade"
     }
 }

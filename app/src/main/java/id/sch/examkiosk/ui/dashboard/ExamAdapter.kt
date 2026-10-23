@@ -40,16 +40,16 @@ class ExamAdapter(
             val exam = item.exam
             val context = binding.root.context
 
-            // 1. Hari & Jadwal Jam
+            // 1. Hari & Jadwal Jam (Tanpa Karakter Emoticon, Ikon Ditangani Vector Drawable)
             val dayName = if (exam.examDay.isNotBlank()) exam.examDay else "Senin"
-            binding.tvExamDayBadge.text = "📅 $dayName"
+            binding.tvExamDayBadge.text = dayName
 
             val timeSchedule = if (exam.startTime.isNotBlank() && exam.endTime.isNotBlank()) {
-                "⏰ ${exam.startTime} - ${exam.endTime} WIB"
+                "${exam.startTime} - ${exam.endTime} WIB"
             } else if (exam.startTime.isNotBlank()) {
-                "⏰ Mulai ${exam.startTime} WIB"
+                "Mulai ${exam.startTime} WIB"
             } else {
-                "⏰ Waktu Bebas"
+                "Waktu Bebas"
             }
             binding.tvExamTimeSchedule.text = timeSchedule
 
@@ -72,11 +72,14 @@ class ExamAdapter(
             val primaryColor = ContextCompat.getColor(context, R.color.primary)
 
             if (item.status == ExamStatus.SELESAI) {
-                binding.btnExamAction.text = "✓ Selesai"
+                binding.btnExamAction.text = "Selesai"
+                binding.btnExamAction.setIconResource(R.drawable.ic_check_circle)
+                binding.btnExamAction.iconTint = ColorStateList.valueOf(Color.parseColor("#64748B"))
                 binding.btnExamAction.isEnabled = false
                 binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
                 binding.btnExamAction.setTextColor(Color.parseColor("#64748B"))
             } else {
+                binding.btnExamAction.icon = null
                 val scheduleState = ExamScheduleHelper.getScheduleState(exam)
 
                 when (scheduleState) {

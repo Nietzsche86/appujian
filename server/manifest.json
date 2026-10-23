@@ -1,20 +1,12 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
-  "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
+  "school_tagline": "Madrasah Unggulan",
+  "exam_title": "Ujian Akhir",
   "exam_rules": [
-    "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
-    "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening (Silent), dan koneksi Wi-Fi/Bluetooth mati.",
-    "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras mencoba keluar dari aplikasi.",
-    "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
-    "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
-    "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
-    "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
-    "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
-    "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
-    "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
+    "Aturan 1",
+    "Aturan 2"
   ],
-  "sync_timestamp": 1792780194,
+  "sync_timestamp": 1792782241,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -27,9 +19,9 @@
       "grade_level": 8,
       "duration_minutes": 10,
       "download_url": "http://192.168.0.109:8080/files/HALO-8-1792773172.enc",
-      "file_sha256": "06cd420aa9bd8718d2e119bea3d42f7ddc149e4503dc8b391b5c76d9debebe9f",
-      "pbkdf2_salt_hex": "4a79af2e376b41f92ae5953d72e0fb45",
-      "gcm_iv_hex": "e96c7df6219f700685407415"
+      "file_sha256": "3e7f387fb1d12154d016584842237615a5bdbf5ab2e54546e57ba110add4a755",
+      "pbkdf2_salt_hex": "a2a3b85b6c0abd49d646b3dc57decb31",
+      "gcm_iv_hex": "83e895b2e16c71804ec41c73"
     },
     {
       "id": "DAYUM-7-1792776728",
@@ -41,9 +33,23 @@
       "grade_level": 7,
       "duration_minutes": 90,
       "download_url": "http://192.168.0.109:8080/files/DAYUM-7-1792776728.enc",
-      "file_sha256": "6d219e16b2187b31bb6fc2bdafe42191dcada762e79da5c5b05b178af6ef9306",
-      "pbkdf2_salt_hex": "ceabac2f2b622d444f344977176dc160",
-      "gcm_iv_hex": "1a621ae2c93a6ab4270daf11"
+      "file_sha256": "38c728309da307676bc832120d315a26b91d01239d021d14b1a5f51cdd0151bd",
+      "pbkdf2_salt_hex": "5463fb88bff9235fa321f614b59d3869",
+      "gcm_iv_hex": "19dafb6bf9fa730b61104b14"
+    },
+    {
+      "id": "MATEMA-8-1792782240",
+      "subject_name": "Matematika",
+      "short_name": "MTK",
+      "exam_day": "Selasa",
+      "start_time": "07:30",
+      "end_time": "09:00",
+      "grade_level": 8,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/MATEMA-8-1792782240.enc",
+      "file_sha256": "ddbab3a74f590478277d0e19704e322beb3bd5e36651f44afc8bfa869280ebee",
+      "pbkdf2_salt_hex": "f0db05835c3038962f6a2367e5797814",
+      "gcm_iv_hex": "78200fc9b9e0f0a6cd20017d"
     }
   ]
 }

@@ -25,6 +25,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
+            <!-- Day & Schedule Container -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -32,34 +33,66 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvExamDayBadge"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_badge_rounded"
+                    android:backgroundTint="@color/primary_container"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="3dp"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    tools:text="📅 Senin" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvExamTimeSchedule"
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/primary"
+                        android:contentDescription="Hari" />
+
+                    <TextView
+                        android:id="@+id/tvExamDayBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        tools:text="Senin" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:fontFamily="sans-serif-medium"
-                    tools:text="⏰ 07:00 - 08:30 WIB" />
+                    android:layout_marginStart="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="@color/gold"
+                        android:contentDescription="Jadwal Jam" />
+
+                    <TextView
+                        android:id="@+id/tvExamTimeSchedule"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        android:fontFamily="sans-serif-medium"
+                        tools:text="07:00 - 08:30 WIB" />
+                </LinearLayout>
             </LinearLayout>
 
+            <!-- Grade Badge -->
             <TextView
                 android:id="@+id/tvGradeBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="#F1F5F9"
+                android:background="@color/surface_variant"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="3dp"
                 android:textColor="@color/text_secondary"
@@ -74,7 +107,7 @@
             android:layout_height="1dp"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="10dp"
-            android:background="#F1F5F9" />
+            android:background="@color/surface_variant" />
 
         <!-- Main Content Row -->
         <LinearLayout
@@ -83,13 +116,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Left: Short Name Badge -->
+            <!-- Left: Short Name Badge (Teal) -->
             <TextView
                 android:id="@+id/tvShortNameBadge"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
                 android:background="@drawable/bg_badge_rounded"
-                android:backgroundTint="#0F766E"
+                android:backgroundTint="@color/teal"
                 android:gravity="center"
                 android:textColor="#FFFFFF"
                 android:textSize="13sp"
@@ -127,7 +160,7 @@
                         android:layout_width="12dp"
                         android:layout_height="12dp"
                         android:src="@drawable/ic_timer"
-                        app:tint="@color/text_secondary"
+                        app:tint="@color/gold"
                         android:contentDescription="Durasi" />
 
                     <TextView
@@ -148,7 +181,7 @@
                 android:layout_height="38dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:paddingHorizontal="12dp"
+                android:paddingHorizontal="14dp"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 app:cornerRadius="10dp"
