@@ -192,22 +192,48 @@ class DashboardActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val manifestResult = syncManager.fetchManifest(url)
-            binding.btnSyncExams.isEnabled = true
 
             manifestResult.onSuccess { manifest ->
-                binding.tvServerStatus.text = "✓ Manifest tersinkron (${manifest.exams.size} soal ditemukan)"
-                binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_ready_text))
-
                 val secureStorage = ExamApp.instance.secureStorage
                 if (manifest.masterPinSha256.isNotBlank()) {
                     secureStorage.masterPinHash = manifest.masterPinSha256
                 }
                 secureStorage.cachedManifest = json.encodeToString(ExamManifest.serializer(), manifest)
-
                 allExams = manifest.exams
+
+                // Otomatis unduh seluruh berkas .enc yang belum ada / berubah
+                var downloadedCount = 0
+                val totalToDownload = manifest.exams.count { !syncManager.isExamFileValid(it.id, it.fileSha256) }
+
+                if (totalToDownload > 0) {
+                    binding.tvServerStatus.text = "Mengunduh paket soal (0/$totalToDownload)..."
+
+                    for (exam in manifest.exams) {
+                        if (!syncManager.isExamFileValid(exam.id, exam.fileSha256)) {
+                            val fullUrl = if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
+                                exam.downloadUrl
+                            } else {
+                                val base = url.trimEnd('/')
+                                "$base/${exam.downloadUrl.trimStart('/')}"
+                            }
+                            syncManager.downloadExamFile(
+                                downloadUrl = fullUrl,
+                                examId = exam.id,
+                                expectedSha256 = exam.fileSha256
+                            )
+                            downloadedCount++
+                            binding.tvServerStatus.text = "Mengunduh paket soal ($downloadedCount/$totalToDownload)..."
+                        }
+                    }
+                }
+
+                binding.btnSyncExams.isEnabled = true
+                binding.tvServerStatus.text = "✓ Sinkronisasi selesai (${manifest.exams.size} soal siap)"
+                binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_ready_text))
                 refreshExamList()
-                Toast.makeText(this@DashboardActivity, "Sinkronisasi soal berhasil!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@DashboardActivity, "Seluruh paket soal berhasil disinkronkan!", Toast.LENGTH_SHORT).show()
             }.onFailure { err ->
+                binding.btnSyncExams.isEnabled = true
                 binding.tvServerStatus.text = "✗ Sinkronisasi gagal: ${err.localizedMessage}"
                 binding.tvServerStatus.setTextColor(ContextCompat.getColor(this@DashboardActivity, R.color.badge_danger_text))
                 Toast.makeText(this@DashboardActivity, "Gagal mengunduh manifest: ${err.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -248,7 +274,7 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         val uiModels = filtered.map { exam ->
-            val isDownloaded = syncManager.isExamFileDownloaded(exam.id)
+            val isDownloaded = syncManager.isExamFileValid(exam.id, exam.fileSha256)
             val isFinished = secureStorage.isExamFinished(exam.id)
             val isActive = secureStorage.activeExamId == exam.id
 

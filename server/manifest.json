@@ -1,6 +1,6 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "sync_timestamp": 1792772438,
+  "sync_timestamp": 1792773177,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -9,9 +9,9 @@
       "grade_level": 7,
       "duration_minutes": 10,
       "download_url": "http://192.168.0.109:8080/files/CONTOH-7-1792770771.enc",
-      "file_sha256": "05b2f1e252bc69e1c129c6a267991ed4b857bb505720cbb6c93cb58ff6e4323f",
-      "pbkdf2_salt_hex": "a44fefa11f30f05c71c8ef613e40430a",
-      "gcm_iv_hex": "24307677f6341bbba932e432"
+      "file_sha256": "4cba741d99e8efbd6bfe4025100e4c6c81273a9c5acc33a88bd7a8708b0ef53b",
+      "pbkdf2_salt_hex": "afe70d9a69479cc7077cf4a2d16dc467",
+      "gcm_iv_hex": "22b392119a2f237517ee0fe1"
     },
     {
       "id": "BINDO-7-2026",
@@ -19,9 +19,9 @@
       "grade_level": 7,
       "duration_minutes": 90,
       "download_url": "http://192.168.0.109:8080/files/BINDO-7-2026.enc",
-      "file_sha256": "f7adde068b858a115d54e90edf8c0c74abba18241e5dc4d508c8a9fdbad5dcd7",
-      "pbkdf2_salt_hex": "b93c193d8f9f611c79c097ada1ffb56d",
-      "gcm_iv_hex": "379cec3e797302d20ff83e35"
+      "file_sha256": "c370cf2df901cbf5e777e2e22c743a97f6da45ff9de7028c63be838db0ed3a05",
+      "pbkdf2_salt_hex": "94dd7e82f1e222590c4b4f9594a84fb5",
+      "gcm_iv_hex": "027e99a4aa5e5cfd142bbb8a"
     },
     {
       "id": "IPA-8-2026",
@@ -29,9 +29,9 @@
       "grade_level": 8,
       "duration_minutes": 90,
       "download_url": "http://192.168.0.109:8080/files/IPA-8-2026.enc",
-      "file_sha256": "a197888ac31b98578a34c8056817f1e1916549ca5649e37262fced38634db0ac",
-      "pbkdf2_salt_hex": "631e4c37039fda91053c415afb26bd84",
-      "gcm_iv_hex": "442cb39388d2fef2528a29a1"
+      "file_sha256": "4cd9c9c732e6900313dcd8ecfca2aad946e249fede35ec6f27104276892e0f1e",
+      "pbkdf2_salt_hex": "792f6a55558dd9f10ff4830828dcfd1d",
+      "gcm_iv_hex": "0c18e580455023d3eb30952d"
     },
     {
       "id": "MAT-9-2026",
@@ -39,9 +39,19 @@
       "grade_level": 9,
       "duration_minutes": 90,
       "download_url": "http://192.168.0.109:8080/files/MAT-9-2026.enc",
-      "file_sha256": "0ab9a98e776b4ed97fe7ae8315bd6ea0e353ec6433cf296e6732dd26ad3fe226",
-      "pbkdf2_salt_hex": "495dd15ed64183cf4b62887e6893e38f",
-      "gcm_iv_hex": "d9671ba8ef9e049a26b977d0"
+      "file_sha256": "f0f214c8dedb3cf5b28c7d0515502bedd12841b7d731c65bfac84fc4268c0910",
+      "pbkdf2_salt_hex": "c7c075986eba6d26d2d425992c816756",
+      "gcm_iv_hex": "7a7f28a0fff23a34ebbaad80"
+    },
+    {
+      "id": "HALO-8-1792773172",
+      "subject_name": "HALO",
+      "grade_level": 8,
+      "duration_minutes": 10,
+      "download_url": "http://192.168.0.109:8080/files/HALO-8-1792773172.enc",
+      "file_sha256": "4d325fac34ea14b9b87ac0e8e0bddee62440dedbbf0d7cbb06dd7c4a790520bf",
+      "pbkdf2_salt_hex": "e6bd90756bfafe9695ed384b3e95d6eb",
+      "gcm_iv_hex": "3628b28dd6607395e3a8bccc"
     }
   ]
 }

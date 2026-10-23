@@ -39,6 +39,14 @@ class LocalSyncManager(private val context: Context) {
         return File(examsDirectory, "$examId.enc")
     }
 
+    fun isExamFileValid(examId: String, expectedSha256: String): Boolean {
+        val file = getExamFile(examId)
+        if (!file.exists() || file.length() == 0L) return false
+        if (expectedSha256.isBlank()) return true
+        val actualSha256 = calculateSha256(file)
+        return actualSha256.equals(expectedSha256, ignoreCase = true)
+    }
+
     fun isExamFileDownloaded(examId: String): Boolean {
         val file = getExamFile(examId)
         return file.exists() && file.length() > 0

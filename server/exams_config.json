@@ -33,6 +33,14 @@
       "duration_minutes": 90,
       "token": "MAT9MTS",
       "pdf_filename": "soal_matematika_9.pdf"
+    },
+    {
+      "id": "HALO-8-1792773172",
+      "subject_name": "HALO",
+      "grade_level": 8,
+      "duration_minutes": 10,
+      "token": "TEST",
+      "pdf_filename": "soal_halo-8-1792773172.pdf"
     }
   ]
 }

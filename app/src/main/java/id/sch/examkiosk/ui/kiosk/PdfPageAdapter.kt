@@ -3,6 +3,7 @@ package id.sch.examkiosk.ui.kiosk
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,6 +60,12 @@ class PdfPageAdapter(
             recycleBitmap()
             binding.pbPageLoading.visibility = View.VISIBLE
 
+            // Berikan minimum height estimasi (rasio A4) agar layout tidak collapsible saat loading
+            val displayMetrics = binding.root.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val estimatedHeight = (screenWidth * 1.414f).toInt()
+            binding.ivPdfPage.minimumHeight = estimatedHeight
+
             renderJob = scope.launch(Dispatchers.Default) {
                 val bitmap = renderPage(pageIndex)
                 withContext(Dispatchers.Main) {
@@ -66,6 +73,8 @@ class PdfPageAdapter(
                     if (bitmap != null) {
                         currentBitmap = bitmap
                         binding.ivPdfPage.setImageBitmap(bitmap)
+                    } else {
+                        Log.e("PdfPageAdapter", "Gagal merender halaman $pageIndex, bitmap null")
                     }
                 }
             }
@@ -75,18 +84,20 @@ class PdfPageAdapter(
             return synchronized(rendererLock) {
                 try {
                     val page = renderer.openPage(pageIndex)
-                    // Standarisasi resolusi render berbasis density
                     val displayMetrics = binding.root.resources.displayMetrics
                     val screenWidth = displayMetrics.widthPixels
-                    val pageAspectRatio = page.height.toFloat() / page.width.toFloat()
-                    val targetWidth = screenWidth
-                    val targetHeight = (screenWidth * pageAspectRatio).toInt()
 
-                    // Wajib RGB_565 untuk hemat 50% RAM heap
+                    // Lebar target render (dibatasi maksimal 1080 untuk hemat memori)
+                    val targetWidth = if (screenWidth in 1..1080) screenWidth else 1080
+                    val pageAspectRatio = page.height.toFloat() / page.width.toFloat()
+                    val targetHeight = (targetWidth * pageAspectRatio).toInt()
+
+                    // PENTING: Android PdfRenderer.Page.render() WAJIB menggunakan Bitmap.Config.ARGB_8888.
+                    // Jika menggunakan RGB_565, Android akan melempar IllegalArgumentException ("Unsupported pixel format").
                     val bitmap = Bitmap.createBitmap(
                         targetWidth,
                         targetHeight,
-                        Bitmap.Config.RGB_565
+                        Bitmap.Config.ARGB_8888
                     )
                     bitmap.eraseColor(Color.WHITE)
 
@@ -94,6 +105,7 @@ class PdfPageAdapter(
                     page.close()
                     bitmap
                 } catch (e: Exception) {
+                    Log.e("PdfPageAdapter", "Exception pada renderPage $pageIndex: ${e.message}", e)
                     null
                 }
             }
