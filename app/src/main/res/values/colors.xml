@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand & Theme (MTS Modern Emerald) -->
+    <color name="primary">#059669</color>
+    <color name="primary_dark">#047857</color>
+    <color name="primary_light">#10B981</color>
+    <color name="primary_container">#ECFDF5</color>
+    <color name="on_primary_container">#065F46</color>
+    
+    <!-- Surfaces & Backgrounds -->
+    <color name="background">#F8FAFC</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#F1F5F9</color>
+    <color name="stroke_border">#E2E8F0</color>
+    
+    <!-- Typography -->
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#64748B</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    
+    <!-- Kiosk Status Bar & Fullscreen Overlay -->
+    <color name="kiosk_bar_bg">#0F172A</color>
+    <color name="kiosk_text_primary">#FFFFFF</color>
+    <color name="kiosk_text_secondary">#94A3B8</color>
+    <color name="timer_normal">#FFFFFF</color>
+    <color name="timer_warning">#F59E0B</color>
+    <color name="timer_danger">#EF4444</color>
+    
+    <!-- Badges & Indicators -->
+    <color name="badge_ready_text">#059669</color>
+    <color name="badge_ready_bg">#ECFDF5</color>
+    <color name="badge_warning_text">#D97706</color>
+    <color name="badge_warning_bg">#FFFBEB</color>
+    <color name="badge_danger_text">#DC2626</color>
+    <color name="badge_danger_bg">#FEF2F2</color>
+    <color name="badge_finished_text">#7C3AED</color>
+    <color name="badge_finished_bg">#F5F3FF</color>
+    
+    <!-- Ban Overlay -->
+    <color name="ban_overlay_bg">#DC2626</color>
+    <color name="kiosk_black_blocker">#000000</color>
+</resources>

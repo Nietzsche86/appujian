@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ujian MTS ROUDHOTUT THOWALIB</string>
+    <string name="school_name">MTS ROUDHOTUT THOWALIB</string>
+    <string name="app_subtitle">Kiosk Offline Exam Reader</string>
+    
+    <!-- Dashboard Strings -->
+    <string name="title_server_config">Pengaturan Server Proktor</string>
+    <string name="desc_server_config">Ubah alamat IP dan port server lab jika terjadi pergantian jaringan</string>
+    <string name="hint_server_url">http://192.168.1.100:8080</string>
+    <string name="btn_test_connection">Tes Koneksi</string>
+    <string name="btn_save_server">Simpan IP</string>
+    <string name="btn_sync_exams">Sinkronkan Soal</string>
+    <string name="status_server_online">Terhubung ke Server</string>
+    <string name="status_server_offline">Belum Terhubung</string>
+    
+    <!-- Hardware Status -->
+    <string name="title_device_status">Kesiapan Perangkat</string>
+    <string name="status_airplane_on">Mode Pesawat: AKTIF (Siap)</string>
+    <string name="status_airplane_off">Mode Pesawat: NONAKTIF (Wajib ON)</string>
+    <string name="status_bluetooth_off">Bluetooth: NONAKTIF (Siap)</string>
+    <string name="status_bluetooth_on">Bluetooth: AKTIF (Wajib OFF)</string>
+    
+    <!-- Grade Filters -->
+    <string name="filter_all">Semua</string>
+    <string name="filter_grade_7">Kelas 7</string>
+    <string name="filter_grade_8">Kelas 8</string>
+    <string name="filter_grade_9">Kelas 9</string>
+    
+    <!-- Exam Cards -->
+    <string name="label_duration">%1$d Menit</string>
+    <string name="status_saved">Tersimpan</string>
+    <string name="status_not_downloaded">Belum Diunduh</string>
+    <string name="status_finished">Selesai</string>
+    <string name="btn_start_exam">Mulai Ujian</string>
+    <string name="btn_download">Unduh Paket</string>
+    
+    <!-- Token Dialog -->
+    <string name="title_token_dialog">Masukkan Token Angkatan</string>
+    <string name="desc_token_dialog">Masukkan token 6-8 digit yang diberikan oleh pengawas untuk membuka lembar soal terenkripsi</string>
+    <string name="hint_token">TOKEN UJIAN</string>
+    <string name="btn_open_exam">Buka Soal</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="error_invalid_token">Token salah atau kunci dekripsi tidak cocok!</string>
+    
+    <!-- Kiosk Exam -->
+    <string name="page_indicator">Hal %1$d / %2$d</string>
+    <string name="supervisor_access">Akses Pengawas</string>
+    
+    <!-- Supervisor Dialog -->
+    <string name="title_supervisor_dialog">Otoritas Pengawas</string>
+    <string name="desc_supervisor_dialog">Masukkan Master PIN 6 Digit untuk mengakses pengaturan darurat</string>
+    <string name="hint_master_pin">MASTER PIN</string>
+    <string name="btn_reset_penalty">Reset Penalti &amp; Buka Ban</string>
+    <string name="btn_finish_early">Akhiri Ujian Lebih Awal</string>
+    <string name="error_wrong_pin">Master PIN tidak valid!</string>
+    
+    <!-- Violations & Penalties -->
+    <string name="title_penalty_overlay">PERINGATAN PELANGGARAN UJIAN</string>
+    <string name="countdown_ban">Masa Penguncian: %1$02d:%2$02d</string>
+    <string name="msg_permanent_ban">UJIAN DIBLOKIR TOTAL\nLaporkan ke Pengawas Ujian!</string>
+    <string name="req_airplane_on">1. Pastikan Mode Pesawat AKTIF</string>
+    <string name="req_bluetooth_off">2. Pastikan Bluetooth MATI</string>
+    <string name="req_pin_screen">3. Layar harus dalam Mode Pinned (Kiosk)</string>
+    <string name="kiosk_screen_pinned_msg">Tekan tombol Pin / Kunci Layar untuk menampilkan soal ujian.</string>
+</resources>

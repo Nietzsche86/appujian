@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/kiosk_bar_bg"
+    android:keepScreenOn="true">
+
+    <!-- Custom Status Bar (Height 48dp, Background #0F172A) -->
+    <LinearLayout
+        android:id="@+id/layoutStatusBar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:background="@color/kiosk_bar_bg"
+        android:elevation="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
+
+        <!-- Left: Subject & Grade -->
+        <TextView
+            android:id="@+id/tvStatusBarSubject"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/kiosk_text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            tools:text="IPA • Kelas 8" />
+
+        <!-- Center: Countdown Timer -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <ImageView
+                android:id="@+id/ivTimerIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_timer"
+                app:tint="@color/timer_normal"
+                android:contentDescription="Timer" />
+
+            <TextView
+                android:id="@+id/tvStatusBarTimer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:fontFamily="monospace"
+                android:textColor="@color/timer_normal"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="01:29:45" />
+        </LinearLayout>
+
+        <!-- Right: Page Indicator, Battery, Supervisor Button -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvStatusBarPage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:textColor="@color/kiosk_text_secondary"
+                android:textSize="12sp"
+                tools:text="Hal 1/12" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/ivStatusBarBattery"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_battery"
+                    app:tint="@color/kiosk_text_secondary"
+                    android:contentDescription="Battery" />
+
+                <TextView
+                    android:id="@+id/tvStatusBarBattery"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
+                    android:textColor="@color/kiosk_text_secondary"
+                    android:textSize="11sp"
+                    tools:text="95%" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnSupervisorLock"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="6dp"
+                android:src="@drawable/ic_lock"
+                app:tint="@color/kiosk_text_primary"
+                android:contentDescription="@string/supervisor_access" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- PDF Viewer Area Wrapped in ZoomableLayout -->
+    <id.sch.examkiosk.ui.kiosk.ZoomableLayout
+        android:id="@+id/zoomablePdfContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layoutStatusBar"
+        android:background="@color/surface">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPdfPages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:padding="8dp"
+            android:scrollbars="vertical" />
+    </id.sch.examkiosk.ui.kiosk.ZoomableLayout>
+
+    <!-- Kiosk Mode Screen Pinning Blocker (Black Overlay) -->
+    <LinearLayout
+        android:id="@+id/overlayKioskBlocker"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layoutStatusBar"
+        android:background="@color/kiosk_black_blocker"
+        android:elevation="10dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_lock"
+            app:tint="@color/timer_warning"
+            android:contentDescription="Kiosk Mode" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Mode Ujian Kiosk Belum Terkunci"
+            android:textColor="@color/text_on_primary"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="@string/kiosk_screen_pinned_msg"
+            android:textColor="@color/kiosk_text_secondary"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnReactivatePin"
+            style="@style/Widget.ExamKiosk.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:backgroundTint="@color/primary"
+            android:text="Kunci Layar Sekarang" />
+    </LinearLayout>
+
+    <!-- Red Violation Penalty Overlay -->
+    <LinearLayout
+        android:id="@+id/overlayViolationBan"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layoutStatusBar"
+        android:background="@color/ban_overlay_bg"
+        android:elevation="20dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:src="@drawable/ic_warning"
+            app:tint="@color/text_on_primary"
+            android:contentDescription="Pelanggaran" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/title_penalty_overlay"
+            android:textColor="@color/text_on_primary"
+            android:textSize="19sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvViolationDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="@color/text_on_primary"
+            android:textSize="14sp"
+            tools:text="Mode Pesawat Dimatikan!" />
+
+        <!-- Ban Countdown Timer -->
+        <TextView
+            android:id="@+id/tvBanCountdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/bg_badge_rounded"
+            android:backgroundTint="#80000000"
+            android:fontFamily="monospace"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="10dp"
+            android:textColor="@color/text_on_primary"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            tools:text="Masa Penguncian: 01:00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:text="Perhatikan syarat agar ban dapat selesai:\n• Mode Pesawat Harus ON\n• Bluetooth Harus OFF\n• Layar Tetap Terkunci (Pinned)\n\nWaktu ujian utama tetap berjalan!"
+            android:textColor="@color/text_on_primary"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSupervisorEmergency"
+            style="@style/Widget.ExamKiosk.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:strokeColor="@color/text_on_primary"
+            android:textColor="@color/text_on_primary"
+            android:text="Akses Pengawas Ujian" />
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ExamKiosk" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/text_on_primary</item>
+        <item name="colorSecondary">@color/primary_light</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+    </style>
+
+    <!-- Theme for Kiosk Exam (Fullscreen dark status bar) -->
+    <style name="Theme.ExamKiosk.Fullscreen" parent="Theme.ExamKiosk">
+        <item name="android:statusBarColor">@color/kiosk_bar_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">@color/kiosk_bar_bg</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+
+    <!-- Card Styles -->
+    <style name="Widget.ExamKiosk.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">1dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/stroke_border</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+    </style>
+
+    <!-- Rounded Button Styles -->
+    <style name="Widget.ExamKiosk.Button" parent="Widget.Material3.Button">
+        <item name="cornerRadius">12dp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="Widget.ExamKiosk.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">12dp</item>
+        <item name="strokeColor">@color/primary</item>
+    </style>
+</resources>
