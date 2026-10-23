@@ -9,12 +9,16 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.security.spec.KeySpec
 import javax.crypto.Cipher
-import javax.crypto.CipherInputStream
 import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
+
+data class DecryptedPdfSession(
+    val pfd: ParcelFileDescriptor,
+    val tempFile: File
+)
 
 class CryptoEngine(private val context: Context) {
 
@@ -44,7 +48,7 @@ class CryptoEngine(private val context: Context) {
         token: String,
         saltHex: String,
         ivHex: String
-    ): Result<ParcelFileDescriptor> = withContext(Dispatchers.IO) {
+    ): Result<DecryptedPdfSession> = withContext(Dispatchers.IO) {
         val tempPdf = File(context.cacheDir, "temp_active_${System.currentTimeMillis()}.pdf")
         try {
             val key = deriveKey(token, saltHex)
@@ -53,23 +57,47 @@ class CryptoEngine(private val context: Context) {
             val gcmSpec = GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv)
             cipher.init(Cipher.DECRYPT_MODE, key, gcmSpec)
 
+            // Stream decrypt via update() + doFinal() untuk kehandalan autentikasi AES-GCM
             FileInputStream(encryptedFile).use { fis ->
-                CipherInputStream(fis, cipher).use { cis ->
-                    FileOutputStream(tempPdf).use { fos ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        var bytesRead: Int
-                        while (cis.read(buffer).also { bytesRead = it } != -1) {
-                            fos.write(buffer, 0, bytesRead)
+                FileOutputStream(tempPdf).use { fos ->
+                    val inBuffer = ByteArray(BUFFER_SIZE)
+                    var bytesRead: Int
+                    while (fis.read(inBuffer).also { bytesRead = it } != -1) {
+                        val chunk = cipher.update(inBuffer, 0, bytesRead)
+                        if (chunk != null && chunk.isNotEmpty()) {
+                            fos.write(chunk)
                         }
-                        fos.flush()
                     }
+                    val finalChunk = cipher.doFinal()
+                    if (finalChunk != null && finalChunk.isNotEmpty()) {
+                        fos.write(finalChunk)
+                    }
+                    fos.flush()
                 }
             }
 
-            // Unlinked File Descriptor: buka descriptor lalu hapus file fisik seketika
+            // Validasi format Magic Bytes (%PDF-)
+            if (tempPdf.length() < 4) {
+                tempPdf.delete()
+                return@withContext Result.failure(IllegalStateException("Berkas hasil dekripsi kosong."))
+            }
+
+            val header = ByteArray(4)
+            FileInputStream(tempPdf).use { it.read(header) }
+            val isPdf = header[0] == 0x25.toByte() && // '%'
+                        header[1] == 0x50.toByte() && // 'P'
+                        header[2] == 0x44.toByte() && // 'D'
+                        header[3] == 0x46.toByte()    // 'F'
+
+            if (!isPdf) {
+                tempPdf.delete()
+                return@withContext Result.failure(
+                    IllegalStateException("Berkas yang didekripsi bukan format PDF yang valid! Pastikan berkas yang diunggah ke server proktor adalah file PDF asli (bukan halaman error web).")
+                )
+            }
+
             val pfd = ParcelFileDescriptor.open(tempPdf, ParcelFileDescriptor.MODE_READ_ONLY)
-            tempPdf.delete() // File terhapus dari storage, PFD tetap valid di memori OS
-            Result.success(pfd)
+            Result.success(DecryptedPdfSession(pfd, tempPdf))
         } catch (e: Exception) {
             if (tempPdf.exists()) {
                 tempPdf.delete()

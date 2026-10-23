@@ -1,17 +1,218 @@
-<br />
-<b>Fatal error</b>:  Uncaught Spipu\Html2Pdf\Exception\HtmlParsingException: Unauthorized path host on https://www.classtools.net/_logo.jpg =&gt;  in /home/classtoo/public_html/vendor/spipu/html2pdf/src/Security/Security.php:47
-Stack trace:
-#0 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1556): Spipu\Html2Pdf\Security\Security-&gt;checkValidPath('https://www.cla...')
-#1 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(5822): Spipu\Html2Pdf\Html2Pdf-&gt;_drawImage('https://www.cla...', false)
-#2 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1481): Spipu\Html2Pdf\Html2Pdf-&gt;_tag_open_IMG(Array)
-#3 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1088): Spipu\Html2Pdf\Html2Pdf-&gt;_executeAction(Object(Spipu\Html2Pdf\Parsing\Node))
-#4 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1044): Spipu\Html2Pdf\Html2Pdf-&gt;_setNewPositionForNewLine(NULL)
-#5 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1526): Spipu\Html2Pdf\Html2Pdf-&gt;_setNewLine(3.5277777777778, NULL)
-#6 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(4339): Spipu\Html2Pdf\Html2Pdf-&gt;_makeBreakLine(3.5277777777778)
-#7 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1481): Spipu\Html2Pdf\Html2Pdf-&gt;_tag_open_P(Array)
-#8 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1449): Spipu\Html2Pdf\Html2Pdf-&gt;_executeAction(Object(Spipu\Html2Pdf\Parsing\Node))
-#9 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(634): Spipu\Html2Pdf\Html2Pdf-&gt;_makeHTMLcode()
-#10 /home/classtoo/public_html/shorturl/pdf-creator/html2pdf.class.php(34): Spipu\Html2Pdf\Html2Pdf-&gt;writeHTML('&lt;page&gt;&lt;h1 align...')
-#11 /home/classtoo/public_html/random-group-generator/pdf.php(7): HTML2PDF-&gt;WriteHTML('&lt;page&gt;&lt;h1 align...')
-#12 {main}
-  thrown in <b>/home/classtoo/public_html/vendor/spipu/html2pdf/src/Security/Security.php</b> on line <b>47</b><br />
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 6 0 R 9 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1223 >>
+stream
+BT
+/F1 12 Tf
+50 780 Td
+18 TL
+/F1 16 Tf
+(MTS ROUDHOTUT THOWALIB) Tj
+T*
+/F1 12 Tf
+(ASESMEN SUMATIF AKHIR SEMESTER \(ASAS\)) Tj
+T*
+(Mata Pelajaran: Contoh Ujian - Kelas 7) Tj
+T*
+(Halaman 1 dari 3) Tj
+T*
+(----------------------------------------------------------------) Tj
+T*
+(PETUNJUK: Berdoalah sebelum mengerjakan. Lembar jawaban diisi pada LJK fisik.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 1:) Tj
+T*
+(Manakah pernyataan berikut yang paling tepat sesuai kaidah pembelajaran?) Tj
+T*
+(A. Membaca dan memahami konsep secara mandiri dan tekun.) Tj
+T*
+(B. Mengabaikan instruksi dan langsung menjawab sembarangan.) Tj
+T*
+(C. Mengisi lembar jawaban LJK tanpa membaca soal terlebih dahulu.) Tj
+T*
+(D. Membuka aplikasi lain selama ujian berlangsung.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 2:) Tj
+T*
+(Dalam pelaksanaan ujian semi-online luring \(full offline\), siswa wajib mematuhi:) Tj
+T*
+(A. Menyalakan koneksi internet hotspot seluler.) Tj
+T*
+(B. Mengaktifkan Mode Pesawat dan mematikan koneksi Bluetooth.) Tj
+T*
+(C. Mengaktifkan koneksi USB transfer data ke laptop lain.) Tj
+T*
+(D. Membuka fitur split screen dan floating apps di HP.) Tj
+T*
+() Tj
+T*
+/F1 16 Tf
+([ Lembar Soal Resmi MTS ROUDHOTUT THOWALIB - Dokumen Rahasia Ujian ]) Tj
+T*
+/F1 12 Tf
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 7 0 R /Resources << /Font << /F1 8 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 1223 >>
+stream
+BT
+/F1 12 Tf
+50 780 Td
+18 TL
+/F1 16 Tf
+(MTS ROUDHOTUT THOWALIB) Tj
+T*
+/F1 12 Tf
+(ASESMEN SUMATIF AKHIR SEMESTER \(ASAS\)) Tj
+T*
+(Mata Pelajaran: Contoh Ujian - Kelas 7) Tj
+T*
+(Halaman 2 dari 3) Tj
+T*
+(----------------------------------------------------------------) Tj
+T*
+(PETUNJUK: Berdoalah sebelum mengerjakan. Lembar jawaban diisi pada LJK fisik.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 6:) Tj
+T*
+(Manakah pernyataan berikut yang paling tepat sesuai kaidah pembelajaran?) Tj
+T*
+(A. Membaca dan memahami konsep secara mandiri dan tekun.) Tj
+T*
+(B. Mengabaikan instruksi dan langsung menjawab sembarangan.) Tj
+T*
+(C. Mengisi lembar jawaban LJK tanpa membaca soal terlebih dahulu.) Tj
+T*
+(D. Membuka aplikasi lain selama ujian berlangsung.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 7:) Tj
+T*
+(Dalam pelaksanaan ujian semi-online luring \(full offline\), siswa wajib mematuhi:) Tj
+T*
+(A. Menyalakan koneksi internet hotspot seluler.) Tj
+T*
+(B. Mengaktifkan Mode Pesawat dan mematikan koneksi Bluetooth.) Tj
+T*
+(C. Mengaktifkan koneksi USB transfer data ke laptop lain.) Tj
+T*
+(D. Membuka fitur split screen dan floating apps di HP.) Tj
+T*
+() Tj
+T*
+/F1 16 Tf
+([ Lembar Soal Resmi MTS ROUDHOTUT THOWALIB - Dokumen Rahasia Ujian ]) Tj
+T*
+/F1 12 Tf
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 10 0 R /Resources << /Font << /F1 11 0 R >> >> >>
+endobj
+10 0 obj
+<< /Length 1225 >>
+stream
+BT
+/F1 12 Tf
+50 780 Td
+18 TL
+/F1 16 Tf
+(MTS ROUDHOTUT THOWALIB) Tj
+T*
+/F1 12 Tf
+(ASESMEN SUMATIF AKHIR SEMESTER \(ASAS\)) Tj
+T*
+(Mata Pelajaran: Contoh Ujian - Kelas 7) Tj
+T*
+(Halaman 3 dari 3) Tj
+T*
+(----------------------------------------------------------------) Tj
+T*
+(PETUNJUK: Berdoalah sebelum mengerjakan. Lembar jawaban diisi pada LJK fisik.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 11:) Tj
+T*
+(Manakah pernyataan berikut yang paling tepat sesuai kaidah pembelajaran?) Tj
+T*
+(A. Membaca dan memahami konsep secara mandiri dan tekun.) Tj
+T*
+(B. Mengabaikan instruksi dan langsung menjawab sembarangan.) Tj
+T*
+(C. Mengisi lembar jawaban LJK tanpa membaca soal terlebih dahulu.) Tj
+T*
+(D. Membuka aplikasi lain selama ujian berlangsung.) Tj
+T*
+() Tj
+T*
+(Soal Nomor 12:) Tj
+T*
+(Dalam pelaksanaan ujian semi-online luring \(full offline\), siswa wajib mematuhi:) Tj
+T*
+(A. Menyalakan koneksi internet hotspot seluler.) Tj
+T*
+(B. Mengaktifkan Mode Pesawat dan mematikan koneksi Bluetooth.) Tj
+T*
+(C. Mengaktifkan koneksi USB transfer data ke laptop lain.) Tj
+T*
+(D. Membuka fitur split screen dan floating apps di HP.) Tj
+T*
+() Tj
+T*
+/F1 16 Tf
+([ Lembar Soal Resmi MTS ROUDHOTUT THOWALIB - Dokumen Rahasia Ujian ]) Tj
+T*
+/F1 12 Tf
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000253 00000 n 
+0000001527 00000 n 
+0000001597 00000 n 
+0000001723 00000 n 
+0000002997 00000 n 
+0000003067 00000 n 
+0000003195 00000 n 
+0000004472 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+4543
+%%EOF

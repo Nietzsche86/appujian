@@ -1,6 +1,6 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "sync_timestamp": 1792770782,
+  "sync_timestamp": 1792772438,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -9,9 +9,39 @@
       "grade_level": 7,
       "duration_minutes": 10,
       "download_url": "http://192.168.0.109:8080/files/CONTOH-7-1792770771.enc",
-      "file_sha256": "3c4764cd3df7d08ec3064e349fd1c16bac40fc8288b12c3ce3634567703abda3",
-      "pbkdf2_salt_hex": "0701fbd58a620710291dc6993b186bf7",
-      "gcm_iv_hex": "36c2747b1d1930d4eda821cc"
+      "file_sha256": "05b2f1e252bc69e1c129c6a267991ed4b857bb505720cbb6c93cb58ff6e4323f",
+      "pbkdf2_salt_hex": "a44fefa11f30f05c71c8ef613e40430a",
+      "gcm_iv_hex": "24307677f6341bbba932e432"
+    },
+    {
+      "id": "BINDO-7-2026",
+      "subject_name": "Bahasa Indonesia",
+      "grade_level": 7,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/BINDO-7-2026.enc",
+      "file_sha256": "f7adde068b858a115d54e90edf8c0c74abba18241e5dc4d508c8a9fdbad5dcd7",
+      "pbkdf2_salt_hex": "b93c193d8f9f611c79c097ada1ffb56d",
+      "gcm_iv_hex": "379cec3e797302d20ff83e35"
+    },
+    {
+      "id": "IPA-8-2026",
+      "subject_name": "Ilmu Pengetahuan Alam (IPA)",
+      "grade_level": 8,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/IPA-8-2026.enc",
+      "file_sha256": "a197888ac31b98578a34c8056817f1e1916549ca5649e37262fced38634db0ac",
+      "pbkdf2_salt_hex": "631e4c37039fda91053c415afb26bd84",
+      "gcm_iv_hex": "442cb39388d2fef2528a29a1"
+    },
+    {
+      "id": "MAT-9-2026",
+      "subject_name": "Matematika",
+      "grade_level": 9,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/MAT-9-2026.enc",
+      "file_sha256": "0ab9a98e776b4ed97fe7ae8315bd6ea0e353ec6433cf296e6732dd26ad3fe226",
+      "pbkdf2_salt_hex": "495dd15ed64183cf4b62887e6893e38f",
+      "gcm_iv_hex": "d9671ba8ef9e049a26b977d0"
     }
   ]
 }

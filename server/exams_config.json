@@ -9,6 +9,30 @@
       "duration_minutes": 10,
       "token": "CONTOH",
       "pdf_filename": "soal_contoh-7-1792770771.pdf"
+    },
+    {
+      "id": "BINDO-7-2026",
+      "subject_name": "Bahasa Indonesia",
+      "grade_level": 7,
+      "duration_minutes": 90,
+      "token": "BINDO7",
+      "pdf_filename": "soal_bindo_7.pdf"
+    },
+    {
+      "id": "IPA-8-2026",
+      "subject_name": "Ilmu Pengetahuan Alam (IPA)",
+      "grade_level": 8,
+      "duration_minutes": 90,
+      "token": "IPA8MTS",
+      "pdf_filename": "soal_ipa_8.pdf"
+    },
+    {
+      "id": "MAT-9-2026",
+      "subject_name": "Matematika",
+      "grade_level": 9,
+      "duration_minutes": 90,
+      "token": "MAT9MTS",
+      "pdf_filename": "soal_matematika_9.pdf"
     }
   ]
 }

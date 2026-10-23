@@ -51,6 +51,7 @@ class KioskExamActivity : AppCompatActivity() {
 
     private var pdfRenderer: PdfRenderer? = null
     private var pdfPfd: ParcelFileDescriptor? = null
+    private var activeTempPdfFile: File? = null
     private var pdfAdapter: PdfPageAdapter? = null
 
     // Exam countdown
@@ -209,10 +210,11 @@ class KioskExamActivity : AppCompatActivity() {
                 ivHex = ivHex
             )
 
-            decryptResult.onSuccess { pfd ->
-                pdfPfd = pfd
+            decryptResult.onSuccess { session ->
+                pdfPfd = session.pfd
+                activeTempPdfFile = session.tempFile
                 try {
-                    val renderer = PdfRenderer(pfd)
+                    val renderer = PdfRenderer(session.pfd)
                     pdfRenderer = renderer
 
                     val adapter = PdfPageAdapter(renderer, lifecycleScope)
@@ -405,6 +407,11 @@ class KioskExamActivity : AppCompatActivity() {
 
         try {
             pdfPfd?.close()
+        } catch (_: Exception) {
+        }
+
+        try {
+            activeTempPdfFile?.delete()
         } catch (_: Exception) {
         }
 

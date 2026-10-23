@@ -98,13 +98,25 @@ class TokenInputDialog : DialogFragment() {
             binding.pbDecrypting.visibility = View.GONE
             binding.btnSubmitToken.isEnabled = true
 
-            result.onSuccess { pfd ->
-                // Close trial PFD
-                pfd.close()
+            result.onSuccess { session ->
+                // Tutup PFD dan hapus file uji coba
+                try {
+                    session.pfd.close()
+                } catch (_: Exception) {
+                }
+                try {
+                    session.tempFile.delete()
+                } catch (_: Exception) {
+                }
                 dismiss()
                 onTokenConfirmed?.invoke(token)
-            }.onFailure {
-                binding.tvTokenError.text = getString(R.string.error_invalid_token)
+            }.onFailure { err ->
+                val errorMsg = if (err.localizedMessage?.contains("PDF") == true) {
+                    err.localizedMessage ?: getString(R.string.error_invalid_token)
+                } else {
+                    getString(R.string.error_invalid_token)
+                }
+                binding.tvTokenError.text = errorMsg
                 binding.tvTokenError.visibility = View.VISIBLE
             }
         }

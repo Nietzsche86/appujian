@@ -393,6 +393,14 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": "Semua kolom dan berkas PDF wajib diisi!"}, 400)
                 return
 
+            # Validasi Magic Header berkas PDF
+            if not pdf_bytes.startswith(b"%PDF-"):
+                self.send_json({
+                    "ok": False,
+                    "error": "Berkas yang Anda unggah BUKAN dokumen PDF yang valid! (Format berkas tidak diawali %PDF-). Pastikan file tersebut adalah dokumen PDF asli, bukan halaman web yang tersimpan sebagai .pdf."
+                }, 400)
+                return
+
             # Generate unique safe ID
             clean_sub = re.sub(r'[^A-Za-z0-9]', '', subject_name)[:6].upper()
             exam_id = f"{clean_sub}-{grade_level}-{int(time.time())}"
