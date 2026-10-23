@@ -117,6 +117,11 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNavigation() {
+        runCatching {
+            binding.bottomNavigation.itemActiveIndicatorColor = ColorStateList.valueOf(Color.TRANSPARENT)
+            binding.bottomNavigation.itemRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
+        }
+
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_dashboard -> {
