@@ -5,9 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     app:cardCornerRadius="16dp"
-    app:cardElevation="1dp"
+    app:cardElevation="0dp"
     app:strokeWidth="1dp"
     app:strokeColor="@color/stroke_border"
     app:cardBackgroundColor="@color/surface">
@@ -16,115 +16,146 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="12dp">
 
-        <!-- Top Row: Subject Title + Status Badge -->
+        <!-- Top Header: Day & Schedule + Grade -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvSubjectName"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                tools:text="Bahasa Indonesia" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvExamDayBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_rounded"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"
+                    tools:text="📅 Senin" />
+
+                <TextView
+                    android:id="@+id/tvExamTimeSchedule"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:fontFamily="sans-serif-medium"
+                    tools:text="⏰ 07:00 - 08:30 WIB" />
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/tvExamStatusBadge"
+                android:id="@+id/tvGradeBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_badge_rounded"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
+                android:background="#F1F5F9"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:textStyle="bold"
-                android:textColor="@color/badge_ready_text"
-                tools:text="Tersimpan" />
-        </LinearLayout>
-
-        <!-- Subtitle: Grade & Duration -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <!-- Grade Info -->
-            <TextView
-                android:id="@+id/tvGradeLevel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
                 tools:text="Kelas 8" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" • "
-                android:textColor="@color/text_muted" />
-
-            <!-- Duration Info -->
-            <ImageView
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:src="@drawable/ic_timer"
-                app:tint="@color/text_secondary"
-                android:contentDescription="Durasi" />
-
-            <TextView
-                android:id="@+id/tvDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                tools:text="90 Menit" />
         </LinearLayout>
 
-        <!-- Divider -->
+        <!-- Divider line -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="12dp"
-            android:background="@color/stroke_border" />
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="10dp"
+            android:background="#F1F5F9" />
 
-        <!-- Bottom Action Row -->
+        <!-- Main Content Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
+            <!-- Left: Short Name Badge -->
             <TextView
-                android:id="@+id/tvSecurityLabel"
+                android:id="@+id/tvShortNameBadge"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_badge_rounded"
+                android:backgroundTint="#0F766E"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="IPA" />
+
+            <!-- Middle: Full Subject Name + Duration -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Terenkripsi AES-256-GCM"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp" />
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="vertical">
 
+                <TextView
+                    android:id="@+id/tvSubjectName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    tools:text="Ilmu Pengetahuan Alam (IPA)" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_timer"
+                        app:tint="@color/text_secondary"
+                        android:contentDescription="Durasi" />
+
+                    <TextView
+                        android:id="@+id/tvDuration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"
+                        tools:text="90 Menit" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Right: Action Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExamAction"
-                style="@style/Widget.ExamKiosk.Button"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minHeight="40dp"
-                android:paddingHorizontal="16dp"
+                android:layout_height="38dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="12dp"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                app:cornerRadius="10dp"
                 android:backgroundTint="@color/primary"
-                android:text="@string/btn_start_exam"
-                android:textSize="13sp" />
+                android:textColor="#FFFFFF"
+                tools:text="Mulai Ujian" />
         </LinearLayout>
 
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>

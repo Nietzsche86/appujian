@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/kiosk_bar_bg"
+    android:gravity="center">
+
+    <LinearLayout
+        android:id="@+id/layoutCenterBrand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Logo Container with glow effect -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSplashLogo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="8dp"
+            app:strokeColor="#1E293B"
+            app:strokeWidth="2dp"
+            app:cardBackgroundColor="@color/surface">
+
+            <ImageView
+                android:id="@+id/ivSplashLogo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="12dp"
+                android:src="@drawable/logo_sekolah"
+                android:scaleType="fitCenter"
+                android:contentDescription="Logo Sekolah" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- School Name -->
+        <TextView
+            android:id="@+id/tvSplashSchoolName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:textColor="@color/text_on_primary"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.05"
+            tools:text="MTS ROUDHOTUT THOWALIB" />
+
+        <!-- School Subtitle / Tagline -->
+        <TextView
+            android:id="@+id/tvSplashTagline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:textColor="@color/primary_light"
+            android:textSize="13sp"
+            android:text="Aplikasi Ujian Kiosk &amp; Berbasis Komputer" />
+    </LinearLayout>
+
+    <!-- Bottom Loading Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="40dp"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/splashProgress"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            app:indicatorColor="@color/primary"
+            app:trackColor="#1E293B"
+            app:trackCornerRadius="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Memuat Sistem Ujian..."
+            android:textColor="@color/text_muted"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+</RelativeLayout>

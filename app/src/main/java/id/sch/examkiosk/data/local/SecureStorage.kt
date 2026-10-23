@@ -19,6 +19,14 @@ class SecureStorage(context: Context) {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
+    var schoolName: String
+        get() = prefs.getString(KEY_SCHOOL_NAME, "MTS ROUDHOTUT THOWALIB") ?: "MTS ROUDHOTUT THOWALIB"
+        set(value) = prefs.edit().putString(KEY_SCHOOL_NAME, value).apply()
+
+    var schoolTagline: String
+        get() = prefs.getString(KEY_SCHOOL_TAGLINE, "Madrasah Tsanawiyah Unggulan & Berkarakter") ?: "Madrasah Tsanawiyah Unggulan & Berkarakter"
+        set(value) = prefs.edit().putString(KEY_SCHOOL_TAGLINE, value).apply()
+
     var serverUrl: String
         get() = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trim()).apply()
@@ -78,6 +86,8 @@ class SecureStorage(context: Context) {
         private const val PREFS_FILENAME = "secure_exam_prefs"
         private const val DEFAULT_SERVER_URL = "http://192.168.1.100:8080"
 
+        private const val KEY_SCHOOL_NAME = "school_name"
+        private const val KEY_SCHOOL_TAGLINE = "school_tagline"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_MASTER_PIN_HASH = "master_pin_hash"
         private const val KEY_ACTIVE_EXAM_ID = "active_exam_id"

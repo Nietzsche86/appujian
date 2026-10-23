@@ -11,6 +11,18 @@ data class ExamItem(
     @SerialName("subject_name")
     val subjectName: String,
 
+    @SerialName("short_name")
+    val shortName: String = "",
+
+    @SerialName("exam_day")
+    val examDay: String = "Senin",
+
+    @SerialName("start_time")
+    val startTime: String = "",
+
+    @SerialName("end_time")
+    val endTime: String = "",
+
     @SerialName("grade_level")
     val gradeLevel: Int,
 

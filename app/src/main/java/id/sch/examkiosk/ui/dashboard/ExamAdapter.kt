@@ -1,5 +1,7 @@
 package id.sch.examkiosk.ui.dashboard
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -10,6 +12,7 @@ import id.sch.examkiosk.R
 import id.sch.examkiosk.data.model.ExamItemUiModel
 import id.sch.examkiosk.data.model.ExamStatus
 import id.sch.examkiosk.databinding.ItemExamCardBinding
+import id.sch.examkiosk.util.ExamScheduleHelper
 
 class ExamAdapter(
     private val onActionClick: (ExamItemUiModel) -> Unit
@@ -37,34 +40,68 @@ class ExamAdapter(
             val exam = item.exam
             val context = binding.root.context
 
-            binding.tvSubjectName.text = exam.subjectName
-            binding.tvGradeLevel.text = context.getString(R.string.filter_all).let {
-                "Kelas ${exam.gradeLevel}"
-            }
-            binding.tvDuration.text = context.getString(R.string.label_duration, exam.durationMinutes)
+            // 1. Hari & Jadwal Jam
+            val dayName = if (exam.examDay.isNotBlank()) exam.examDay else "Senin"
+            binding.tvExamDayBadge.text = "📅 $dayName"
 
-            when (item.status) {
-                ExamStatus.SELESAI -> {
-                    binding.tvExamStatusBadge.text = context.getString(R.string.status_finished)
-                    binding.tvExamStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.badge_finished_text))
-                    binding.btnExamAction.text = context.getString(R.string.status_finished)
-                    binding.btnExamAction.isEnabled = false
-                    binding.btnExamAction.alpha = 0.5f
-                }
-                ExamStatus.TERSIMPAN, ExamStatus.SEDANG_UJIAN -> {
-                    val statusText = if (item.status == ExamStatus.SEDANG_UJIAN) "Sedang Berjalan" else context.getString(R.string.status_saved)
-                    binding.tvExamStatusBadge.text = statusText
-                    binding.tvExamStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.badge_ready_text))
-                    binding.btnExamAction.text = context.getString(R.string.btn_start_exam)
-                    binding.btnExamAction.isEnabled = true
-                    binding.btnExamAction.alpha = 1.0f
-                }
-                ExamStatus.BELUM_DIUNDUH -> {
-                    binding.tvExamStatusBadge.text = context.getString(R.string.status_not_downloaded)
-                    binding.tvExamStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
-                    binding.btnExamAction.text = context.getString(R.string.btn_download)
-                    binding.btnExamAction.isEnabled = true
-                    binding.btnExamAction.alpha = 1.0f
+            val timeSchedule = if (exam.startTime.isNotBlank() && exam.endTime.isNotBlank()) {
+                "⏰ ${exam.startTime} - ${exam.endTime} WIB"
+            } else if (exam.startTime.isNotBlank()) {
+                "⏰ Mulai ${exam.startTime} WIB"
+            } else {
+                "⏰ Waktu Bebas"
+            }
+            binding.tvExamTimeSchedule.text = timeSchedule
+
+            // 2. Tingkat Kelas
+            binding.tvGradeBadge.text = "Kelas ${exam.gradeLevel}"
+
+            // 3. Singkatan / Kode Mapel
+            val shortCode = if (exam.shortName.isNotBlank()) {
+                exam.shortName.uppercase()
+            } else {
+                exam.subjectName.filter { it.isLetterOrDigit() }.take(4).uppercase().ifEmpty { "MAPEL" }
+            }
+            binding.tvShortNameBadge.text = shortCode
+
+            // 4. Nama Mapel Lengkap & Durasi
+            binding.tvSubjectName.text = exam.subjectName
+            binding.tvDuration.text = "${exam.durationMinutes} Menit"
+
+            // 5. Status Aksi & Jadwal Jam Nyata HP
+            val primaryColor = ContextCompat.getColor(context, R.color.primary)
+
+            if (item.status == ExamStatus.SELESAI) {
+                binding.btnExamAction.text = "✓ Selesai"
+                binding.btnExamAction.isEnabled = false
+                binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
+                binding.btnExamAction.setTextColor(Color.parseColor("#64748B"))
+            } else {
+                val scheduleState = ExamScheduleHelper.getScheduleState(exam)
+
+                when (scheduleState) {
+                    ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {
+                        binding.btnExamAction.text = "Jam ${exam.startTime}"
+                        binding.btnExamAction.isEnabled = false
+                        binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
+                        binding.btnExamAction.setTextColor(Color.parseColor("#94A3B8"))
+                    }
+                    ExamScheduleHelper.ScheduleState.EXPIRED -> {
+                        binding.btnExamAction.text = "Waktu Habis"
+                        binding.btnExamAction.isEnabled = false
+                        binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FEE2E2"))
+                        binding.btnExamAction.setTextColor(Color.parseColor("#DC2626"))
+                    }
+                    ExamScheduleHelper.ScheduleState.ACTIVE -> {
+                        if (item.status == ExamStatus.BELUM_DIUNDUH) {
+                            binding.btnExamAction.text = "Unduh Soal"
+                        } else {
+                            binding.btnExamAction.text = "Mulai Ujian"
+                        }
+                        binding.btnExamAction.isEnabled = true
+                        binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(primaryColor)
+                        binding.btnExamAction.setTextColor(Color.WHITE)
+                    }
                 }
             }
 

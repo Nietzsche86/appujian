@@ -1,438 +1,873 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <androidx.core.widget.NestedScrollView
+    <!-- Top Sticky Header on All Tabs -->
+    <LinearLayout
+        android:id="@+id/layoutGlobalHeader"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:overScrollMode="never">
+        android:layout_height="62dp"
+        android:layout_alignParentTop="true"
+        android:background="@color/header_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:elevation="4dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#334155"
+            app:cardBackgroundColor="@color/surface">
+
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="4dp"
+                android:src="@drawable/logo_sekolah"
+                android:scaleType="fitCenter"
+                android:contentDescription="Logo Sekolah" />
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
 
-            <!-- Hero Header Card with MTS Branding & Logo -->
-            <com.google.android.material.card.MaterialCardView
+            <TextView
+                android:id="@+id/tvHeaderSchoolName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="MTS ROUDHOTUT THOWALIB" />
+
+            <TextView
+                android:id="@+id/tvHeaderSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/header_sub"
+                android:textSize="11sp"
+                tools:text="Dashboard Kesiapan &amp; Statistik" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/ivHeaderQuickSync"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="6dp"
+            android:src="@drawable/ic_sync"
+            app:tint="@color/primary_light"
+            android:contentDescription="Sinkronisasi Cepat" />
+    </LinearLayout>
+
+    <!-- Main Navigation Content Container -->
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/layoutGlobalHeader"
+        android:layout_above="@id/bottomNavigation">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/containerDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="visible">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/stroke_border"
-                app:cardBackgroundColor="@color/surface">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <LinearLayout
+                <!-- Container 1 Header Status Card (Red / Green Alert) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardDeviceStatusHeader"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1.5dp"
+                    app:strokeColor="@color/card_sensor_bad_border"
+                    app:cardBackgroundColor="@color/card_sensor_bad_bg">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:padding="14dp">
 
                         <ImageView
-                            android:id="@+id/ivSchoolLogo"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:contentDescription="@string/school_name"
-                            android:src="@drawable/logo_sekolah"
-                            android:scaleType="fitCenter" />
+                            android:id="@+id/ivDeviceStatusIcon"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:src="@drawable/ic_warning"
+                            app:tint="@color/badge_danger_text"
+                            android:contentDescription="Status" />
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:layout_marginStart="16dp"
+                            android:layout_marginStart="12dp"
                             android:orientation="vertical">
 
                             <TextView
-                                android:id="@+id/tvSchoolName"
+                                android:id="@+id/tvDeviceStatusTitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/school_name"
-                                android:textColor="@color/text_primary"
-                                android:textSize="17sp"
+                                android:textColor="@color/badge_danger_text"
+                                android:textSize="14sp"
                                 android:textStyle="bold"
-                                android:letterSpacing="0.02" />
+                                android:text="Pengaturan Belum Sesuai Standar" />
 
                             <TextView
-                                android:id="@+id/tvSubtitle"
+                                android:id="@+id/tvDeviceStatusDesc"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="@string/app_subtitle"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="13sp" />
+                                android:textSize="11sp"
+                                android:text="Harap aktifkan Mode Pesawat &amp; Mode Hening sebelum ujian dimulai." />
                         </LinearLayout>
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Divider -->
-                    <View
+                <!-- Container 1: 4 Hardware Sensors Real-Time -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Pemeriksaan Perangkat Real-Time"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- 1. Mode Pesawat -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardAirplaneStatus"
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="14dp"
-                        android:background="@color/stroke_border" />
-
-                    <!-- Hardware Status Badges Row -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/title_device_status"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_muted"
-                        android:textAllCaps="true"
-                        android:letterSpacing="0.05" />
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <!-- Airplane Status Badge -->
                         <LinearLayout
-                            android:id="@+id/badgeAirplaneStatus"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="8dp">
+                            android:orientation="horizontal"
+                            android:padding="12dp">
 
                             <ImageView
                                 android:id="@+id/ivAirplaneIcon"
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:src="@drawable/ic_airplane"
-                                app:tint="@color/badge_ready_text"
-                                android:contentDescription="Airplane Mode" />
+                                app:tint="@color/badge_danger_text"
+                                android:contentDescription="Mode Pesawat" />
 
                             <TextView
                                 android:id="@+id/tvAirplaneStatus"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:text="Pesawat: ON"
-                                android:textSize="12sp"
+                                android:layout_weight="1"
+                                android:layout_marginStart="10dp"
+                                android:textColor="@color/badge_danger_text"
+                                android:textSize="13sp"
                                 android:textStyle="bold"
-                                android:textColor="@color/badge_ready_text" />
+                                android:text="Mode Pesawat: Nonaktif (Wajib ON!)" />
                         </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                        <!-- Bluetooth Status Badge -->
+                    <!-- 2. Wi-Fi -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardWifiStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
+
                         <LinearLayout
-                            android:id="@+id/badgeBluetoothStatus"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="6dp"
-                            android:background="@drawable/bg_badge_rounded"
-                            android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:paddingHorizontal="10dp"
-                            android:paddingVertical="8dp">
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivWifiIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_wifi_off"
+                                app:tint="@color/badge_danger_text"
+                                android:contentDescription="Wi-Fi" />
+
+                            <TextView
+                                android:id="@+id/tvWifiStatus"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="10dp"
+                                android:textColor="@color/badge_danger_text"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:text="Wi-Fi: Aktif (Wajib Dimatikan!)" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- 3. Bluetooth -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardBluetoothStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
 
                             <ImageView
                                 android:id="@+id/ivBluetoothIcon"
-                                android:layout_width="18dp"
-                                android:layout_height="18dp"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
                                 android:src="@drawable/ic_bluetooth"
                                 app:tint="@color/badge_ready_text"
                                 android:contentDescription="Bluetooth" />
 
                             <TextView
                                 android:id="@+id/tvBluetoothStatus"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:text="BT: OFF"
-                                android:textSize="12sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/badge_ready_text" />
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="Bluetooth: Nonaktif (Aman)"
+                                android:textColor="@color/badge_ready_text"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
                         </LinearLayout>
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- 4. Mode Hening (Silent / Vibrate) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardRingerStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivRingerIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_volume_off"
+                                app:tint="@color/badge_ready_text"
+                                android:contentDescription="Mode Hening" />
+
+                            <TextView
+                                android:id="@+id/tvRingerStatus"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="Mode Suara: Hening/Getar (Aman)"
+                                android:textColor="@color/badge_ready_text"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-            <!-- Server Configuration Card (Editable IP Server) -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="1dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/stroke_border"
-                app:cardBackgroundColor="@color/surface">
+                <!-- Container 2: Statistik Ujian Siswa -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Statistik Pelaksanaan Ujian"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/stroke_border"
+                    app:cardBackgroundColor="@color/surface">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@drawable/ic_server"
-                            app:tint="@color/primary"
-                            android:contentDescription="Server" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <!-- Metric 1: Total -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvStatTotalExams"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-black"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="26sp"
+                                    tools:text="4" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Total Paket"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="38dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="@color/stroke_border" />
+
+                            <!-- Metric 2: Selesai -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvStatFinishedExams"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-black"
+                                    android:textColor="@color/primary"
+                                    android:textSize="26sp"
+                                    tools:text="1" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Selesai"
+                                    android:textColor="@color/primary"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="38dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="@color/stroke_border" />
+
+                            <!-- Metric 3: Belum -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvStatRemainingExams"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-black"
+                                    android:textColor="@color/timer_warning"
+                                    android:textSize="26sp"
+                                    tools:text="3" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Belum Selesai"
+                                    android:textColor="@color/timer_warning"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGoToExamsTab"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="16dp"
+                            android:backgroundTint="@color/primary"
+                            android:text="Buka Jadwal &amp; Daftar Soal"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            app:cornerRadius="12dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- ================= TAB 2: PANDUAN & TATA TERTIB ================= -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/containerRules"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/stroke_border"
+                    app:cardBackgroundColor="@color/surface">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/title_server_config"
+                            android:text="📋 Tata Tertib &amp; Petunjuk Ujian"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp"
+                            android:textSize="16sp"
                             android:textStyle="bold" />
-                    </LinearLayout>
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/desc_server_config"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvRulesSchoolHeader"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            tools:text="MTS ROUDHOTUT THOWALIB • Wajib dipatuhi seluruh peserta ujian." />
 
-                    <!-- Outlined Text Field for Server URL -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilServerUrl"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Alamat IP &amp; Port Server Lab"
-                        app:boxCornerRadiusBottomEnd="12dp"
-                        app:boxCornerRadiusBottomStart="12dp"
-                        app:boxCornerRadiusTopEnd="12dp"
-                        app:boxCornerRadiusTopStart="12dp"
-                        app:boxStrokeColor="@color/primary"
-                        app:startIconDrawable="@drawable/ic_sync"
-                        app:startIconTint="@color/primary">
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="14dp"
+                            android:layout_marginBottom="14dp"
+                            android:background="@color/stroke_border" />
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etServerUrl"
+                        <!-- Dynamic Rules Item List -->
+                        <LinearLayout
+                            android:id="@+id/llRulesContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textUri"
-                            android:text="http://192.168.1.100:8080"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:orientation="vertical" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
-                    <!-- Server Action Buttons -->
+        <!-- ================= TAB 3: SOAL & JADWAL ================= -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/containerExams"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Container 1: Banner Jenis Ujian Aktif -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#059669"
+                    app:cardBackgroundColor="#064E3B">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="horizontal">
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnTestConnection"
-                            style="@style/Widget.ExamKiosk.Button.Outlined"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvExamTitleBanner"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:text="@string/btn_test_connection"
-                            android:textSize="13sp"
-                            android:textColor="@color/primary" />
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="Penilaian Akhir Semester (PAS) Ganjil" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSyncExams"
-                            style="@style/Widget.ExamKiosk.Button"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvExamSubtitleBanner"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1.2"
-                            android:layout_marginStart="6dp"
-                            android:backgroundTint="@color/primary"
-                            android:text="@string/btn_sync_exams"
-                            android:textSize="13sp"
-                            app:icon="@drawable/ic_sync"
-                            app:iconSize="16dp" />
+                            android:layout_marginTop="4dp"
+                            android:textColor="#A7F3D0"
+                            android:textSize="12sp"
+                            tools:text="Tahun Ajaran 2026/2027 • MTS ROUDHOTUT THOWALIB" />
                     </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                    <!-- Server Status Banner -->
-                    <TextView
-                        android:id="@+id/tvServerStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/status_server_offline"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:gravity="center_vertical" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Grade Filter Chips Section -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
+                <!-- Container 2: 3 Filter Hoover Angkatan -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Filter Angkatan:"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Pilih Angkatan Kelas"
                     android:textColor="@color/text_primary"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textStyle="bold" />
 
-                <HorizontalScrollView
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupGrade"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:scrollbars="none">
+                    app:singleSelection="true">
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupGrade"
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGradeAll"
+                        style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
+                        android:checked="true"
+                        android:text="Semua" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipGradeAll"
-                            style="@style/Widget.Material3.Chip.Filter"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true"
-                            android:text="@string/filter_all" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGrade7"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Kelas 7" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipGrade7"
-                            style="@style/Widget.Material3.Chip.Filter"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/filter_grade_7" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGrade8"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Kelas 8" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipGrade8"
-                            style="@style/Widget.Material3.Chip.Filter"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/filter_grade_8" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipGrade9"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Kelas 9" />
+                </com.google.android.material.chip.ChipGroup>
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipGrade9"
-                            style="@style/Widget.Material3.Chip.Filter"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/filter_grade_9" />
-                    </com.google.android.material.chip.ChipGroup>
-                </HorizontalScrollView>
-            </LinearLayout>
-
-            <!-- Exam List Title -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
+                <!-- Daftar Card Soal -->
                 <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Daftar Paket Ujian"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvExamCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 Ujian"
-                    android:textColor="@color/text_muted"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Daftar Paket Soal Ujian"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-            <!-- Empty State Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/stroke_border"
-                app:cardBackgroundColor="@color/surface">
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvExams"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
 
+                <!-- Empty State -->
                 <LinearLayout
+                    android:id="@+id/layoutEmptyExams"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="32dp">
+                    android:padding="32dp"
+                    android:visibility="gone">
 
                     <ImageView
                         android:layout_width="48dp"
                         android:layout_height="48dp"
                         android:src="@drawable/ic_book"
                         app:tint="@color/text_muted"
-                        android:contentDescription="Belum ada ujian" />
+                        android:contentDescription="Kosong" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Belum Ada Paket Ujian Tersinkron"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
+                        android:text="Tidak Ada Soal Ujian"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Masukkan IP server proktor lab lalu tekan 'Sinkronkan Soal' untuk mengunduh paket ujian."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:gravity="center" />
+                        android:gravity="center"
+                        android:text="Buka menu Pengaturan untuk menghubungkan server dan menyinkronkan paket soal."
+                        android:textColor="@color/text_muted"
+                        android:textSize="12sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-            <!-- RecyclerView of Exams -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvExams"
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- ================= TAB 4: PENGATURAN ================= -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/containerSettings"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:visibility="gone">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:visibility="gone"
-                tools:listitem="@layout/item_exam_card"
-                tools:visibility="visible" />
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+                <!-- Server Settings Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/stroke_border"
+                    app:cardBackgroundColor="@color/surface">
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🌐 Pengaturan Server Proktor"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Masukkan IP laptop server lab sekolah untuk sinkronisasi soal."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilServerUrl"
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:hint="Alamat IP &amp; Port Server (Contoh: 192.168.0.109:8080)">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etServerUrl"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textUri"
+                                android:singleLine="true" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Buttons Row -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnTestConnection"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="6dp"
+                                android:text="Tes Koneksi"
+                                app:cornerRadius="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSyncExams"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.2"
+                                android:layout_marginStart="6dp"
+                                android:backgroundTint="@color/primary"
+                                android:text="Sinkronkan Soal"
+                                app:cornerRadius="10dp" />
+                        </LinearLayout>
+
+                        <!-- Status text -->
+                        <TextView
+                            android:id="@+id/tvServerStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            tools:text="✓ Server online &amp; dapat diakses" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- School Identity Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="@color/stroke_border"
+                    app:cardBackgroundColor="@color/surface">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="20dp">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@drawable/logo_sekolah"
+                            android:contentDescription="Logo Madrasah" />
+
+                        <TextView
+                            android:id="@+id/tvSettingsSchoolName"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            tools:text="MTS ROUDHOTUT THOWALIB" />
+
+                        <TextView
+                            android:id="@+id/tvSettingsSchoolTagline"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
+                            tools:text="Madrasah Tsanawiyah Unggulan &amp; Berkarakter" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="14dp"
+                            android:layout_marginBottom="14dp"
+                            android:background="@color/stroke_border" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Kiosk Offline Exam Reader • Versi 2.0"
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Sistem Ujian Terenkripsi AES-256-GCM &amp; Kiosk LockTask"
+                            android:textColor="@color/primary"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+    </FrameLayout>
+
+    <!-- Bottom Navigation Bar (4 Menus) -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/surface"
+        android:elevation="8dp"
+        app:itemIconTint="@color/bottom_nav_colors"
+        app:itemTextColor="@color/bottom_nav_colors"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu" />
+
+</RelativeLayout>

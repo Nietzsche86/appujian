@@ -73,33 +73,22 @@ def load_or_init_config() -> dict:
     # Default fallback config jika belum ada
     default_config = {
         "school_name": "MTS ROUDHOTUT THOWALIB",
+        "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
+        "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
         "master_pin": "888999",
-        "exams": [
-            {
-                "id": "BINDO-7-2026",
-                "subject_name": "Bahasa Indonesia",
-                "grade_level": 7,
-                "duration_minutes": 90,
-                "token": "BINDO7",
-                "pdf_filename": "soal_bindo_7.pdf"
-            },
-            {
-                "id": "IPA-8-2026",
-                "subject_name": "Ilmu Pengetahuan Alam (IPA)",
-                "grade_level": 8,
-                "duration_minutes": 90,
-                "token": "IPA8MTS",
-                "pdf_filename": "soal_ipa_8.pdf"
-            },
-            {
-                "id": "MAT-9-2026",
-                "subject_name": "Matematika",
-                "grade_level": 9,
-                "duration_minutes": 90,
-                "token": "MAT9MTS",
-                "pdf_filename": "soal_matematika_9.pdf"
-            }
-        ]
+        "exam_rules": [
+            "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
+            "Perangkat Android WAJIB dalam Mode Pesawat dan koneksi Wi-Fi/Bluetooth mati.",
+            "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras keluar dari aplikasi.",
+            "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
+            "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
+            "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
+            "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
+            "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
+            "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
+            "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
+        ],
+        "exams": []
     }
     save_config(default_config)
     return default_config
@@ -170,9 +159,17 @@ def rebuild_manifest(server_base_url: str):
         crypto_meta = encrypt_pdf_exam(pdf_file, enc_file, ex["token"])
         download_url = f"{server_base_url}/files/{ex['id']}.enc"
 
+        short_name = ex.get("short_name", "").strip()
+        if not short_name:
+            short_name = ex["subject_name"][:4].upper()
+
         exams_manifest.append({
             "id": ex["id"],
             "subject_name": ex["subject_name"],
+            "short_name": short_name,
+            "exam_day": ex.get("exam_day", "Senin"),
+            "start_time": ex.get("start_time", "07:00"),
+            "end_time": ex.get("end_time", "08:30"),
             "grade_level": int(ex["grade_level"]),
             "duration_minutes": int(ex["duration_minutes"]),
             "download_url": download_url,
@@ -184,8 +181,24 @@ def rebuild_manifest(server_base_url: str):
     master_pin = config.get("master_pin", "888999")
     master_pin_sha256 = hashlib.sha256(master_pin.strip().encode('utf-8')).hexdigest()
 
+    default_rules = [
+        "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
+        "Perangkat Android WAJIB dalam Mode Pesawat dan koneksi Wi-Fi/Bluetooth mati.",
+        "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras keluar dari aplikasi.",
+        "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
+        "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
+        "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
+        "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
+        "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
+        "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
+        "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
+    ]
+
     manifest = {
         "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
+        "school_tagline": config.get("school_tagline", "Madrasah Tsanawiyah Unggulan & Berkarakter"),
+        "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
+        "exam_rules": config.get("exam_rules", default_rules),
         "sync_timestamp": int(time.time()),
         "master_pin_sha256": master_pin_sha256,
         "exams": exams_manifest
@@ -238,6 +251,9 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             config = load_or_init_config()
             self.send_json({
                 "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
+                "school_tagline": config.get("school_tagline", "Madrasah Tsanawiyah Unggulan & Berkarakter"),
+                "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
+                "exam_rules": config.get("exam_rules", []),
                 "master_pin": config.get("master_pin", "888999"),
                 "server_url": self.server_base_url,
                 "exams": config.get("exams", []),
@@ -294,7 +310,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
         content_type = self.headers.get("Content-Type", "")
         content_length = int(self.headers.get("Content-Length", 0))
 
-        # 1. Update Master PIN & Nama Madrasah
+        # 1. Update Pengaturan Madrasah & Ujian
         if clean_path == "api/settings":
             raw_body = self.rfile.read(content_length)
             payload = json.loads(raw_body.decode('utf-8'))
@@ -302,33 +318,47 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
             if "school_name" in payload:
                 config["school_name"] = payload["school_name"].strip()
+            if "school_tagline" in payload:
+                config["school_tagline"] = payload["school_tagline"].strip()
+            if "exam_title" in payload:
+                config["exam_title"] = payload["exam_title"].strip()
             if "master_pin" in payload:
                 config["master_pin"] = payload["master_pin"].strip()
+            if "exam_rules" in payload and isinstance(payload["exam_rules"], list):
+                config["exam_rules"] = [r.strip() for r in payload["exam_rules"] if r.strip()]
 
             save_config(config)
             rebuild_manifest(self.server_base_url)
             self.send_json({"ok": True})
             return
 
-        # 2. Update Cepat Durasi Ujian (duration_minutes)
+        # 2. Update Cepat Durasi / Jadwal Ujian
         if clean_path == "api/update-duration":
             raw_body = self.rfile.read(content_length)
             payload = json.loads(raw_body.decode('utf-8'))
             exam_id = payload.get("id")
-            new_duration = int(payload.get("duration_minutes", 90))
 
             config = load_or_init_config()
             found = False
             for ex in config.get("exams", []):
                 if ex["id"] == exam_id:
-                    ex["duration_minutes"] = new_duration
+                    if "duration_minutes" in payload:
+                        ex["duration_minutes"] = int(payload["duration_minutes"])
+                    if "exam_day" in payload:
+                        ex["exam_day"] = payload["exam_day"].strip()
+                    if "start_time" in payload:
+                        ex["start_time"] = payload["start_time"].strip()
+                    if "end_time" in payload:
+                        ex["end_time"] = payload["end_time"].strip()
+                    if "short_name" in payload:
+                        ex["short_name"] = payload["short_name"].strip()
                     found = True
                     break
 
             if found:
                 save_config(config)
                 rebuild_manifest(self.server_base_url)
-                self.send_json({"ok": True, "message": f"Durasi berhasil diubah ke {new_duration} Menit"})
+                self.send_json({"ok": True, "message": "Jadwal dan durasi ujian berhasil diperbarui!"})
             else:
                 self.send_json({"ok": False, "error": "Exam ID tidak ditemukan"}, 404)
             return
@@ -385,9 +415,16 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                     fields[name] = payload.decode('utf-8', errors='ignore').strip()
 
             subject_name = fields.get("subject_name", "").strip()
+            short_name = fields.get("short_name", "").strip()
+            exam_day = fields.get("exam_day", "Senin").strip()
+            start_time = fields.get("start_time", "07:00").strip()
+            end_time = fields.get("end_time", "08:30").strip()
             grade_level = int(fields.get("grade_level", 7))
             duration_minutes = int(fields.get("duration_minutes", 90))
             token = fields.get("token", "").strip().upper()
+
+            if not short_name:
+                short_name = re.sub(r'[^A-Za-z0-9]', '', subject_name)[:4].upper()
 
             if not subject_name or not token or not pdf_bytes:
                 self.send_json({"ok": False, "error": "Semua kolom dan berkas PDF wajib diisi!"}, 400)
@@ -415,6 +452,10 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             config["exams"].append({
                 "id": exam_id,
                 "subject_name": subject_name,
+                "short_name": short_name,
+                "exam_day": exam_day,
+                "start_time": start_time,
+                "end_time": end_time,
                 "grade_level": grade_level,
                 "duration_minutes": duration_minutes,
                 "token": token,

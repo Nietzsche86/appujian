@@ -93,3 +93,22 @@
   - [x] Fitur reset pelanggaran / bypass ban darurat.
   - [x] Fitur selesaikan ujian lebih awal (`stopLockTask()` dan tandai status mapel `SELESAI`).
 - [ ] **Verifikasi:** Simulasi mematikan mode pesawat saat ujian untuk memastikan overlay ban merah aktif dan timer ujian utama tidak berhenti pada perangkat uji.
+
+---
+
+## Milestone 5: Rombak UI/UX Besar-Besaran (Material 3 Overhaul)
+- [x] Animasi Splash Screen (`SplashActivity.kt` & `activity_splash.xml`):
+  - [x] Animasi fade-in dan scale-up logo sekolah & nama madrasah.
+  - [x] Transisi halus ke layar utama setelah 1.7 detik.
+- [x] Sistem 4 Navigasi Bawah (*Bottom Navigation Bar*):
+  - [x] Header sticky identitas madrasah dinamis di setiap tab.
+  - [x] Tab 1: Dashboard (Container 1: 4 sensor hardware real-time termasuk mode hening + Container 2: statistik ujian).
+  - [x] Tab 2: Panduan & Tata Tertib Ujian (Dinamis dari server `manifest.json`).
+  - [x] Tab 3: Soal & Jadwal (Banner jenis ujian + 3 filter angkatan + kartu proporsional dengan badge singkatan & hari).
+  - [x] Tab 4: Pengaturan Server (Form IP/Port, tes koneksi, sinkronisasi, dan info madrasah).
+- [x] Jadwal Jam Nyata HP & Auto-Finish:
+  - [x] Tombol nonaktif jika belum masuk jam mulai ujian.
+  - [x] Auto-finish (soal tertutup otomatis) saat jam HP mencapai batas jam selesai ujian.
+- [x] Pembaruan Server Proktor Web Dashboard:
+  - [x] Input identitas madrasah (`school_name` & `school_tagline`), jenis ujian (`exam_title`), dan tata tertib (`exam_rules`).
+  - [x] Form upload & edit soal dengan hari ujian (`exam_day`), singkatan mapel (`short_name`), dan jam mulai-selesai.

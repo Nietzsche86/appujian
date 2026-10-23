@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_nav_dashboard"
+        android:title="Dashboard" />
+    <item
+        android:id="@+id/nav_rules"
+        android:icon="@drawable/ic_nav_rules"
+        android:title="Panduan" />
+    <item
+        android:id="@+id/nav_exams"
+        android:icon="@drawable/ic_nav_exam"
+        android:title="Soal" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_nav_settings"
+        android:title="Pengaturan" />
+</menu>

@@ -47,6 +47,7 @@ class KioskExamActivity : AppCompatActivity() {
     private var subjectName: String = ""
     private var gradeLevel: Int = 0
     private var durationMinutes: Int = 90
+    private var endTime: String = ""
     private var saltHex: String = ""
     private var ivHex: String = ""
     private var token: String = ""
@@ -136,6 +137,7 @@ class KioskExamActivity : AppCompatActivity() {
         subjectName = intent.getStringExtra(EXTRA_SUBJECT_NAME) ?: "Ujian"
         gradeLevel = intent.getIntExtra(EXTRA_GRADE_LEVEL, 7)
         durationMinutes = intent.getIntExtra(EXTRA_DURATION_MINUTES, 90)
+        endTime = intent.getStringExtra(EXTRA_END_TIME) ?: ""
         saltHex = intent.getStringExtra(EXTRA_SALT_HEX) ?: ""
         ivHex = intent.getStringExtra(EXTRA_IV_HEX) ?: ""
         token = intent.getStringExtra(EXTRA_TOKEN) ?: ""
@@ -345,6 +347,19 @@ class KioskExamActivity : AppCompatActivity() {
                     }
                 }
 
+                // Cek jam nyata di HP jika batas jam selesai ditentukan
+                if (endTime.isNotBlank()) {
+                    val endMin = id.sch.examkiosk.util.ExamScheduleHelper.parseMinutesOfDay(endTime)
+                    if (endMin != null) {
+                        val now = java.util.Calendar.getInstance()
+                        val currentMin = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+                        if (currentMin >= endMin) {
+                            finishExam(isExpired = true)
+                            return@launch
+                        }
+                    }
+                }
+
                 // Tick ban penalty jika sedang aktif
                 if (penaltyManager.isBanActive()) {
                     tickBanPenalty()
@@ -475,6 +490,7 @@ class KioskExamActivity : AppCompatActivity() {
         const val EXTRA_SUBJECT_NAME = "extra_subject_name"
         const val EXTRA_GRADE_LEVEL = "extra_grade_level"
         const val EXTRA_DURATION_MINUTES = "extra_duration_minutes"
+        const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_SALT_HEX = "extra_salt_hex"
         const val EXTRA_IV_HEX = "extra_iv_hex"
         const val EXTRA_TOKEN = "extra_token"
