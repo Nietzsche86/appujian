@@ -201,6 +201,10 @@ class DashboardActivity : AppCompatActivity() {
                 secureStorage.cachedManifest = json.encodeToString(ExamManifest.serializer(), manifest)
                 allExams = manifest.exams
 
+                // Bersihkan berkas fisik ujian lokal yang sudah dihapus dari server
+                val activeExamIds = manifest.exams.map { it.id }.toSet()
+                syncManager.cleanupOrphanedExams(activeExamIds)
+
                 // Otomatis unduh seluruh berkas .enc yang belum ada / berubah
                 var downloadedCount = 0
                 val totalToDownload = manifest.exams.count { !syncManager.isExamFileValid(it.id, it.fileSha256) }

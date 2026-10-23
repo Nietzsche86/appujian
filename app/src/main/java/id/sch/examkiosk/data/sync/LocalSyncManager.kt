@@ -52,6 +52,26 @@ class LocalSyncManager(private val context: Context) {
         return file.exists() && file.length() > 0
     }
 
+    /**
+     * Menghapus seluruh berkas .enc atau .tmp lokal yang sudah tidak ada
+     * di manifest server (misal: soal telah dihapus oleh pengawas/proktor).
+     */
+    fun cleanupOrphanedExams(activeExamIds: Set<String>) {
+        runCatching {
+            val files = examsDirectory.listFiles() ?: return
+            for (file in files) {
+                if (file.name.endsWith(".tmp")) {
+                    file.delete()
+                } else if (file.name.endsWith(".enc")) {
+                    val examId = file.name.removeSuffix(".enc")
+                    if (!activeExamIds.contains(examId)) {
+                        file.delete()
+                    }
+                }
+            }
+        }
+    }
+
     suspend fun testConnection(serverUrl: String): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             val normalizedUrl = normalizeUrl(serverUrl)
