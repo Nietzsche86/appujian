@@ -968,8 +968,6 @@
         android:layout_alignParentBottom="true"
         android:background="@color/surface"
         android:elevation="8dp"
-        app:itemActiveIndicatorColor="@color/nav_indicator"
-        app:itemRippleColor="@color/nav_indicator"
         app:itemIconTint="@color/bottom_nav_colors"
         app:itemTextColor="@color/bottom_nav_colors"
         app:labelVisibilityMode="labeled"
