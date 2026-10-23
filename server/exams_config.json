@@ -12,13 +12,14 @@
       "id": "HALO-8-1792773172",
       "subject_name": "HALO",
       "short_name": "HALO",
-      "exam_day": "Senin",
-      "start_time": "07:00",
-      "end_time": "08:30",
+      "exam_day": "Sabtu",
+      "start_time": "05:00",
+      "end_time": "06:30",
       "grade_level": 8,
-      "duration_minutes": 10,
+      "duration_minutes": 90,
       "token": "TEST",
-      "pdf_filename": "soal_halo-8-1792773172.pdf"
+      "pdf_filename": "soal_halo-8-1792773172.pdf",
+      "exam_date": "2026-10-24"
     },
     {
       "id": "DAYUM-7-1792776728",
@@ -30,7 +31,8 @@
       "grade_level": 7,
       "duration_minutes": 90,
       "token": "DDDD",
-      "pdf_filename": "soal_dayum-7-1792776728.pdf"
+      "pdf_filename": "soal_dayum-7-1792776728.pdf",
+      "exam_date": "2026-10-26"
     },
     {
       "id": "MATEMA-8-1792782240",
@@ -42,7 +44,21 @@
       "grade_level": 8,
       "duration_minutes": 90,
       "token": "MTK88",
-      "pdf_filename": "soal_matema-8-1792782240.pdf"
+      "pdf_filename": "soal_matema-8-1792782240.pdf",
+      "exam_date": "2026-10-27"
+    },
+    {
+      "id": "IPA-9-1792795714",
+      "subject_name": "IPA",
+      "short_name": "IPA",
+      "exam_day": "Rabu",
+      "start_time": "07:00",
+      "end_time": "08:30",
+      "grade_level": 9,
+      "duration_minutes": 90,
+      "token": "IPAAA",
+      "pdf_filename": "soal_ipa-9-1792795714.pdf",
+      "exam_date": "2026-10-28"
     }
   ]
 }

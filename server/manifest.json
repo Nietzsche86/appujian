@@ -6,50 +6,68 @@
     "Aturan 1",
     "Aturan 2"
   ],
-  "sync_timestamp": 1792783034,
+  "sync_timestamp": 1792796632,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
       "id": "HALO-8-1792773172",
       "subject_name": "HALO",
       "short_name": "HALO",
-      "exam_day": "Senin",
-      "start_time": "07:00",
-      "end_time": "08:30",
+      "exam_date": "2026-10-24",
+      "exam_day": "Sabtu",
+      "start_time": "05:00",
+      "end_time": "06:30",
       "grade_level": 8,
-      "duration_minutes": 10,
-      "download_url": "http://192.168.0.109:8080/files/HALO-8-1792773172.enc",
-      "file_sha256": "6b25746a3b84db17f92a8d6d8a242cd878e71a3a51ad05a266126fb76454b150",
-      "pbkdf2_salt_hex": "781048ae34d5f2b93e8c40f571df80d4",
-      "gcm_iv_hex": "5f3c219e466a4d3be0056b54"
+      "duration_minutes": 90,
+      "download_url": "http://127.0.0.1:8080/files/HALO-8-1792773172.enc",
+      "file_sha256": "c670bdc78ad88bef0a0e6bfe27c9f21219a6acba6d4450a0a51123963bcfa435",
+      "pbkdf2_salt_hex": "91eb21c017dba63e3a4dba13d4d3884f",
+      "gcm_iv_hex": "b220ec94b0f7777ee8f438bb"
     },
     {
       "id": "DAYUM-7-1792776728",
       "subject_name": "DAYUM",
       "short_name": "DYM",
+      "exam_date": "2026-10-26",
       "exam_day": "Senin",
       "start_time": "07:00",
       "end_time": "08:30",
       "grade_level": 7,
       "duration_minutes": 90,
-      "download_url": "http://192.168.0.109:8080/files/DAYUM-7-1792776728.enc",
-      "file_sha256": "569bf1ff922717e09eb0259fa269d64606294abd820487e2cc406c5a939fd02f",
-      "pbkdf2_salt_hex": "38386d952b869a4a7e7a8b528e18276e",
-      "gcm_iv_hex": "e6063bf5d490a331078d2675"
+      "download_url": "http://127.0.0.1:8080/files/DAYUM-7-1792776728.enc",
+      "file_sha256": "fcaceb1136e1ba5206240adb9e3d3940f77fb614420609dfa8a8eb8653d2e8ec",
+      "pbkdf2_salt_hex": "6123149039459ea8fa9ee6ce90e6d793",
+      "gcm_iv_hex": "81d96e663f491abd47ba49a0"
     },
     {
       "id": "MATEMA-8-1792782240",
       "subject_name": "Matematika",
       "short_name": "MTK",
+      "exam_date": "2026-10-27",
       "exam_day": "Selasa",
       "start_time": "07:30",
       "end_time": "09:00",
       "grade_level": 8,
       "duration_minutes": 90,
-      "download_url": "http://192.168.0.109:8080/files/MATEMA-8-1792782240.enc",
-      "file_sha256": "52ac152a4275687812c013e55b5a7352115d2fe0232865507202201c3e0505d3",
-      "pbkdf2_salt_hex": "82e1ef191989a99e8dd8bec4046b5d60",
-      "gcm_iv_hex": "ccfd11b45d64ae2bc43f07fd"
+      "download_url": "http://127.0.0.1:8080/files/MATEMA-8-1792782240.enc",
+      "file_sha256": "f394d198fba884af4fcd349abe84a0e82fc33f9b6d3ec4a6ad8f59fc8d292681",
+      "pbkdf2_salt_hex": "a27f97c54105fd16d5873e53d6300c72",
+      "gcm_iv_hex": "3ae78991e1d788e4ddc85959"
+    },
+    {
+      "id": "IPA-9-1792795714",
+      "subject_name": "IPA",
+      "short_name": "IPA",
+      "exam_date": "2026-10-28",
+      "exam_day": "Rabu",
+      "start_time": "07:00",
+      "end_time": "08:30",
+      "grade_level": 9,
+      "duration_minutes": 90,
+      "download_url": "http://127.0.0.1:8080/files/IPA-9-1792795714.enc",
+      "file_sha256": "afd7aec09ab8639eb2cb6ce5c8c4ef2f25f74632eb0007883cf104a4cad29bd3",
+      "pbkdf2_salt_hex": "c022c2147a2379b80e9ae7cb3867cd4d",
+      "gcm_iv_hex": "e947c8bbada90b2ca9765e55"
     }
   ]
 }

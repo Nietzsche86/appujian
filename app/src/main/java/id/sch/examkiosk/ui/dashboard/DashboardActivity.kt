@@ -369,22 +369,24 @@ class DashboardActivity : AppCompatActivity() {
         binding.etServerUrl.setText(secureStorage.serverUrl)
 
         binding.btnTestConnection.setOnClickListener {
-            val url = binding.etServerUrl.text?.toString()?.trim() ?: ""
-            if (url.isEmpty()) {
+            val raw = binding.etServerUrl.text?.toString()?.trim() ?: ""
+            if (raw.isEmpty()) {
                 binding.tilServerUrl.error = "IP server tidak boleh kosong"
                 return@setOnClickListener
             }
             binding.tilServerUrl.error = null
+            val url = LocalSyncManager.normalizeUrl(raw)
             testServerConnection(url)
         }
 
         binding.btnSyncExams.setOnClickListener {
-            val url = binding.etServerUrl.text?.toString()?.trim() ?: ""
-            if (url.isEmpty()) {
+            val raw = binding.etServerUrl.text?.toString()?.trim() ?: ""
+            if (raw.isEmpty()) {
                 binding.tilServerUrl.error = "IP server tidak boleh kosong"
                 return@setOnClickListener
             }
             binding.tilServerUrl.error = null
+            val url = LocalSyncManager.normalizeUrl(raw)
             secureStorage.serverUrl = url
             syncManifestAndExams(url)
         }
@@ -454,12 +456,7 @@ class DashboardActivity : AppCompatActivity() {
                     binding.tvServerStatus.text = "Mengunduh paket soal Kelas $targetGrade (0/$totalToDownload)..."
 
                     for (exam in toDownload) {
-                        val fullUrl = if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
-                            exam.downloadUrl
-                        } else {
-                            val base = url.trimEnd('/')
-                            "$base/${exam.downloadUrl.trimStart('/')}"
-                        }
+                        val fullUrl = resolveExamDownloadUrl(url, exam)
                         syncManager.downloadExamFile(
                             downloadUrl = fullUrl,
                             examId = exam.id,
@@ -509,28 +506,6 @@ class DashboardActivity : AppCompatActivity() {
         val currentGrade = storage.selectedGrade
         selectedGradeFilter = currentGrade
 
-        // Tab 3 Filter Chips (Kelas 7, 8, 9)
-        when (currentGrade) {
-            7 -> binding.chipGrade7.isChecked = true
-            8 -> binding.chipGrade8.isChecked = true
-            9 -> binding.chipGrade9.isChecked = true
-            else -> binding.chipGrade7.isChecked = true
-        }
-
-        binding.chipGroupGrade.setOnCheckedStateChangeListener { _, checkedIds ->
-            val grade = when {
-                checkedIds.contains(R.id.chipGrade7) -> 7
-                checkedIds.contains(R.id.chipGrade8) -> 8
-                checkedIds.contains(R.id.chipGrade9) -> 9
-                else -> storage.selectedGrade
-            }
-            selectedGradeFilter = grade
-            storage.selectedGrade = grade
-            updateSyncGradeChips(grade)
-            refreshExamList()
-            updateExamStatistics()
-        }
-
         // Tab 4 Settings Sync Target Grade Chips
         updateSyncGradeChips(currentGrade)
 
@@ -543,11 +518,6 @@ class DashboardActivity : AppCompatActivity() {
             }
             storage.selectedGrade = grade
             selectedGradeFilter = grade
-            when (grade) {
-                7 -> binding.chipGrade7.isChecked = true
-                8 -> binding.chipGrade8.isChecked = true
-                9 -> binding.chipGrade9.isChecked = true
-            }
             refreshExamList()
             updateExamStatistics()
         }
@@ -564,10 +534,16 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun refreshExamList() {
         val secureStorage = ExamApp.instance.secureStorage
-        val filterGrade = selectedGradeFilter ?: secureStorage.selectedGrade
-        val filtered = allExams.filter { it.gradeLevel == filterGrade }
+        val targetGrade = selectedGradeFilter ?: secureStorage.selectedGrade
+        val filtered = allExams.filter { it.gradeLevel == targetGrade }
 
-        val uiModels = filtered.map { exam ->
+        // Urutkan paket soal secara kronologis berdasarkan kalender (Tanggal, lalu Jam Mulai)
+        val sortedExams = filtered.sortedWith(
+            compareBy<ExamItem> { it.examDate.ifEmpty { "9999-99-99" } }
+                .thenBy { it.startTime.ifEmpty { "99:99" } }
+        )
+
+        val uiModels = sortedExams.map { exam ->
             val isDownloaded = syncManager.isExamFileValid(exam.id, exam.fileSha256)
             val isFinished = secureStorage.isExamFinished(exam.id)
             val isActive = secureStorage.activeExamId == exam.id
@@ -636,21 +612,30 @@ class DashboardActivity : AppCompatActivity() {
             return
         }
 
-        // 2. Cek Jadwal Waktu Jam Nyata HP
+        // 2. Cek Jadwal Waktu Kalender & Jam Nyata HP
         val scheduleState = ExamScheduleHelper.getScheduleState(exam)
         when (scheduleState) {
             ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {
+                val dateMsg = if (exam.examDate.isNotBlank()) {
+                    val formatted = ExamScheduleHelper.formatDisplayDate(exam.examDate, exam.examDay)
+                    "$formatted pukul ${exam.startTime.ifEmpty { "sesuai jadwal" }} WIB"
+                } else if (exam.startTime.isNotBlank()) {
+                    "pukul ${exam.startTime} WIB"
+                } else {
+                    "sesuai jadwal proktor"
+                }
                 Toast.makeText(
                     this,
-                    "Ujian belum dimulai! Jadwal pengerjaan pukul ${exam.startTime} WIB.",
+                    "Ujian belum dimulai! Jadwal pengerjaan: $dateMsg.",
                     Toast.LENGTH_LONG
                 ).show()
                 return
             }
             ExamScheduleHelper.ScheduleState.EXPIRED -> {
+                val timeLabel = if (exam.endTime.isNotBlank()) "Batas pukul ${exam.endTime} WIB" else "Jadwal telah lewat"
                 Toast.makeText(
                     this,
-                    "Waktu ujian ini telah berakhir (Batas pukul ${exam.endTime} WIB)!",
+                    "Waktu ujian ini telah berakhir ($timeLabel)!",
                     Toast.LENGTH_LONG
                 ).show()
                 return
@@ -665,13 +650,24 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun downloadExamFile(exam: ExamItem) {
-        val fullUrl = if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
-            exam.downloadUrl
+    private fun resolveExamDownloadUrl(baseServerUrl: String, exam: ExamItem): String {
+        val cleanBase = LocalSyncManager.normalizeUrl(baseServerUrl)
+
+        return if (exam.downloadUrl.startsWith("http://") || exam.downloadUrl.startsWith("https://")) {
+            try {
+                val uri = java.net.URI(exam.downloadUrl)
+                val path = uri.rawPath.trimStart('/')
+                "$cleanBase/$path"
+            } catch (_: Exception) {
+                "$cleanBase/files/${exam.id}.enc"
+            }
         } else {
-            val base = ExamApp.instance.secureStorage.serverUrl.trimEnd('/')
-            "$base/${exam.downloadUrl.trimStart('/')}"
+            "$cleanBase/${exam.downloadUrl.trimStart('/')}"
         }
+    }
+
+    private fun downloadExamFile(exam: ExamItem) {
+        val fullUrl = resolveExamDownloadUrl(ExamApp.instance.secureStorage.serverUrl, exam)
 
         Toast.makeText(this, "Mengunduh berkas ${exam.subjectName}...", Toast.LENGTH_SHORT).show()
 

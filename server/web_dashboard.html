@@ -505,7 +505,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Hari &amp; Jadwal Jam</th>
+                        <th>Tanggal, Hari &amp; Jam</th>
                         <th>Kode/Singkatan</th>
                         <th>Mata Pelajaran</th>
                         <th>Tingkat</th>
@@ -557,6 +557,10 @@
         
         <div class="grid-2" style="margin-bottom: 0;">
             <div class="form-group">
+                <label>Tanggal Pelaksanaan (Kalender)</label>
+                <input type="date" id="editExamDate" class="form-control" required>
+            </div>
+            <div class="form-group">
                 <label>Hari Pelaksanaan</label>
                 <select id="editExamDay" class="form-control">
                     <option value="Senin">Senin</option>
@@ -568,10 +572,11 @@
                     <option value="Minggu">Minggu</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>Singkatan/Kode Mapel</label>
-                <input type="text" id="editShortName" class="form-control" maxlength="6" style="text-transform: uppercase;">
-            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Singkatan/Kode Mapel</label>
+            <input type="text" id="editShortName" class="form-control" maxlength="6" style="text-transform: uppercase;">
         </div>
 
         <div class="grid-2" style="margin-bottom: 0;">
@@ -610,6 +615,10 @@
         <form id="formAddExam" onsubmit="submitAddExam(event)">
             <div class="grid-2" style="margin-bottom: 0;">
                 <div class="form-group">
+                    <label>Tanggal Pelaksanaan (Kalender)</label>
+                    <input type="date" name="exam_date" id="addExamDate" class="form-control" required>
+                </div>
+                <div class="form-group">
                     <label>Hari Pelaksanaan</label>
                     <select name="exam_day" class="form-control" required>
                         <option value="Senin">Senin</option>
@@ -621,10 +630,11 @@
                         <option value="Minggu">Minggu</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Singkatan/Kode Mapel</label>
-                    <input type="text" name="short_name" class="form-control" placeholder="Contoh: IPA / FIQ" maxlength="6" style="text-transform: uppercase;">
-                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Singkatan/Kode Mapel</label>
+                <input type="text" name="short_name" class="form-control" placeholder="Contoh: IPA / FIQ" maxlength="6" style="text-transform: uppercase;">
             </div>
 
             <div class="form-group">
@@ -721,7 +731,12 @@
                 document.getElementById('inputExamRules').value = data.exam_rules.join('\n');
             }
             
-            document.getElementById('serverUrlBox').textContent = data.server_url;
+            if (data.all_ips && data.all_ips.length > 1) {
+                const altIps = data.all_ips.map(ip => `<span style="font-size: 12px; font-weight: normal; color: #A7F3D0; margin-left: 8px;">(alt: <b>${escapeHtml(ip)}</b>)</span>`).join('');
+                document.getElementById('serverUrlBox').innerHTML = `${escapeHtml(data.server_url)} ${altIps}`;
+            } else {
+                document.getElementById('serverUrlBox').textContent = data.server_url;
+            }
 
             renderExams(data.exams || []);
             renderLogs(data.activity_logs || []);
@@ -740,13 +755,16 @@
         let html = '';
         exams.forEach(ex => {
             const shortName = ex.short_name || (ex.subject_name ? ex.subject_name.substring(0, 4).toUpperCase() : "MAPEL");
+            const examDate = ex.exam_date || "";
             const examDay = ex.exam_day || "Senin";
             const startTime = ex.start_time || "07:00";
             const endTime = ex.end_time || "08:30";
+            const dateBadge = examDate ? `<span class="pill-token" style="background:rgba(217, 119, 6, 0.2); color:#FDE68A; border-color:#D97706; margin-right:4px;"><i class="fa-solid fa-calendar"></i> ${escapeHtml(examDate)}</span>` : '';
 
             html += `
             <tr>
                 <td>
+                    ${dateBadge}
                     <span class="pill-token" style="background:rgba(5, 150, 105, 0.2); color:#34D399; border-color:#059669;"><i class="fa-solid fa-calendar-day"></i> ${escapeHtml(examDay)}</span><br>
                     <span style="font-size: 13px; font-weight: 700; color: #F8FAFC; margin-top: 5px; display: inline-block;"><i class="fa-solid fa-clock" style="color:var(--gold-light);"></i> ${escapeHtml(startTime)} - ${escapeHtml(endTime)}</span>
                 </td>
@@ -759,13 +777,13 @@
                 </td>
                 <td><span class="pill-grade">Kelas ${ex.grade_level}</span></td>
                 <td>
-                    <span class="duration-badge" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}')" title="Klik untuk mengubah jadwal/durasi">
+                    <span class="duration-badge" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}', '${escapeHtml(examDate)}')" title="Klik untuk mengubah jadwal/durasi">
                         <i class="fa-solid fa-stopwatch"></i> <b>${ex.duration_minutes} Menit</b> <i class="fa-solid fa-pen-to-square" style="font-size:11px;"></i>
                     </span>
                 </td>
                 <td><span class="pill-token">${escapeHtml(ex.token)}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}')"><i class="fa-solid fa-pen"></i> Ubah</button>
+                    <button class="btn btn-sm btn-outline" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}', '${escapeHtml(examDate)}')"><i class="fa-solid fa-pen"></i> Ubah</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteExam('${ex.id}', '${escapeHtml(ex.subject_name)}')"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
@@ -795,7 +813,7 @@
     }
 
     function copyServerUrl() {
-        const url = document.getElementById('serverUrlBox').textContent;
+        const url = (serverData && serverData.server_url) ? serverData.server_url : document.getElementById('serverUrlBox').textContent.trim();
         navigator.clipboard.writeText(url).then(() => {
             showToast("Alamat server proktor berhasil disalin!");
         });
@@ -840,10 +858,11 @@
         }
     }
 
-    function openEditDuration(id, subjectName, duration, day, startTime, endTime, shortName) {
+    function openEditDuration(id, subjectName, duration, day, startTime, endTime, shortName, examDate) {
         document.getElementById('editExamId').value = id;
         document.getElementById('modalExamTitle').textContent = `Mata Pelajaran: ${subjectName}`;
         document.getElementById('inputDurationMinutes').value = duration || 90;
+        document.getElementById('editExamDate').value = examDate || new Date().toISOString().split('T')[0];
         document.getElementById('editExamDay').value = day || 'Senin';
         document.getElementById('editStartTime').value = startTime || '07:00';
         document.getElementById('editEndTime').value = endTime || '08:30';
@@ -858,10 +877,16 @@
     async function saveDuration() {
         const examId = document.getElementById('editExamId').value;
         const duration = parseInt(document.getElementById('inputDurationMinutes').value, 10);
+        const examDate = document.getElementById('editExamDate').value;
         const examDay = document.getElementById('editExamDay').value;
         const startTime = document.getElementById('editStartTime').value;
         const endTime = document.getElementById('editEndTime').value;
         const shortName = document.getElementById('editShortName').value.trim();
+
+        if (!examDate) {
+            alert("Tanggal pelaksanaan ujian wajib dipilih!");
+            return;
+        }
 
         if (!duration || duration <= 0) {
             alert("Durasi waktu harus berupa angka positif!");
@@ -875,6 +900,7 @@
                 body: JSON.stringify({
                     id: examId,
                     duration_minutes: duration,
+                    exam_date: examDate,
                     exam_day: examDay,
                     start_time: startTime,
                     end_time: endTime,
@@ -896,6 +922,7 @@
 
     function openAddModal() {
         document.getElementById('formAddExam').reset();
+        document.getElementById('addExamDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('modalAddExam').style.display = 'flex';
     }
 

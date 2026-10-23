@@ -14,6 +14,9 @@ data class ExamItem(
     @SerialName("short_name")
     val shortName: String = "",
 
+    @SerialName("exam_date")
+    val examDate: String = "",
+
     @SerialName("exam_day")
     val examDay: String = "Senin",
 

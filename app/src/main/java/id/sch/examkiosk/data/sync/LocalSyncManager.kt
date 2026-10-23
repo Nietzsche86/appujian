@@ -188,16 +188,31 @@ class LocalSyncManager(private val context: Context) {
         }
     }
 
-    private fun normalizeUrl(url: String): String {
-        val trimmed = url.trim()
-        return if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            "http://$trimmed"
-        } else {
-            trimmed
-        }
-    }
+    private fun normalizeUrl(url: String): String = Companion.normalizeUrl(url)
 
     companion object {
+        fun normalizeUrl(url: String): String {
+            var trimmed = url.trim()
+            if (trimmed.isEmpty()) return ""
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                trimmed = "http://$trimmed"
+            }
+            try {
+                val uri = java.net.URI(trimmed)
+                if (uri.port == -1) {
+                    val host = uri.host ?: trimmed.substringAfter("://").substringBefore("/").substringBefore(":")
+                    val path = uri.path ?: ""
+                    trimmed = "${uri.scheme}://$host:8080$path"
+                }
+            } catch (_: Exception) {
+                val authority = trimmed.substringAfter("://").substringBefore("/")
+                if (!authority.contains(":")) {
+                    trimmed = trimmed.replace(authority, "$authority:8080")
+                }
+            }
+            return trimmed.trimEnd('/')
+        }
+
         fun calculateSha256(file: File): String {
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().use { input ->

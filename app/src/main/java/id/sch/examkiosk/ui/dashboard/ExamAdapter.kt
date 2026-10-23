@@ -40,9 +40,9 @@ class ExamAdapter(
             val exam = item.exam
             val context = binding.root.context
 
-            // 1. Hari & Jadwal Jam (Tanpa Karakter Emoticon, Ikon Ditangani Vector Drawable)
-            val dayName = if (exam.examDay.isNotBlank()) exam.examDay else "Senin"
-            binding.tvExamDayBadge.text = dayName
+            // 1. Hari & Jadwal Kalender / Jam (Tanpa Karakter Emoticon, Ikon Ditangani Vector Drawable)
+            val dateLabel = ExamScheduleHelper.formatDisplayDate(exam.examDate, exam.examDay)
+            binding.tvExamDayBadge.text = dateLabel
 
             val timeSchedule = if (exam.startTime.isNotBlank() && exam.endTime.isNotBlank()) {
                 "${exam.startTime} - ${exam.endTime} WIB"
@@ -84,7 +84,14 @@ class ExamAdapter(
 
                 when (scheduleState) {
                     ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {
-                        binding.btnExamAction.text = "Jam ${exam.startTime}"
+                        val dateCompare = ExamScheduleHelper.compareExamDateWithToday(exam.examDate)
+                        binding.btnExamAction.text = if (dateCompare != null && dateCompare < 0) {
+                            "Belum Buka"
+                        } else if (exam.startTime.isNotBlank()) {
+                            "Jam ${exam.startTime}"
+                        } else {
+                            "Belum Buka"
+                        }
                         binding.btnExamAction.isEnabled = false
                         binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
                         binding.btnExamAction.setTextColor(Color.parseColor("#94A3B8"))

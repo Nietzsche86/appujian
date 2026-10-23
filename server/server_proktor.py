@@ -17,7 +17,7 @@ import sys
 import time
 import webbrowser
 from datetime import datetime
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
 try:
@@ -47,20 +47,42 @@ def add_log(ip: str, action: str):
     if len(ACTIVITY_LOGS) > 50:
         ACTIVITY_LOGS.pop(0)
 
-def get_local_ip() -> str:
-    """Mendeteksi IP LAN lokal perangkat yang terhubung ke router Wi-Fi."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def get_all_local_ips() -> list:
+    """Mendeteksi semua alamat IP LAN IPv4 lokal yang aktif (Wi-Fi, Ethernet, Hotspot)."""
+    ips = set()
     try:
-        s.connect(('10.255.255.255', 1))
-        ip = s.getsockname()[0]
+        hostname = socket.gethostname()
+        for item in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            ip = item[4][0]
+            if not ip.startswith("127.") and not ip.startswith("169.254."):
+                ips.add(ip)
     except Exception:
+        pass
+
+    for target in ['192.168.1.1', '10.255.255.255', '8.8.8.8']:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
-            ip = socket.gethostbyname(socket.gethostname())
+            s.connect((target, 80))
+            ip = s.getsockname()[0]
+            if not ip.startswith("127.") and not ip.startswith("169.254."):
+                ips.add(ip)
         except Exception:
-            ip = "127.0.0.1"
-    finally:
-        s.close()
-    return ip
+            pass
+        finally:
+            s.close()
+
+    result = sorted(list(ips))
+    if not result:
+        result = ["127.0.0.1"]
+    return result
+
+def get_local_ip() -> str:
+    """Mendeteksi IP LAN utama untuk server proktor."""
+    ips = get_all_local_ips()
+    for ip in ips:
+        if not ip.startswith("127."):
+            return ip
+    return "127.0.0.1"
 
 def load_or_init_config() -> dict:
     if CONFIG_FILE.exists():
@@ -163,10 +185,15 @@ def rebuild_manifest(server_base_url: str):
         if not short_name:
             short_name = ex["subject_name"][:4].upper()
 
+        exam_date = ex.get("exam_date", "").strip()
+        if not exam_date:
+            exam_date = datetime.now().strftime("%Y-%m-%d")
+
         exams_manifest.append({
             "id": ex["id"],
             "subject_name": ex["subject_name"],
             "short_name": short_name,
+            "exam_date": exam_date,
             "exam_day": ex.get("exam_day", "Senin"),
             "start_time": ex.get("start_time", "07:00"),
             "end_time": ex.get("end_time", "08:30"),
@@ -222,11 +249,21 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
+    def do_OPTIONS(self):
+        # Pre-flight CORS request
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, HEAD, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_HEAD(self):
         # Respons uji koneksi dari tombol 'Tes Koneksi' Android
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):
@@ -256,6 +293,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 "exam_rules": config.get("exam_rules", []),
                 "master_pin": config.get("master_pin", "888999"),
                 "server_url": self.server_base_url,
+                "all_ips": get_all_local_ips(),
                 "exams": config.get("exams", []),
                 "activity_logs": ACTIVITY_LOGS
             })
@@ -266,8 +304,17 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             if not MANIFEST_FILE.exists():
                 rebuild_manifest(self.server_base_url)
 
-            with open(MANIFEST_FILE, "rb") as f:
-                content = f.read()
+            with open(MANIFEST_FILE, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+
+            # Rewrite download_url secara dinamis sesuai Host yang diminta client
+            req_host = self.headers.get("Host", "").strip()
+            if req_host:
+                dynamic_base = f"http://{req_host}"
+                for ex in manifest_data.get("exams", []):
+                    ex["download_url"] = f"{dynamic_base}/files/{ex['id']}.enc"
+
+            content = json.dumps(manifest_data, ensure_ascii=False, indent=2).encode('utf-8')
 
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -344,6 +391,8 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 if ex["id"] == exam_id:
                     if "duration_minutes" in payload:
                         ex["duration_minutes"] = int(payload["duration_minutes"])
+                    if "exam_date" in payload:
+                        ex["exam_date"] = payload["exam_date"].strip()
                     if "exam_day" in payload:
                         ex["exam_day"] = payload["exam_day"].strip()
                     if "start_time" in payload:
@@ -416,6 +465,9 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
             subject_name = fields.get("subject_name", "").strip()
             short_name = fields.get("short_name", "").strip()
+            exam_date = fields.get("exam_date", "").strip()
+            if not exam_date:
+                exam_date = datetime.now().strftime("%Y-%m-%d")
             exam_day = fields.get("exam_day", "Senin").strip()
             start_time = fields.get("start_time", "07:00").strip()
             end_time = fields.get("end_time", "08:30").strip()
@@ -453,6 +505,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 "id": exam_id,
                 "subject_name": subject_name,
                 "short_name": short_name,
+                "exam_date": exam_date,
                 "exam_day": exam_day,
                 "start_time": start_time,
                 "end_time": end_time,
@@ -480,22 +533,28 @@ def run_server(port: int = 8080):
         except Exception:
             pass
 
-    local_ip = get_local_ip()
-    base_url = f"http://{local_ip}:{port}"
+    all_ips = get_all_local_ips()
+    primary_ip = get_local_ip()
+    base_url = f"http://{primary_ip}:{port}"
     ExamProctorWebHandler.server_base_url = base_url
 
     # Inisialisasi awal manifest
     rebuild_manifest(base_url)
 
     server_address = ('0.0.0.0', port)
-    httpd = HTTPServer(server_address, ExamProctorWebHandler)
+    httpd = ThreadingHTTPServer(server_address, ExamProctorWebHandler)
+    httpd.daemon_threads = True
 
-    print("\n" + "=" * 65)
+    print("\n" + "=" * 68)
     print("  SERVER PROKTOR & WEB DASHBOARD - MTS ROUDHOTUT THOWALIB")
-    print("=" * 65)
+    print("=" * 68)
     print(f"  • Buka di Browser Laptop Proktor : http://localhost:{port}")
-    print(f"  • Alamat untuk HP Siswa (Wi-Fi)   : {base_url}")
-    print("=" * 65)
+    print("  • Alamat untuk diisi di HP Siswa:")
+    for ip in all_ips:
+        print(f"      -> http://{ip}:{port}  (atau cukup masukkan: {ip})")
+    print("=" * 68)
+    print("  Status: Multi-threaded Server Aktif (Mendukung banyak siswa)")
+    print("=" * 68)
     print("  Membuka browser otomatis...")
 
     # Buka web browser otomatis di laptop proktor
