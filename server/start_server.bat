@@ -22,7 +22,10 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Menjalankan Server Proktor Lokal...
-python server_proktor.py --port 8080 --pin 888999
+echo Membuka Panel Kontrol Web Proktor di Browser...
+start "" "http://localhost:8080"
+
+echo Menjalankan Server Proktor Lokal di Port 8080...
+python server_proktor.py --port 8080
 
 pause

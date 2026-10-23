@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """
-Server Proktor Lokal & Enkriptor Soal Ujian
+Server Proktor Web Dashboard & Enkriptor Soal Ujian
 MTS ROUDHOTUT THOWALIB
-Mendukung enkripsi PDF PBKDF2 + AES-GCM 256-bit dan HTTP Server LAN mandiri.
+Antarmuka web modern untuk mengatur waktu ujian, token, master PIN, serta upload & enkripsi PDF.
 """
 
 import argparse
+import email
+from email.policy import default as email_default_policy
 import hashlib
 import json
 import os
+import re
 import socket
 import sys
 import time
+import webbrowser
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
@@ -21,11 +26,31 @@ except ImportError:
     print("[ERROR] Library 'cryptography' belum terpasang. Jalankan: pip install cryptography")
     sys.exit(1)
 
+BASE_DIR = Path(__file__).parent
+RAW_PDFS_DIR = BASE_DIR / "raw_pdfs"
+FILES_DIR = BASE_DIR / "files"
+CONFIG_FILE = BASE_DIR / "exams_config.json"
+MANIFEST_FILE = BASE_DIR / "manifest.json"
+HTML_FILE = BASE_DIR / "web_dashboard.html"
+
+# Log aktivitas perangkat siswa di memori
+ACTIVITY_LOGS = []
+
+def add_log(ip: str, action: str):
+    timestamp = datetime.now().strftime("%H:%M:%S")
+    ACTIVITY_LOGS.append({
+        "time": timestamp,
+        "ip": ip,
+        "action": action
+    })
+    # Batasi maksimal 50 log terakhir
+    if len(ACTIVITY_LOGS) > 50:
+        ACTIVITY_LOGS.pop(0)
+
 def get_local_ip() -> str:
     """Mendeteksi IP LAN lokal perangkat yang terhubung ke router Wi-Fi."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        # Menghubungkan ke alamat dummy untuk mendeteksi interface keluar
         s.connect(('10.255.255.255', 1))
         ip = s.getsockname()[0]
     except Exception:
@@ -37,10 +62,55 @@ def get_local_ip() -> str:
         s.close()
     return ip
 
+def load_or_init_config() -> dict:
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+
+    # Default fallback config jika belum ada
+    default_config = {
+        "school_name": "MTS ROUDHOTUT THOWALIB",
+        "master_pin": "888999",
+        "exams": [
+            {
+                "id": "BINDO-7-2026",
+                "subject_name": "Bahasa Indonesia",
+                "grade_level": 7,
+                "duration_minutes": 90,
+                "token": "BINDO7",
+                "pdf_filename": "soal_bindo_7.pdf"
+            },
+            {
+                "id": "IPA-8-2026",
+                "subject_name": "Ilmu Pengetahuan Alam (IPA)",
+                "grade_level": 8,
+                "duration_minutes": 90,
+                "token": "IPA8MTS",
+                "pdf_filename": "soal_ipa_8.pdf"
+            },
+            {
+                "id": "MAT-9-2026",
+                "subject_name": "Matematika",
+                "grade_level": 9,
+                "duration_minutes": 90,
+                "token": "MAT9MTS",
+                "pdf_filename": "soal_matematika_9.pdf"
+            }
+        ]
+    }
+    save_config(default_config)
+    return default_config
+
+def save_config(config: dict):
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+
 def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
     """
-    Mengenkripsi berkas PDF menggunakan PBKDF2WithHmacSHA256 (10.000 iterasi) + AES-GCM 256-bit.
-    Kompatibel 100% dengan CryptoEngine.kt pada aplikasi Android.
+    Mengenkripsi PDF menggunakan PBKDF2 (10.000 iterasi) + AES-GCM 256-bit.
     """
     with open(pdf_path, "rb") as f:
         pdf_data = f.read()
@@ -48,7 +118,6 @@ def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
     salt_bytes = os.urandom(16)
     iv_bytes = os.urandom(12)
 
-    # Derivasi kunci PBKDF2 (10.000 iterasi, 32 bytes / 256 bits)
     key = hashlib.pbkdf2_hmac(
         'sha256',
         token.strip().encode('utf-8'),
@@ -57,7 +126,6 @@ def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
         32
     )
 
-    # Enkripsi AES-GCM (Auth Tag 128 bits otomatis di-append di akhir ciphertext)
     aesgcm = AESGCM(key)
     ciphertext = aesgcm.encrypt(iv_bytes, pdf_data, None)
 
@@ -65,7 +133,6 @@ def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
     with open(output_enc_path, "wb") as f:
         f.write(ciphertext)
 
-    # Hitung checksum SHA-256 dari berkas .enc
     sha256_hash = hashlib.sha256(ciphertext).hexdigest()
 
     return {
@@ -75,117 +142,75 @@ def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
         "enc_size": len(ciphertext)
     }
 
-def generate_exam_package(server_base_url: str, master_pin: str) -> dict:
+def rebuild_manifest(server_base_url: str):
     """
-    Menghasilkan berkas terenkripsi dan manifest.json berdasarkan file di folder raw_pdfs/.
+    Membangun ulang berkas .enc dan manifest.json berdasarkan config terbaru.
     """
-    base_dir = Path(__file__).parent
-    raw_dir = base_dir / "raw_pdfs"
-    files_dir = base_dir / "files"
-    files_dir.mkdir(parents=True, exist_ok=True)
+    config = load_or_init_config()
+    FILES_DIR.mkdir(parents=True, exist_ok=True)
+    RAW_PDFS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Jika folder raw_pdfs belum ada isinya, buat sample otomatis
-    if not raw_dir.exists() or not list(raw_dir.glob("*.pdf")):
-        print("[INFO] Membuat dokumen soal sample otomatis...")
-        from generate_sample_exams import main as gen_sample
-        gen_sample()
-
-    # Konfigurasi paket soal standar MTS ROUDHOTUT THOWALIB
-    sample_configs = [
-        {
-            "id": "BINDO-7-2026",
-            "pdf_name": "soal_bindo_7.pdf",
-            "subject_name": "Bahasa Indonesia",
-            "grade_level": 7,
-            "duration_minutes": 90,
-            "token": "BINDO7"
-        },
-        {
-            "id": "IPA-8-2026",
-            "pdf_name": "soal_ipa_8.pdf",
-            "subject_name": "Ilmu Pengetahuan Alam (IPA)",
-            "grade_level": 8,
-            "duration_minutes": 90,
-            "token": "IPA8MTS"
-        },
-        {
-            "id": "MAT-9-2026",
-            "pdf_name": "soal_matematika_9.pdf",
-            "subject_name": "Matematika",
-            "grade_level": 9,
-            "duration_minutes": 90,
-            "token": "MAT9MTS"
-        }
-    ]
-
-    exams_manifest = []
-
-    print("\n" + "=" * 65)
-    print("PROSES ENKRIPSI LEMBAR SOAL UJIAN (AES-GCM 256-BIT)")
-    print("=" * 65)
-
-    # Pastikan stdout mendukung UTF-8 di Windows
-    if sys.stdout.encoding != 'utf-8':
+    # Buat sample jika folder raw kosong
+    if not list(RAW_PDFS_DIR.glob("*.pdf")):
         try:
-            sys.stdout.reconfigure(encoding='utf-8')
+            from generate_sample_exams import main as gen_sample
+            gen_sample()
         except Exception:
             pass
 
-    for cfg in sample_configs:
-        pdf_file = raw_dir / cfg["pdf_name"]
-        enc_file = files_dir / f"{cfg['id']}.enc"
+    exams_manifest = []
+
+    for ex in config.get("exams", []):
+        pdf_file = RAW_PDFS_DIR / ex.get("pdf_filename", "")
+        enc_file = FILES_DIR / f"{ex['id']}.enc"
 
         if not pdf_file.exists():
-            print(f"[SKIP] Berkas {pdf_file.name} tidak ditemukan.")
             continue
 
-        crypto_meta = encrypt_pdf_exam(pdf_file, enc_file, cfg["token"])
-        download_url = f"{server_base_url}/files/{cfg['id']}.enc"
+        crypto_meta = encrypt_pdf_exam(pdf_file, enc_file, ex["token"])
+        download_url = f"{server_base_url}/files/{ex['id']}.enc"
 
-        exam_entry = {
-            "id": cfg["id"],
-            "subject_name": cfg["subject_name"],
-            "grade_level": cfg["grade_level"],
-            "duration_minutes": cfg["duration_minutes"],
+        exams_manifest.append({
+            "id": ex["id"],
+            "subject_name": ex["subject_name"],
+            "grade_level": int(ex["grade_level"]),
+            "duration_minutes": int(ex["duration_minutes"]),
             "download_url": download_url,
             "file_sha256": crypto_meta["file_sha256"],
             "pbkdf2_salt_hex": crypto_meta["salt_hex"],
             "gcm_iv_hex": crypto_meta["iv_hex"]
-        }
-        exams_manifest.append(exam_entry)
+        })
 
-        print(f"[+] Mapel: {cfg['subject_name']} (Kelas {cfg['grade_level']})")
-        print(f"  * Token Angkatan: {cfg['token']}")
-        print(f"  * Berkas Enkripsi: {enc_file.name} ({crypto_meta['enc_size']} bytes)")
-        print(f"  * SHA-256: {crypto_meta['file_sha256'][:16]}...")
-
+    master_pin = config.get("master_pin", "888999")
     master_pin_sha256 = hashlib.sha256(master_pin.strip().encode('utf-8')).hexdigest()
 
     manifest = {
-        "school_name": "MTS ROUDHOTUT THOWALIB",
+        "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
         "sync_timestamp": int(time.time()),
         "master_pin_sha256": master_pin_sha256,
         "exams": exams_manifest
     }
 
-    manifest_path = base_dir / "manifest.json"
-    with open(manifest_path, "w", encoding="utf-8") as f:
+    with open(MANIFEST_FILE, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)
-
-    print("=" * 65)
-    print(f"[OK] Manifest tersimpan di: {manifest_path}")
-    print(f"  • Master PIN Pengawas: {master_pin} (Hash: {master_pin_sha256[:16]}...)")
-    print("=" * 65 + "\n")
 
     return manifest
 
-class ExamServerHandler(BaseHTTPRequestHandler):
-    """HTTP Request Handler khusus untuk melayani manifest.json dan berkas .enc."""
+class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
-    server_dir = Path(__file__).parent
+    server_base_url = ""
+
+    def send_json(self, data: dict, status: int = 200):
+        content = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(content)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(content)
 
     def do_HEAD(self):
-        # Digunakan untuk uji koneksi cepat dari tombol 'Tes Koneksi' di aplikasi siswa
+        # Respons uji koneksi dari tombol 'Tes Koneksi' Android
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Type", "text/plain")
@@ -194,46 +219,56 @@ class ExamServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         clean_path = self.path.split("?")[0].strip("/")
 
-        # Endpoint Root / Status
-        if clean_path == "" or clean_path == "status":
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            html = f"""
-            <html>
-            <head><title>MTS ROUDHOTUT THOWALIB - Server Ujian</title></head>
-            <body style='font-family: sans-serif; padding: 40px; background: #0F172A; color: #F8FAFC;'>
-                <h1 style='color: #10B981;'>Server Proktor MTS ROUDHOTUT THOWALIB</h1>
-                <p>Status: <b>ONLINE &amp; SIAP MELAYANI SINKRONISASI</b></p>
-                <p><a style='color: #38BDF8;' href='/manifest.json'>Lihat manifest.json</a></p>
-            </body>
-            </html>
-            """
-            self.wfile.write(html.encode("utf-8"))
-            return
-
-        # Endpoint manifest.json
-        if clean_path == "manifest.json":
-            manifest_path = self.server_dir / "manifest.json"
-            if manifest_path.exists():
-                with open(manifest_path, "rb") as f:
+        # 1. Halaman Web Dashboard Proktor
+        if clean_path == "" or clean_path == "admin":
+            if HTML_FILE.exists():
+                with open(HTML_FILE, "rb") as f:
                     content = f.read()
                 self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(content)))
-                self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(content)
-                print(f"[SYNC] HP Siswa ({self.client_address[0]}) mengunduh manifest.json")
             else:
-                self.send_error(404, "Manifest file not found")
+                self.send_error(404, "HTML template tidak ditemukan")
             return
 
-        # Endpoint berkas terenkripsi /files/<filename>.enc
+        # 2. Endpoint Data Web API (Status, Konfigurasi, & Log)
+        if clean_path == "api/data":
+            config = load_or_init_config()
+            self.send_json({
+                "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
+                "master_pin": config.get("master_pin", "888999"),
+                "server_url": self.server_base_url,
+                "exams": config.get("exams", []),
+                "activity_logs": ACTIVITY_LOGS
+            })
+            return
+
+        # 3. Endpoint manifest.json (untuk HP Siswa)
+        if clean_path == "manifest.json":
+            if not MANIFEST_FILE.exists():
+                rebuild_manifest(self.server_base_url)
+
+            with open(MANIFEST_FILE, "rb") as f:
+                content = f.read()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(content)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(content)
+
+            client_ip = self.client_address[0]
+            add_log(client_ip, "Sinkronisasi Berhasil (Unduh manifest.json)")
+            print(f"[SYNC] Siswa ({client_ip}) mengunduh manifest.json")
+            return
+
+        # 4. Endpoint berkas terenkripsi /files/<filename>.enc (untuk HP Siswa)
         if clean_path.startswith("files/"):
             filename = clean_path.replace("files/", "")
-            file_path = self.server_dir / "files" / filename
+            file_path = FILES_DIR / filename
             if file_path.exists() and file_path.is_file():
                 file_size = file_path.stat().st_size
                 self.send_response(200)
@@ -242,68 +277,198 @@ class ExamServerHandler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 with open(file_path, "rb") as f:
-                    # Stream buffer 16 KB
                     while chunk := f.read(16384):
                         self.wfile.write(chunk)
-                print(f"[DOWNLOAD] HP Siswa ({self.client_address[0]}) mengunduh: {filename} ({file_size} bytes)")
+
+                client_ip = self.client_address[0]
+                add_log(client_ip, f"Unduh Paket Soal: {filename}")
+                print(f"[DOWNLOAD] Siswa ({client_ip}) mengunduh: {filename}")
             else:
                 self.send_error(404, f"File {filename} tidak ditemukan")
             return
 
-        self.send_error(404, "Halaman atau endpoint tidak ditemukan")
+        self.send_error(404, "Endpoint tidak ditemukan")
+
+    def do_POST(self):
+        clean_path = self.path.split("?")[0].strip("/")
+        content_type = self.headers.get("Content-Type", "")
+        content_length = int(self.headers.get("Content-Length", 0))
+
+        # 1. Update Master PIN & Nama Madrasah
+        if clean_path == "api/settings":
+            raw_body = self.rfile.read(content_length)
+            payload = json.loads(raw_body.decode('utf-8'))
+            config = load_or_init_config()
+
+            if "school_name" in payload:
+                config["school_name"] = payload["school_name"].strip()
+            if "master_pin" in payload:
+                config["master_pin"] = payload["master_pin"].strip()
+
+            save_config(config)
+            rebuild_manifest(self.server_base_url)
+            self.send_json({"ok": True})
+            return
+
+        # 2. Update Cepat Durasi Ujian (duration_minutes)
+        if clean_path == "api/update-duration":
+            raw_body = self.rfile.read(content_length)
+            payload = json.loads(raw_body.decode('utf-8'))
+            exam_id = payload.get("id")
+            new_duration = int(payload.get("duration_minutes", 90))
+
+            config = load_or_init_config()
+            found = False
+            for ex in config.get("exams", []):
+                if ex["id"] == exam_id:
+                    ex["duration_minutes"] = new_duration
+                    found = True
+                    break
+
+            if found:
+                save_config(config)
+                rebuild_manifest(self.server_base_url)
+                self.send_json({"ok": True, "message": f"Durasi berhasil diubah ke {new_duration} Menit"})
+            else:
+                self.send_json({"ok": False, "error": "Exam ID tidak ditemukan"}, 404)
+            return
+
+        # 3. Hapus Paket Soal
+        if clean_path == "api/delete-exam":
+            raw_body = self.rfile.read(content_length)
+            payload = json.loads(raw_body.decode('utf-8'))
+            exam_id = payload.get("id")
+
+            config = load_or_init_config()
+            config["exams"] = [ex for ex in config.get("exams", []) if ex["id"] != exam_id]
+            save_config(config)
+
+            # Hapus file .enc jika ada
+            enc_file = FILES_DIR / f"{exam_id}.enc"
+            if enc_file.exists():
+                try:
+                    enc_file.unlink()
+                except Exception:
+                    pass
+
+            rebuild_manifest(self.server_base_url)
+            self.send_json({"ok": True})
+            return
+
+        # 4. Enkripsi Ulang Seluruh Paket
+        if clean_path == "api/rebuild":
+            rebuild_manifest(self.server_base_url)
+            self.send_json({"ok": True})
+            return
+
+        # 5. Upload & Enkripsi Paket Soal Baru (Multipart Form Data)
+        if clean_path == "api/upload-exam":
+            raw_data = self.rfile.read(content_length)
+            msg = email.message_from_bytes(
+                b"Content-Type: " + content_type.encode('utf-8') + b"\r\n\r\n" + raw_data,
+                policy=email_default_policy
+            )
+
+            fields = {}
+            pdf_bytes = b""
+            pdf_filename = ""
+
+            for part in msg.iter_parts():
+                name = part.get_param('name', header='content-disposition')
+                filename = part.get_param('filename', header='content-disposition')
+                payload = part.get_payload(decode=True)
+
+                if filename:
+                    pdf_filename = filename
+                    pdf_bytes = payload
+                elif name:
+                    fields[name] = payload.decode('utf-8', errors='ignore').strip()
+
+            subject_name = fields.get("subject_name", "").strip()
+            grade_level = int(fields.get("grade_level", 7))
+            duration_minutes = int(fields.get("duration_minutes", 90))
+            token = fields.get("token", "").strip().upper()
+
+            if not subject_name or not token or not pdf_bytes:
+                self.send_json({"ok": False, "error": "Semua kolom dan berkas PDF wajib diisi!"}, 400)
+                return
+
+            # Generate unique safe ID
+            clean_sub = re.sub(r'[^A-Za-z0-9]', '', subject_name)[:6].upper()
+            exam_id = f"{clean_sub}-{grade_level}-{int(time.time())}"
+            safe_pdf_name = f"soal_{exam_id.lower()}.pdf"
+
+            # Simpan file PDF asli ke raw_pdfs/
+            RAW_PDFS_DIR.mkdir(parents=True, exist_ok=True)
+            with open(RAW_PDFS_DIR / safe_pdf_name, "wb") as f:
+                f.write(pdf_bytes)
+
+            config = load_or_init_config()
+            config["exams"].append({
+                "id": exam_id,
+                "subject_name": subject_name,
+                "grade_level": grade_level,
+                "duration_minutes": duration_minutes,
+                "token": token,
+                "pdf_filename": safe_pdf_name
+            })
+            save_config(config)
+
+            # Langsung enkripsi dan perbarui manifest
+            rebuild_manifest(self.server_base_url)
+            self.send_json({"ok": True, "exam_id": exam_id})
+            return
+
+        self.send_error(404, "Endpoint POST tidak ditemukan")
 
     def log_message(self, format, *args):
-        # Meredam logging bawaan agar terminal proktor tetap bersih
         pass
 
-def run_server(port: int = 8080, master_pin: str = "888999", build_only: bool = False):
+def run_server(port: int = 8080):
+    if sys.stdout.encoding != 'utf-8':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except Exception:
+            pass
+
     local_ip = get_local_ip()
     base_url = f"http://{local_ip}:{port}"
+    ExamProctorWebHandler.server_base_url = base_url
 
-    # Generate berkas enkripsi & manifest
-    manifest = generate_exam_package(base_url, master_pin)
-
-    if build_only:
-        print("[INFO] Mode build-only selesai.")
-        return
+    # Inisialisasi awal manifest
+    rebuild_manifest(base_url)
 
     server_address = ('0.0.0.0', port)
-    httpd = HTTPServer(server_address, ExamServerHandler)
+    httpd = HTTPServer(server_address, ExamProctorWebHandler)
 
-    print("\n" + "#" * 65)
-    print("  SERVER PROKTOR LOKAL - MTS ROUDHOTUT THOWALIB")
-    print("#" * 65)
-    print(f"  • Alamat IP Server Proktor : {base_url}")
-    print(f"  • Endpoint Manifest Ujian : {base_url}/manifest.json")
-    print(f"  • Master PIN Pengawas     : {master_pin}")
-    print("-" * 65)
-    print("  PETUNJUK PROKTOR:")
-    print(f"  1. Pastikan laptop proktor & HP siswa terhubung ke Wi-Fi lab yang sama.")
-    print(f"  2. Pada aplikasi HP siswa, ketikkan alamat berikut di kotak IP Server:")
-    print(f"     >>> {base_url} <<<")
-    print(f"  3. Tekan 'Tes Koneksi' lalu tekan 'Sinkronkan Soal'.")
-    print("-" * 65)
-    print("  DAFTAR TOKEN ANGKATAN UNTUK SISWA:")
-    for ex in manifest.get("exams", []):
-        token_name = "BINDO7" if "7" in ex["id"] else ("IPA8MTS" if "8" in ex["id"] else "MAT9MTS")
-        print(f"  • {ex['subject_name']} (Kelas {ex['grade_level']}) -> TOKEN: [{token_name}]")
-    print("#" * 65)
-    print("\n[READY] Server sedang berjalan... Tekan Ctrl+C untuk menghentikan server.\n")
+    print("\n" + "=" * 65)
+    print("  SERVER PROKTOR & WEB DASHBOARD - MTS ROUDHOTUT THOWALIB")
+    print("=" * 65)
+    print(f"  • Buka di Browser Laptop Proktor : http://localhost:{port}")
+    print(f"  • Alamat untuk HP Siswa (Wi-Fi)   : {base_url}")
+    print("=" * 65)
+    print("  Membuka browser otomatis...")
+
+    # Buka web browser otomatis di laptop proktor
+    try:
+        webbrowser.open(f"http://localhost:{port}")
+    except Exception:
+        pass
+
+    print("[READY] Server aktif! Tekan Ctrl+C untuk menghentikan server.\n")
 
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\n[STOP] Server proktor dihentikan oleh pengguna.")
+        print("\n[STOP] Server proktor dihentikan.")
         httpd.server_close()
 
 def main():
-    parser = argparse.ArgumentParser(description="Server Proktor Ujian Lokal MTS ROUDHOTUT THOWALIB")
+    parser = argparse.ArgumentParser(description="Server Proktor Web Dashboard MTS ROUDHOTUT THOWALIB")
     parser.add_argument("--port", type=int, default=8080, help="Port server HTTP (default: 8080)")
-    parser.add_argument("--pin", type=str, default="888999", help="6-digit Master PIN pengawas (default: 888999)")
-    parser.add_argument("--build-only", action="store_true", help="Hanya bangun manifest & berkas .enc tanpa menyalakan server")
     args = parser.parse_args()
 
-    run_server(port=args.port, master_pin=args.pin, build_only=args.build_only)
+    run_server(port=args.port)
 
 if __name__ == "__main__":
     main()

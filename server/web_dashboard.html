@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Proktor - MTS ROUDHOTUT THOWALIB</title>
+    <style>
+        :root {
+            --bg-dark: #0B132B;
+            --surface: #1C2541;
+            --surface-hover: #223055;
+            --surface-card: #151E36;
+            --primary: #10B981;
+            --primary-hover: #059669;
+            --accent: #38BDF8;
+            --text-light: #F8FAFC;
+            --text-muted: #94A3B8;
+            --border: #334155;
+            --danger: #F43F5E;
+            --warning: #F59E0B;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            padding: 24px 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Top Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-live {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-live::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* Hero Server IP Banner */
+        .banner-ip {
+            background: linear-gradient(135deg, #064E3B 0%, #065F46 40%, #0F172A 100%);
+            border: 1px solid #059669;
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .banner-ip .info h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6EE7B7;
+            margin-bottom: 6px;
+        }
+
+        .banner-ip .info .ip-box {
+            font-size: 28px;
+            font-weight: 800;
+            color: #FFFFFF;
+            letter-spacing: 0.05em;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        }
+
+        .banner-ip .info p {
+            color: #A7F3D0;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 18px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-light);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--surface-hover);
+            border-color: var(--text-muted);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        .btn-danger:hover {
+            background-color: #E11D48;
+        }
+
+        /* Cards Layout */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-light);
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 14px;
+            background-color: var(--surface);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-light);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        .pill-grade {
+            background-color: #1E293B;
+            border: 1px solid #475569;
+            color: #94A3B8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .pill-token {
+            background-color: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+        }
+
+        .duration-badge {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .duration-badge:hover {
+            background-color: rgba(245, 158, 11, 0.25);
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-box h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-light);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 14px;
+            display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <h1>🏫 <span id="displaySchoolName">MTS ROUDHOTUT THOWALIB</span></h1>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 2px;">Panel Kontrol Server Proktor Ujian Luring (Full Offline)</p>
+        </div>
+        <div>
+            <span class="badge-live">SERVER AKTIF (PORT 8080)</span>
+        </div>
+    </div>
+
+    <!-- Hero Banner Server IP -->
+    <div class="banner-ip">
+        <div class="info">
+            <h2>Alamat Server untuk Aplikasi HP Siswa</h2>
+            <div class="ip-box" id="serverUrlBox">http://192.168.0.109:8080</div>
+            <p>Ketikkan alamat di atas pada kotak <b>Alamat IP &amp; Port Server</b> di HP siswa saat sinkronisasi.</p>
+        </div>
+        <div>
+            <button class="btn" onclick="copyServerUrl()">📋 Salin Alamat</button>
+        </div>
+    </div>
+
+    <!-- Master PIN & School Config Grid -->
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3>⚙️ Pengaturan Madrasah &amp; PIN Pengawas</h3>
+            </div>
+            <div class="form-group">
+                <label>Nama Madrasah</label>
+                <input type="text" id="inputSchoolName" class="form-control" value="MTS ROUDHOTUT THOWALIB">
+            </div>
+            <div class="form-group">
+                <label>Master PIN Pengawas (6-Digit Offline Bypass)</label>
+                <input type="text" id="inputMasterPin" class="form-control" maxlength="8" value="888999" style="letter-spacing: 0.15em; font-family: monospace; font-weight: bold;">
+                <small style="color: var(--text-muted); font-size: 11px;">Digunakan pengawas di ruang ujian untuk membuka penalti ban darurat atau menyelesaikan ujian.</small>
+            </div>
+            <div style="margin-top: 16px;">
+                <button class="btn btn-sm" onclick="saveSettings()">💾 Simpan Pengaturan</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📖 Petunjuk Cepat Proktor</h3>
+            </div>
+            <ul style="color: var(--text-muted); font-size: 13px; padding-left: 20px; line-height: 1.8;">
+                <li><b>Mengubah Waktu Ujian:</b> Klik tombol kuning <b style="color: var(--warning);">⏱️ [X] Menit</b> di tabel bawah untuk langsung mengubah durasi.</li>
+                <li><b>Menambah Mapel Baru:</b> Klik tombol <b style="color: var(--primary);">+ Tambah Paket Soal</b> untuk upload PDF.</li>
+                <li><b>Token Ujian:</b> Diberikan kepada siswa di ruang ujian untuk membuka lembar soal terenkripsi.</li>
+                <li><b>Sinkronisasi Siswa:</b> Dilakukan saat HP siswa terhubung ke Wi-Fi lab sebelum ujian dimulai.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Exam Management Table (Core Feature!) -->
+    <div class="card">
+        <div class="card-header">
+            <h3>📑 Pengaturan Waktu &amp; Paket Soal Ujian</h3>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-outline" onclick="rebuildAllPackages()">🔄 Enkripsi Ulang Semua</button>
+                <button class="btn btn-sm" onclick="openAddModal()">➕ Tambah Paket Soal</button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mata Pelajaran</th>
+                        <th>Tingkat</th>
+                        <th>Durasi Waktu (Klik untuk Ubah)</th>
+                        <th>Token Angkatan</th>
+                        <th>Berkas PDF</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="examTableBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted);">Memuat data ujian...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Student Live Logs -->
+    <div class="card">
+        <div class="card-header">
+            <h3>📡 Monitor Aktivitas Siswa Terhubung</h3>
+            <button class="btn btn-sm btn-outline" onclick="loadData()">Segarkan</button>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>IP Perangkat Siswa</th>
+                        <th>Aktivitas</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-muted);">Belum ada perangkat siswa yang melakukan sinkronisasi.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Durasi Waktu -->
+<div class="modal-backdrop" id="modalEditDuration">
+    <div class="modal-box">
+        <h3>⏱️ Ubah Durasi Waktu Ujian</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;" id="modalExamTitle">Mata Pelajaran</p>
+        <input type="hidden" id="editExamId">
+        
+        <div class="form-group">
+            <label>Durasi Ujian (Satuan Menit):</label>
+            <input type="number" id="inputDurationMinutes" class="form-control" min="10" max="300" step="5" style="font-size: 18px; font-weight: bold;">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(60)">60 Menit</button>
+            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(90)">90 Menit</button>
+            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(120)">120 Menit</button>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-outline" onclick="closeModal('modalEditDuration')">Batal</button>
+            <button class="btn" onclick="saveDuration()">Simpan Durasi</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Paket Soal Baru -->
+<div class="modal-backdrop" id="modalAddExam">
+    <div class="modal-box" style="max-width: 520px;">
+        <h3>➕ Tambah Lembar Soal PDF Baru</h3>
+        <form id="formAddExam" onsubmit="submitAddExam(event)">
+            <div class="form-group">
+                <label>Nama Mata Pelajaran</label>
+                <input type="text" name="subject_name" class="form-control" placeholder="Contoh: Fiqih / Bahasa Arab" required>
+            </div>
+            
+            <div class="grid-2" style="margin-bottom: 0;">
+                <div class="form-group">
+                    <label>Tingkat Kelas</label>
+                    <select name="grade_level" class="form-control" required>
+                        <option value="7">Kelas 7 (Tujuh)</option>
+                        <option value="8">Kelas 8 (Delapan)</option>
+                        <option value="9">Kelas 9 (Sembilan)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Durasi Ujian (Menit)</label>
+                    <input type="number" name="duration_minutes" class="form-control" value="90" min="10" max="300" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Token Ujian Angkatan (6-8 Karakter Huruf/Angka)</label>
+                <input type="text" name="token" class="form-control" placeholder="Contoh: FIQIH7" maxlength="12" style="text-transform: uppercase;" required>
+            </div>
+
+            <div class="form-group">
+                <label>Pilih Berkas Soal Asli (.PDF)</label>
+                <input type="file" name="pdf_file" class="form-control" accept="application/pdf" required>
+                <small style="color: var(--text-muted); font-size: 11px;">Berkas akan langsung dienkripsi AES-256-GCM otomatis oleh server.</small>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="closeModal('modalAddExam')">Batal</button>
+                <button type="submit" class="btn" id="btnSubmitAdd">Unggah &amp; Enkripsi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="toast" id="toastMsg">Pengaturan berhasil disimpan!</div>
+
+<script>
+    let serverData = {};
+
+    async function loadData() {
+        try {
+            const res = await fetch('/api/data');
+            const data = await res.json();
+            serverData = data;
+
+            document.getElementById('displaySchoolName').textContent = data.school_name || "MTS ROUDHOTUT THOWALIB";
+            document.getElementById('inputSchoolName').value = data.school_name || "MTS ROUDHOTUT THOWALIB";
+            document.getElementById('inputMasterPin').value = data.master_pin || "888999";
+            document.getElementById('serverUrlBox').textContent = data.server_url;
+
+            renderExams(data.exams || []);
+            renderLogs(data.activity_logs || []);
+        } catch (e) {
+            console.error("Gagal memuat data:", e);
+        }
+    }
+
+    function renderExams(exams) {
+        const tbody = document.getElementById('examTableBody');
+        if (!exams.length) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">Belum ada paket ujian. Klik tombol "+ Tambah Paket Soal".</td></tr>';
+            return;
+        }
+
+        let html = '';
+        exams.forEach(ex => {
+            html += `
+            <tr>
+                <td>
+                    <b>${escapeHtml(ex.subject_name)}</b><br>
+                    <small style="color: var(--text-muted); font-family: monospace;">${escapeHtml(ex.id)}</small>
+                </td>
+                <td><span class="pill-grade">Kelas ${ex.grade_level}</span></td>
+                <td>
+                    <span class="duration-badge" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes})" title="Klik untuk mengubah durasi">
+                        ⏱️ <b>${ex.duration_minutes} Menit</b> ✏️
+                    </span>
+                </td>
+                <td><span class="pill-token">${escapeHtml(ex.token)}</span></td>
+                <td>
+                    <span style="font-size: 12px; color: #10B981;">🔒 Terenkripsi (.enc)</span><br>
+                    <small style="color: var(--text-muted);">${escapeHtml(ex.pdf_filename || '')}</small>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes})">⏱️ Ubah Waktu</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteExam('${ex.id}', '${escapeHtml(ex.subject_name)}')">🗑️</button>
+                </td>
+            </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderLogs(logs) {
+        const tbody = document.getElementById('logTableBody');
+        if (!logs.length) {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Belum ada aktivitas sinkronisasi.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        logs.slice(-10).reverse().forEach(log => {
+            html += `
+            <tr>
+                <td style="color: var(--text-muted); font-size: 12px;">${log.time}</td>
+                <td><b>${escapeHtml(log.ip)}</b></td>
+                <td><span style="color: #38BDF8;">${escapeHtml(log.action)}</span></td>
+            </tr>
+            `;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function copyServerUrl() {
+        const url = document.getElementById('serverUrlBox').textContent;
+        navigator.clipboard.writeText(url).then(() => {
+            showToast("Alamat server proktor berhasil disalin!");
+        });
+    }
+
+    async function saveSettings() {
+        const schoolName = document.getElementById('inputSchoolName').value.trim();
+        const masterPin = document.getElementById('inputMasterPin').value.trim();
+
+        if (!masterPin) {
+            alert("Master PIN tidak boleh kosong!");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ school_name: schoolName, master_pin: masterPin })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                showToast("Pengaturan madrasah & PIN berhasil diperbarui!");
+                loadData();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (e) {
+            alert("Kesalahan koneksi ke server");
+        }
+    }
+
+    function openEditDuration(id, subjectName, duration) {
+        document.getElementById('editExamId').value = id;
+        document.getElementById('modalExamTitle').textContent = `Mata Pelajaran: ${subjectName}`;
+        document.getElementById('inputDurationMinutes').value = duration;
+        document.getElementById('modalEditDuration').style.display = 'flex';
+    }
+
+    function setPresetDuration(mins) {
+        document.getElementById('inputDurationMinutes').value = mins;
+    }
+
+    async function saveDuration() {
+        const examId = document.getElementById('editExamId').value;
+        const duration = parseInt(document.getElementById('inputDurationMinutes').value, 10);
+
+        if (!duration || duration <= 0) {
+            alert("Durasi waktu harus berupa angka positif!");
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/update-duration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: examId, duration_minutes: duration })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                closeModal('modalEditDuration');
+                showToast(`Waktu ujian berhasil diubah menjadi ${duration} Menit!`);
+                loadData();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (e) {
+            alert("Kesalahan koneksi ke server");
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('formAddExam').reset();
+        document.getElementById('modalAddExam').style.display = 'flex';
+    }
+
+    async function submitAddExam(e) {
+        e.preventDefault();
+        const form = document.getElementById('formAddExam');
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btnSubmitAdd');
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Mengenkripsi PDF...";
+
+        try {
+            const res = await fetch('/api/upload-exam', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Unggah & Enkripsi";
+
+            if (data.ok) {
+                closeModal('modalAddExam');
+                showToast("Paket soal berhasil diunggah & dienkripsi!");
+                loadData();
+            } else {
+                alert("Gagal: " + data.error);
+            }
+        } catch (err) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Unggah & Enkripsi";
+            alert("Kesalahan saat mengunggah: " + err.message);
+        }
+    }
+
+    async function deleteExam(id, name) {
+        if (!confirm(`Apakah Anda yakin ingin menghapus paket soal "${name}"?`)) return;
+
+        try {
+            const res = await fetch('/api/delete-exam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                showToast(`Paket soal "${name}" berhasil dihapus.`);
+                loadData();
+            }
+        } catch (e) {
+            alert("Gagal menghapus soal");
+        }
+    }
+
+    async function rebuildAllPackages() {
+        try {
+            const res = await fetch('/api/rebuild', { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) {
+                showToast("Seluruh berkas soal berhasil dienkripsi ulang!");
+                loadData();
+            }
+        } catch (e) {
+            alert("Gagal mengenkripsi ulang");
+        }
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toastMsg');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // Load awal & auto-refresh log setiap 5 detik
+    loadData();
+    setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
