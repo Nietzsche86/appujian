@@ -22,6 +22,15 @@
         <item name="android:windowLightNavigationBar">false</item>
     </style>
 
+    <!-- Theme for Splash Screen (Bright white background, dark status bar icons) -->
+    <style name="Theme.ExamKiosk.Splash" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+
     <!-- Card Styles -->
     <style name="Widget.ExamKiosk.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardCornerRadius">16dp</item>

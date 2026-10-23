@@ -1,7 +1,7 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
   "school_tagline": "Madrasah Unggulan",
-  "exam_title": "Ujian Akhir",
+  "exam_title": "Ujian Akhir S",
   "master_pin": "888999",
   "exam_rules": [
     "Aturan 1",
@@ -12,14 +12,17 @@
       "id": "HALO-8-1792773172",
       "subject_name": "HALO",
       "short_name": "HALO",
-      "exam_day": "Sabtu",
-      "start_time": "05:00",
-      "end_time": "06:30",
+      "exam_day": "Kamis",
+      "start_time": "07:00",
+      "end_time": "08:30",
       "grade_level": 8,
       "duration_minutes": 90,
       "token": "TEST",
       "pdf_filename": "soal_halo-8-1792773172.pdf",
-      "exam_date": "2026-10-24"
+      "exam_date": "2026-10-29",
+      "file_sha256": "0720f05bc5fb63df0cb4b4136f548959847d88ffd6b583e961c9079724c0cb3d",
+      "pbkdf2_salt_hex": "ffbb58bbd9c6ab00904cace363c3c19e",
+      "gcm_iv_hex": "ea61461f1a2bd9aecedf0abf"
     },
     {
       "id": "DAYUM-7-1792776728",
@@ -32,7 +35,10 @@
       "duration_minutes": 90,
       "token": "DDDD",
       "pdf_filename": "soal_dayum-7-1792776728.pdf",
-      "exam_date": "2026-10-26"
+      "exam_date": "2026-10-26",
+      "file_sha256": "9af0831cad961d63fc35e5bd7e97f39f9f2a30e18b126648b30521b27defa747",
+      "pbkdf2_salt_hex": "cf83a9f71a42478984a021cd5aff9930",
+      "gcm_iv_hex": "d7d56f0d514190839578b5c5"
     },
     {
       "id": "MATEMA-8-1792782240",
@@ -45,7 +51,10 @@
       "duration_minutes": 90,
       "token": "MTK88",
       "pdf_filename": "soal_matema-8-1792782240.pdf",
-      "exam_date": "2026-10-27"
+      "exam_date": "2026-10-27",
+      "file_sha256": "3d44622824a01b0efaf810571241cef8b6180c2b9a7e7022d4cfab1b9839822b",
+      "pbkdf2_salt_hex": "9db48c789204c366ef244782d9c85cfe",
+      "gcm_iv_hex": "3cd9084384d231b5cd114320"
     },
     {
       "id": "IPA-9-1792795714",
@@ -58,7 +67,10 @@
       "duration_minutes": 90,
       "token": "IPAAA",
       "pdf_filename": "soal_ipa-9-1792795714.pdf",
-      "exam_date": "2026-10-28"
+      "exam_date": "2026-10-28",
+      "file_sha256": "973c60ca97a281d341e4d1d6ae3e3f2dbc9efa3e8b717e8929906fb484bd008d",
+      "pbkdf2_salt_hex": "8c9a6739a127187487f662aae8d3c873",
+      "gcm_iv_hex": "e4f82401ad51885bcd87fd99"
     }
   ]
 }

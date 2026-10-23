@@ -166,19 +166,40 @@ def rebuild_manifest(server_base_url: str):
         try:
             from generate_sample_exams import main as gen_sample
             gen_sample()
+            config = load_or_init_config()
         except Exception:
             pass
 
     exams_manifest = []
+    config_dirty = False
 
     for ex in config.get("exams", []):
         pdf_file = RAW_PDFS_DIR / ex.get("pdf_filename", "")
         enc_file = FILES_DIR / f"{ex['id']}.enc"
 
-        if not pdf_file.exists():
+        # Optimasi: Gunakan enkripsi yang sudah ada jika .enc file dan metadatanya valid
+        if enc_file.exists() and ex.get("file_sha256") and ex.get("pbkdf2_salt_hex") and ex.get("gcm_iv_hex"):
+            crypto_meta = {
+                "file_sha256": ex["file_sha256"],
+                "salt_hex": ex["pbkdf2_salt_hex"],
+                "iv_hex": ex["gcm_iv_hex"]
+            }
+        elif pdf_file.exists():
+            crypto_meta = encrypt_pdf_exam(pdf_file, enc_file, ex["token"])
+            ex["file_sha256"] = crypto_meta["file_sha256"]
+            ex["pbkdf2_salt_hex"] = crypto_meta["salt_hex"]
+            ex["gcm_iv_hex"] = crypto_meta["iv_hex"]
+            config_dirty = True
+        elif enc_file.exists():
+            sha256_hash = hashlib.sha256(enc_file.read_bytes()).hexdigest()
+            crypto_meta = {
+                "file_sha256": ex.get("file_sha256", sha256_hash),
+                "salt_hex": ex.get("pbkdf2_salt_hex", ""),
+                "iv_hex": ex.get("gcm_iv_hex", "")
+            }
+        else:
             continue
 
-        crypto_meta = encrypt_pdf_exam(pdf_file, enc_file, ex["token"])
         download_url = f"{server_base_url}/files/{ex['id']}.enc"
 
         short_name = ex.get("short_name", "").strip()
@@ -188,6 +209,8 @@ def rebuild_manifest(server_base_url: str):
         exam_date = ex.get("exam_date", "").strip()
         if not exam_date:
             exam_date = datetime.now().strftime("%Y-%m-%d")
+            ex["exam_date"] = exam_date
+            config_dirty = True
 
         exams_manifest.append({
             "id": ex["id"],
@@ -204,6 +227,9 @@ def rebuild_manifest(server_base_url: str):
             "pbkdf2_salt_hex": crypto_meta["salt_hex"],
             "gcm_iv_hex": crypto_meta["iv_hex"]
         })
+
+    if config_dirty:
+        save_config(config)
 
     master_pin = config.get("master_pin", "888999")
     master_pin_sha256 = hashlib.sha256(master_pin.strip().encode('utf-8')).hexdigest()
@@ -277,6 +303,9 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(content)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.send_header("Pragma", "no-cache")
+                self.send_header("Expires", "0")
                 self.end_headers()
                 self.wfile.write(content)
             else:
@@ -301,11 +330,8 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
         # 3. Endpoint manifest.json (untuk HP Siswa)
         if clean_path == "manifest.json":
-            if not MANIFEST_FILE.exists():
-                rebuild_manifest(self.server_base_url)
-
-            with open(MANIFEST_FILE, "r", encoding="utf-8") as f:
-                manifest_data = json.load(f)
+            # Selalu bangun ulang manifest agar data tanggal & perubahan proktor selalu mutakhir
+            manifest_data = rebuild_manifest(self.server_base_url)
 
             # Rewrite download_url secara dinamis sesuai Host yang diminta client
             req_host = self.headers.get("Host", "").strip()
@@ -319,13 +345,14 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(content)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(content)
 
             client_ip = self.client_address[0]
             add_log(client_ip, "Sinkronisasi Berhasil (Unduh manifest.json)")
-            print(f"[SYNC] Siswa ({client_ip}) mengunduh manifest.json")
+            print(f"[SYNC] Siswa ({client_ip}) mengunduh manifest.json (total {len(manifest_data.get('exams', []))} paket soal)")
             return
 
         # 4. Endpoint berkas terenkripsi /files/<filename>.enc (untuk HP Siswa)
@@ -381,35 +408,39 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
         # 2. Update Cepat Durasi / Jadwal Ujian
         if clean_path == "api/update-duration":
-            raw_body = self.rfile.read(content_length)
-            payload = json.loads(raw_body.decode('utf-8'))
-            exam_id = payload.get("id")
+            try:
+                raw_body = self.rfile.read(content_length)
+                payload = json.loads(raw_body.decode('utf-8'))
+                exam_id = payload.get("id")
 
-            config = load_or_init_config()
-            found = False
-            for ex in config.get("exams", []):
-                if ex["id"] == exam_id:
-                    if "duration_minutes" in payload:
-                        ex["duration_minutes"] = int(payload["duration_minutes"])
-                    if "exam_date" in payload:
-                        ex["exam_date"] = payload["exam_date"].strip()
-                    if "exam_day" in payload:
-                        ex["exam_day"] = payload["exam_day"].strip()
-                    if "start_time" in payload:
-                        ex["start_time"] = payload["start_time"].strip()
-                    if "end_time" in payload:
-                        ex["end_time"] = payload["end_time"].strip()
-                    if "short_name" in payload:
-                        ex["short_name"] = payload["short_name"].strip()
-                    found = True
-                    break
+                config = load_or_init_config()
+                found = False
+                for ex in config.get("exams", []):
+                    if ex["id"] == exam_id:
+                        if "duration_minutes" in payload:
+                            ex["duration_minutes"] = int(payload["duration_minutes"])
+                        if "exam_date" in payload:
+                            ex["exam_date"] = payload["exam_date"].strip()
+                        if "exam_day" in payload:
+                            ex["exam_day"] = payload["exam_day"].strip()
+                        if "start_time" in payload:
+                            ex["start_time"] = payload["start_time"].strip()
+                        if "end_time" in payload:
+                            ex["end_time"] = payload["end_time"].strip()
+                        if "short_name" in payload:
+                            ex["short_name"] = payload["short_name"].strip()
+                        found = True
+                        break
 
-            if found:
-                save_config(config)
-                rebuild_manifest(self.server_base_url)
-                self.send_json({"ok": True, "message": "Jadwal dan durasi ujian berhasil diperbarui!"})
-            else:
-                self.send_json({"ok": False, "error": "Exam ID tidak ditemukan"}, 404)
+                if found:
+                    save_config(config)
+                    rebuild_manifest(self.server_base_url)
+                    self.send_json({"ok": True, "message": "Jadwal dan tanggal ujian berhasil diperbarui!"})
+                else:
+                    self.send_json({"ok": False, "error": "Exam ID tidak ditemukan"}, 404)
+            except Exception as err:
+                print(f"[ERROR] Gagal update duration: {err}")
+                self.send_json({"ok": False, "error": str(err)}, 500)
             return
 
         # 3. Hapus Paket Soal

@@ -777,14 +777,14 @@
                 </td>
                 <td><span class="pill-grade">Kelas ${ex.grade_level}</span></td>
                 <td>
-                    <span class="duration-badge" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}', '${escapeHtml(examDate)}')" title="Klik untuk mengubah jadwal/durasi">
+                    <span class="duration-badge" onclick="openEditDuration('${escapeHtml(ex.id)}')" title="Klik untuk mengubah jadwal/durasi">
                         <i class="fa-solid fa-stopwatch"></i> <b>${ex.duration_minutes} Menit</b> <i class="fa-solid fa-pen-to-square" style="font-size:11px;"></i>
                     </span>
                 </td>
                 <td><span class="pill-token">${escapeHtml(ex.token)}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline" onclick="openEditDuration('${ex.id}', '${escapeHtml(ex.subject_name)}', ${ex.duration_minutes}, '${escapeHtml(examDay)}', '${escapeHtml(startTime)}', '${escapeHtml(endTime)}', '${escapeHtml(shortName)}', '${escapeHtml(examDate)}')"><i class="fa-solid fa-pen"></i> Ubah</button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteExam('${ex.id}', '${escapeHtml(ex.subject_name)}')"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline" onclick="openEditDuration('${escapeHtml(ex.id)}')"><i class="fa-solid fa-pen"></i> Ubah</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteExam('${escapeHtml(ex.id)}', '${escapeHtml(ex.subject_name)}')"><i class="fa-solid fa-trash"></i></button>
                 </td>
             </tr>
             `;
@@ -858,15 +858,38 @@
         }
     }
 
-    function openEditDuration(id, subjectName, duration, day, startTime, endTime, shortName, examDate) {
-        document.getElementById('editExamId').value = id;
-        document.getElementById('modalExamTitle').textContent = `Mata Pelajaran: ${subjectName}`;
-        document.getElementById('inputDurationMinutes').value = duration || 90;
-        document.getElementById('editExamDate').value = examDate || new Date().toISOString().split('T')[0];
-        document.getElementById('editExamDay').value = day || 'Senin';
-        document.getElementById('editStartTime').value = startTime || '07:00';
-        document.getElementById('editEndTime').value = endTime || '08:30';
-        document.getElementById('editShortName').value = shortName || '';
+    const INDO_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    function getIndoDayFromDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            return INDO_DAYS[d.getDay()] || '';
+        }
+        return '';
+    }
+
+    function openEditDuration(examId) {
+        const ex = (serverData.exams || []).find(e => e.id === examId);
+        if (!ex) {
+            alert("Paket soal tidak ditemukan!");
+            return;
+        }
+
+        document.getElementById('editExamId').value = ex.id;
+        document.getElementById('modalExamTitle').textContent = `Mata Pelajaran: ${ex.subject_name}`;
+        document.getElementById('inputDurationMinutes').value = ex.duration_minutes || 90;
+
+        const defaultDate = ex.exam_date || new Date().toISOString().split('T')[0];
+        document.getElementById('editExamDate').value = defaultDate;
+
+        const calculatedDay = getIndoDayFromDate(defaultDate) || 'Senin';
+        document.getElementById('editExamDay').value = ex.exam_day || calculatedDay;
+
+        document.getElementById('editStartTime').value = ex.start_time || '07:00';
+        document.getElementById('editEndTime').value = ex.end_time || '08:30';
+        document.getElementById('editShortName').value = ex.short_name || '';
         document.getElementById('modalEditDuration').style.display = 'flex';
     }
 
@@ -910,7 +933,7 @@
             const data = await res.json();
             if (data.ok) {
                 closeModal('modalEditDuration');
-                showToast("Jadwal & durasi ujian berhasil diperbarui!");
+                showToast("Jadwal & tanggal ujian berhasil diperbarui!");
                 loadData();
             } else {
                 alert("Gagal: " + (data.error || "Gagal memperbarui"));
@@ -922,7 +945,11 @@
 
     function openAddModal() {
         document.getElementById('formAddExam').reset();
-        document.getElementById('addExamDate').value = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('addExamDate').value = today;
+        const day = getIndoDayFromDate(today) || 'Senin';
+        const sel = document.querySelector('#formAddExam select[name="exam_day"]');
+        if (sel) sel.value = day;
         document.getElementById('modalAddExam').style.display = 'flex';
     }
 
@@ -994,10 +1021,29 @@
         }
     }
 
-    // Auto load on start
+    // Auto load on start & date listeners
     window.addEventListener('DOMContentLoaded', () => {
         loadData();
         setInterval(loadData, 5000); // Polling log setiap 5 detik
+
+        const editDateInput = document.getElementById('editExamDate');
+        if (editDateInput) {
+            editDateInput.addEventListener('change', function() {
+                const day = getIndoDayFromDate(this.value);
+                if (day) document.getElementById('editExamDay').value = day;
+            });
+        }
+
+        const addDateInput = document.getElementById('addExamDate');
+        if (addDateInput) {
+            addDateInput.addEventListener('change', function() {
+                const day = getIndoDayFromDate(this.value);
+                if (day) {
+                    const sel = document.querySelector('#formAddExam select[name="exam_day"]');
+                    if (sel) sel.value = day;
+                }
+            });
+        }
     });
 </script>
 </body>

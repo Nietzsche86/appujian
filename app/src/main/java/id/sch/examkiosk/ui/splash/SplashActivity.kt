@@ -22,8 +22,15 @@ class SplashActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val storage = ExamApp.instance.secureStorage
-        binding.tvSplashSchoolName.text = storage.schoolName
-        binding.tvSplashTagline.text = storage.schoolTagline
+        binding.tvSplashWelcome.text = "Selamat Datang di E-Ujian"
+        if (storage.schoolName.isNotBlank()) {
+            binding.tvSplashSchoolName.text = storage.schoolName
+        } else {
+            binding.tvSplashSchoolName.text = "MTS ROUDHOTUT THOWALIB"
+        }
+        if (storage.schoolTagline.isNotBlank()) {
+            binding.tvSplashTagline.text = storage.schoolTagline
+        }
 
         // Animasi halus fade-in & scale-up logo dan teks
         binding.layoutCenterBrand.alpha = 0f

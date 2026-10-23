@@ -1,28 +1,28 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
   "school_tagline": "Madrasah Unggulan",
-  "exam_title": "Ujian Akhir",
+  "exam_title": "Ujian Akhir S",
   "exam_rules": [
     "Aturan 1",
     "Aturan 2"
   ],
-  "sync_timestamp": 1792796632,
+  "sync_timestamp": 1792798357,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
       "id": "HALO-8-1792773172",
       "subject_name": "HALO",
       "short_name": "HALO",
-      "exam_date": "2026-10-24",
-      "exam_day": "Sabtu",
-      "start_time": "05:00",
-      "end_time": "06:30",
+      "exam_date": "2026-10-29",
+      "exam_day": "Kamis",
+      "start_time": "07:00",
+      "end_time": "08:30",
       "grade_level": 8,
       "duration_minutes": 90,
       "download_url": "http://127.0.0.1:8080/files/HALO-8-1792773172.enc",
-      "file_sha256": "c670bdc78ad88bef0a0e6bfe27c9f21219a6acba6d4450a0a51123963bcfa435",
-      "pbkdf2_salt_hex": "91eb21c017dba63e3a4dba13d4d3884f",
-      "gcm_iv_hex": "b220ec94b0f7777ee8f438bb"
+      "file_sha256": "0720f05bc5fb63df0cb4b4136f548959847d88ffd6b583e961c9079724c0cb3d",
+      "pbkdf2_salt_hex": "ffbb58bbd9c6ab00904cace363c3c19e",
+      "gcm_iv_hex": "ea61461f1a2bd9aecedf0abf"
     },
     {
       "id": "DAYUM-7-1792776728",
@@ -35,9 +35,9 @@
       "grade_level": 7,
       "duration_minutes": 90,
       "download_url": "http://127.0.0.1:8080/files/DAYUM-7-1792776728.enc",
-      "file_sha256": "fcaceb1136e1ba5206240adb9e3d3940f77fb614420609dfa8a8eb8653d2e8ec",
-      "pbkdf2_salt_hex": "6123149039459ea8fa9ee6ce90e6d793",
-      "gcm_iv_hex": "81d96e663f491abd47ba49a0"
+      "file_sha256": "9af0831cad961d63fc35e5bd7e97f39f9f2a30e18b126648b30521b27defa747",
+      "pbkdf2_salt_hex": "cf83a9f71a42478984a021cd5aff9930",
+      "gcm_iv_hex": "d7d56f0d514190839578b5c5"
     },
     {
       "id": "MATEMA-8-1792782240",
@@ -50,9 +50,9 @@
       "grade_level": 8,
       "duration_minutes": 90,
       "download_url": "http://127.0.0.1:8080/files/MATEMA-8-1792782240.enc",
-      "file_sha256": "f394d198fba884af4fcd349abe84a0e82fc33f9b6d3ec4a6ad8f59fc8d292681",
-      "pbkdf2_salt_hex": "a27f97c54105fd16d5873e53d6300c72",
-      "gcm_iv_hex": "3ae78991e1d788e4ddc85959"
+      "file_sha256": "3d44622824a01b0efaf810571241cef8b6180c2b9a7e7022d4cfab1b9839822b",
+      "pbkdf2_salt_hex": "9db48c789204c366ef244782d9c85cfe",
+      "gcm_iv_hex": "3cd9084384d231b5cd114320"
     },
     {
       "id": "IPA-9-1792795714",
@@ -65,9 +65,9 @@
       "grade_level": 9,
       "duration_minutes": 90,
       "download_url": "http://127.0.0.1:8080/files/IPA-9-1792795714.enc",
-      "file_sha256": "afd7aec09ab8639eb2cb6ce5c8c4ef2f25f74632eb0007883cf104a4cad29bd3",
-      "pbkdf2_salt_hex": "c022c2147a2379b80e9ae7cb3867cd4d",
-      "gcm_iv_hex": "e947c8bbada90b2ca9765e55"
+      "file_sha256": "973c60ca97a281d341e4d1d6ae3e3f2dbc9efa3e8b717e8929906fb484bd008d",
+      "pbkdf2_salt_hex": "8c9a6739a127187487f662aae8d3c873",
+      "gcm_iv_hex": "e4f82401ad51885bcd87fd99"
     }
   ]
 }
