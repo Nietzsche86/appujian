@@ -58,10 +58,10 @@
   - [x] Indikator halaman aktif (kanan).
   - [x] Tombol gembok akses pengawas (kanan).
 - [x] Implementasikan penampil PDF ramah memori:
-  - [x] `PdfPageAdapter.kt` menggunakan native `PdfRenderer`.
-  - [x] Konfigurasi render bitmap `Bitmap.Config.RGB_565`.
-  - [x] Logika `bitmap.recycle()` pada `onViewRecycled`.
-  - [x] Bungkus kanvas dengan pendeteksi gestur *pinch-to-zoom* (`ZoomableLayout.kt`, 1.0x hingga 3.0x).
+  - [x] `PdfPageAdapter.kt` menggunakan native `PdfRenderer` (`ARGB_8888` kompatibel Android, 1080p width clamping).
+  - [x] Logika `bitmap.recycle()` pada `onViewRecycled` untuk menjaga RAM $\approx 20\text{--}30\text{ MB}$.
+  - [x] Bungkus kanvas dengan pendeteksi gestur *pinch-to-zoom* (`ZoomableLayout.kt`, 1.0x hingga 3.5x, fokus perbesaran titik jari, bebas digeser/pan, dan ketuk ganda zoom/reset).
+  - [x] Kunci gestur *swipe back* navigasi Android (`OnBackPressedCallback`) agar tidak keluar sesi ujian tanpa izin.
 - [x] Atur flag jendela: `FLAG_SECURE` (anti-screenshot/recording) dan `FLAG_KEEP_SCREEN_ON`.
 - [ ] **Verifikasi:** Pantau heap memory di bawah 45 MB saat membuka dokumen PDF 20+ halaman pada perangkat uji.
 
