@@ -1,0 +1,37 @@
+{
+  "school_name": "MTS ROUDHOTUT THOWALIB",
+  "sync_timestamp": 1792769161,
+  "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
+  "exams": [
+    {
+      "id": "BINDO-7-2026",
+      "subject_name": "Bahasa Indonesia",
+      "grade_level": 7,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/BINDO-7-2026.enc",
+      "file_sha256": "ddd2484c16ab562b1c2594efcad257018fa10d6afd8a1859f100c69ce680999a",
+      "pbkdf2_salt_hex": "59683f58ec12a491cfd250940b277c09",
+      "gcm_iv_hex": "a9f8ee9cd68ddb1832abc761"
+    },
+    {
+      "id": "IPA-8-2026",
+      "subject_name": "Ilmu Pengetahuan Alam (IPA)",
+      "grade_level": 8,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/IPA-8-2026.enc",
+      "file_sha256": "4efa3d00609aa043471e340f7e181d22126498f1f988fc862c2699b40a945194",
+      "pbkdf2_salt_hex": "cbe74f1d58fffe6673fc54dc8abd318a",
+      "gcm_iv_hex": "2d962951f926f4221e097b01"
+    },
+    {
+      "id": "MAT-9-2026",
+      "subject_name": "Matematika",
+      "grade_level": 9,
+      "duration_minutes": 90,
+      "download_url": "http://192.168.0.109:8080/files/MAT-9-2026.enc",
+      "file_sha256": "88830a02bbcd3465f4c2dce99daa0924f66a70f4e9ca6176ba3508bf151da12a",
+      "pbkdf2_salt_hex": "015987845aed9b6249530922141dee48",
+      "gcm_iv_hex": "2ea47f4034e845af7560618c"
+    }
+  ]
+}
