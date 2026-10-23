@@ -9,9 +9,11 @@ import android.os.BatteryManager
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
+import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -59,6 +61,10 @@ class KioskExamActivity : AppCompatActivity() {
     private var examRemainingSeconds: Long = 0L
     private var examElapsedBaseTime: Long = 0L
 
+    // Anti-cheat navigation guard
+    private var backGestureAttemptCount = 0
+    private var lastBackAttemptTimestamp = 0L
+
     // Battery receiver
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -88,6 +94,7 @@ class KioskExamActivity : AppCompatActivity() {
         initSecurityEngines()
         setupStatusBar()
         setupListeners()
+        setupBackNavigationLock()
 
         // 2. Start Kiosk Screen Pinning & Anti-Cheat
         kioskEnforcer.startEnforcement()
@@ -179,6 +186,50 @@ class KioskExamActivity : AppCompatActivity() {
         binding.btnSupervisorEmergency.setOnClickListener {
             showSupervisorDialog()
         }
+    }
+
+    private fun setupBackNavigationLock() {
+        // Blokir gestur swipe dari tepi kiri/kanan dan tombol back (Android 10 - 14)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackAttempt()
+            }
+        })
+    }
+
+    private fun handleBackAttempt() {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastBackAttemptTimestamp < 3000L) {
+            backGestureAttemptCount++
+        } else {
+            backGestureAttemptCount = 1
+        }
+        lastBackAttemptTimestamp = now
+
+        // Jika siswa mencoba swipe kembali berkali-kali (>= 3 kali cepat), picu penalti pelanggaran!
+        if (backGestureAttemptCount >= 3) {
+            backGestureAttemptCount = 0
+            handleViolation(ViolationReason.UNAUTHORIZED_EXIT_ATTEMPT)
+        } else {
+            Toast.makeText(
+                this,
+                "⚠️ Gestur & tombol kembali DIKUNCI selama ujian! Hubungi pengawas untuk menyelesaikan.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        handleBackAttempt()
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            handleBackAttempt()
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     private fun registerBatteryReceiver() {

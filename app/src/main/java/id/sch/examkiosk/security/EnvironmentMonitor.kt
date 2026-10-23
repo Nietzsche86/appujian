@@ -14,7 +14,8 @@ enum class ViolationReason(val description: String) {
     BLUETOOTH_ENABLED("Bluetooth Terdeteksi Aktif"),
     USB_CONNECTED("Kabel USB Terhubung"),
     WINDOW_FOCUS_LOST("Kehilangan Fokus Layar (Mencoba Membuka Aplikasi Lain)"),
-    DEVICE_REBOOT_DETECTED("Perangkat Direstart di Tengah Ujian")
+    DEVICE_REBOOT_DETECTED("Perangkat Direstart di Tengah Ujian"),
+    UNAUTHORIZED_EXIT_ATTEMPT("Upaya Menutup / Keluar Sesi Ujian Tanpa Izin")
 }
 
 class EnvironmentMonitor(
