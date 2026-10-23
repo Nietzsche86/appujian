@@ -138,6 +138,10 @@ class DashboardActivity : AppCompatActivity() {
                 binding.tilServerUrl.error = "IP server tidak boleh kosong"
                 return@setOnClickListener
             }
+            if (url.contains("localhost") || url.contains("127.0.0.1")) {
+                binding.tilServerUrl.error = "Gunakan IP Wi-Fi laptop (contoh: 192.168.0.109:8080), bukan localhost!"
+                return@setOnClickListener
+            }
             binding.tilServerUrl.error = null
             testServerConnection(url)
         }
@@ -146,6 +150,10 @@ class DashboardActivity : AppCompatActivity() {
             val url = binding.etServerUrl.text?.toString()?.trim() ?: ""
             if (url.isEmpty()) {
                 binding.tilServerUrl.error = "IP server tidak boleh kosong"
+                return@setOnClickListener
+            }
+            if (url.contains("localhost") || url.contains("127.0.0.1")) {
+                binding.tilServerUrl.error = "Gunakan IP Wi-Fi laptop (contoh: 192.168.0.109:8080), bukan localhost!"
                 return@setOnClickListener
             }
             binding.tilServerUrl.error = null

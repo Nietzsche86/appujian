@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 class LocalSyncManager(private val context: Context) {
 
     private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
@@ -47,13 +47,31 @@ class LocalSyncManager(private val context: Context) {
     suspend fun testConnection(serverUrl: String): Result<Boolean> = withContext(Dispatchers.IO) {
         runCatching {
             val normalizedUrl = normalizeUrl(serverUrl)
-            val request = Request.Builder()
-                .url(normalizedUrl)
-                .head()
+
+            // 1. Coba HEAD request terlebih dahulu
+            try {
+                val headReq = Request.Builder()
+                    .url(normalizedUrl)
+                    .head()
+                    .build()
+
+                client.newCall(headReq).execute().use { resp ->
+                    if (resp.isSuccessful || resp.code in 200..404) {
+                        return@runCatching true
+                    }
+                }
+            } catch (_: Exception) {
+            }
+
+            // 2. Fallback uji langsung endpoint /manifest.json
+            val manifestUrl = "${normalizedUrl.trimEnd('/')}/manifest.json"
+            val getReq = Request.Builder()
+                .url(manifestUrl)
+                .get()
                 .build()
 
-            client.newCall(request).execute().use { response ->
-                response.isSuccessful || response.code in 200..404
+            client.newCall(getReq).execute().use { resp ->
+                resp.isSuccessful || resp.code in 200..404
             }
         }
     }

@@ -1,37 +1,17 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "sync_timestamp": 1792769962,
+  "sync_timestamp": 1792770782,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
-      "id": "BINDO-7-2026",
-      "subject_name": "Bahasa Indonesia",
+      "id": "CONTOH-7-1792770771",
+      "subject_name": "contoh",
       "grade_level": 7,
-      "duration_minutes": 90,
-      "download_url": "http://192.168.0.109:8080/files/BINDO-7-2026.enc",
-      "file_sha256": "e8dc9bf130f849c2b42f639325d38c811feafd288927427d29a1f610cd3bb88f",
-      "pbkdf2_salt_hex": "63a50d4cdc9a65681c83f32156b1f5c5",
-      "gcm_iv_hex": "b5b490c1c7eda501daf742a4"
-    },
-    {
-      "id": "IPA-8-2026",
-      "subject_name": "Ilmu Pengetahuan Alam (IPA)",
-      "grade_level": 8,
-      "duration_minutes": 90,
-      "download_url": "http://192.168.0.109:8080/files/IPA-8-2026.enc",
-      "file_sha256": "6db8c0be25191dc9ceed056d3f559908c04f22b9291e295f1b10a9791d8252cd",
-      "pbkdf2_salt_hex": "519a1fee0b2122369ec410b57890f7d0",
-      "gcm_iv_hex": "5a3be3b370dfb9a54a9d9b31"
-    },
-    {
-      "id": "MAT-9-2026",
-      "subject_name": "Matematika",
-      "grade_level": 9,
-      "duration_minutes": 90,
-      "download_url": "http://192.168.0.109:8080/files/MAT-9-2026.enc",
-      "file_sha256": "465541dfba8ddbdb776fc1b88829a2a9333ba81bdf4e83ee30e20991f4a5ebe5",
-      "pbkdf2_salt_hex": "b2b1022f08776de16480ae6448e10332",
-      "gcm_iv_hex": "02bc7c388c4f4291b69535b2"
+      "duration_minutes": 10,
+      "download_url": "http://192.168.0.109:8080/files/CONTOH-7-1792770771.enc",
+      "file_sha256": "3c4764cd3df7d08ec3064e349fd1c16bac40fc8288b12c3ce3634567703abda3",
+      "pbkdf2_salt_hex": "0701fbd58a620710291dc6993b186bf7",
+      "gcm_iv_hex": "36c2747b1d1930d4eda821cc"
     }
   ]
 }

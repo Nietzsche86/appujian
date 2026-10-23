@@ -1,0 +1,17 @@
+<br />
+<b>Fatal error</b>:  Uncaught Spipu\Html2Pdf\Exception\HtmlParsingException: Unauthorized path host on https://www.classtools.net/_logo.jpg =&gt;  in /home/classtoo/public_html/vendor/spipu/html2pdf/src/Security/Security.php:47
+Stack trace:
+#0 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1556): Spipu\Html2Pdf\Security\Security-&gt;checkValidPath('https://www.cla...')
+#1 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(5822): Spipu\Html2Pdf\Html2Pdf-&gt;_drawImage('https://www.cla...', false)
+#2 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1481): Spipu\Html2Pdf\Html2Pdf-&gt;_tag_open_IMG(Array)
+#3 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1088): Spipu\Html2Pdf\Html2Pdf-&gt;_executeAction(Object(Spipu\Html2Pdf\Parsing\Node))
+#4 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1044): Spipu\Html2Pdf\Html2Pdf-&gt;_setNewPositionForNewLine(NULL)
+#5 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1526): Spipu\Html2Pdf\Html2Pdf-&gt;_setNewLine(3.5277777777778, NULL)
+#6 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(4339): Spipu\Html2Pdf\Html2Pdf-&gt;_makeBreakLine(3.5277777777778)
+#7 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1481): Spipu\Html2Pdf\Html2Pdf-&gt;_tag_open_P(Array)
+#8 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(1449): Spipu\Html2Pdf\Html2Pdf-&gt;_executeAction(Object(Spipu\Html2Pdf\Parsing\Node))
+#9 /home/classtoo/public_html/vendor/spipu/html2pdf/src/Html2Pdf.php(634): Spipu\Html2Pdf\Html2Pdf-&gt;_makeHTMLcode()
+#10 /home/classtoo/public_html/shorturl/pdf-creator/html2pdf.class.php(34): Spipu\Html2Pdf\Html2Pdf-&gt;writeHTML('&lt;page&gt;&lt;h1 align...')
+#11 /home/classtoo/public_html/random-group-generator/pdf.php(7): HTML2PDF-&gt;WriteHTML('&lt;page&gt;&lt;h1 align...')
+#12 {main}
+  thrown in <b>/home/classtoo/public_html/vendor/spipu/html2pdf/src/Security/Security.php</b> on line <b>47</b><br />
