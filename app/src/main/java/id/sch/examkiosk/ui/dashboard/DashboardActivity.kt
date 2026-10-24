@@ -32,6 +32,9 @@ import id.sch.examkiosk.databinding.ActivityDashboardBinding
 import id.sch.examkiosk.ui.dialog.TokenInputDialog
 import id.sch.examkiosk.ui.kiosk.KioskExamActivity
 import id.sch.examkiosk.util.ExamScheduleHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -60,7 +63,7 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private var timeTickerJob: kotlinx.coroutines.Job? = null
+    private var timeTickerJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,8 +102,8 @@ class DashboardActivity : AppCompatActivity() {
     private fun startTimeTicker() {
         timeTickerJob?.cancel()
         timeTickerJob = lifecycleScope.launch {
-            while (kotlinx.coroutines.isActive) {
-                kotlinx.coroutines.delay(3000L) // Periksa status jadwal ujian setiap 3 detik secara real-time
+            while (isActive) {
+                delay(3000L) // Periksa status jadwal ujian setiap 3 detik secara real-time
                 refreshExamList()
             }
         }
