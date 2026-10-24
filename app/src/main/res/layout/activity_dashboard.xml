@@ -471,13 +471,17 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:fillViewport="true"
+            android:clipToPadding="false"
             android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:padding="16dp"
+                android:paddingBottom="48dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
@@ -492,6 +496,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:padding="18dp">
 
                         <LinearLayout
@@ -522,6 +528,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
+                            android:paddingBottom="4dp"
+                            android:includeFontPadding="true"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             tools:text="MTS ROUDHOTUT THOWALIB • Wajib dipatuhi seluruh peserta ujian." />
@@ -538,6 +546,8 @@
                             android:id="@+id/llRulesContainer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:clipChildren="false"
+                            android:clipToPadding="false"
                             android:orientation="vertical" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -576,21 +586,12 @@
 
                         <TextView
                             android:id="@+id/tvExamTitleBanner"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:textColor="#FFFFFF"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             tools:text="Penilaian Akhir Semester (PAS) Ganjil" />
-
-                        <TextView
-                            android:id="@+id/tvExamSubtitleBanner"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textColor="#A7F3D0"
-                            android:textSize="12sp"
-                            tools:text="Tahun Ajaran 2026/2027 • MTS ROUDHOTUT THOWALIB" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -783,35 +784,65 @@
                             android:textColor="#334155"
                             android:textSize="12sp" />
 
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/chipGroupSyncGrade"
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/toggleGroupSyncGrade"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
+                            android:layout_marginTop="12dp"
                             app:singleSelection="true"
                             app:selectionRequired="true">
 
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipSyncGrade7"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Kelas 7" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSyncGrade7"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="Kelas 7"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                app:backgroundTint="@color/selector_grade_btn_bg"
+                                android:textColor="@color/selector_grade_btn_text"
+                                app:strokeColor="@color/selector_grade_btn_stroke"
+                                app:strokeWidth="1.5dp"
+                                app:rippleColor="@color/selector_grade_btn_ripple" />
 
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipSyncGrade8"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Kelas 8" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSyncGrade8"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="Kelas 8"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                app:backgroundTint="@color/selector_grade_btn_bg"
+                                android:textColor="@color/selector_grade_btn_text"
+                                app:strokeColor="@color/selector_grade_btn_stroke"
+                                app:strokeWidth="1.5dp"
+                                app:rippleColor="@color/selector_grade_btn_ripple" />
 
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipSyncGrade9"
-                                style="@style/Widget.Material3.Chip.Filter"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Kelas 9" />
-                        </com.google.android.material.chip.ChipGroup>
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSyncGrade9"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="48dp"
+                                android:layout_weight="1"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:text="Kelas 9"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                app:backgroundTint="@color/selector_grade_btn_bg"
+                                android:textColor="@color/selector_grade_btn_text"
+                                app:strokeColor="@color/selector_grade_btn_stroke"
+                                app:strokeWidth="1.5dp"
+                                app:rippleColor="@color/selector_grade_btn_ripple" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
 
                         <!-- Divider -->
                         <View
@@ -849,27 +880,73 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Masukkan alamat IP laptop server yang ditampilkan pada layar proktor."
+                            android:text="Masukkan alamat IP dan port server yang ditampilkan pada dashboard proktor."
                             android:textColor="#334155"
                             android:textSize="12sp" />
 
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:id="@+id/tilServerUrl"
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        <!-- Alamat IP dan Port Terpisah Secara View -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
-                            android:hint="Alamat IP &amp; Port Server (Contoh: 192.168.0.109:8080)">
+                            android:orientation="horizontal">
 
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etServerUrl"
-                                android:layout_width="match_parent"
+                            <!-- Field 1: Alamat IP Host -->
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/tilServerHost"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:inputType="textUri"
-                                android:singleLine="true"
-                                android:textColor="@color/text_primary"
-                                android:textSize="14sp" />
-                        </com.google.android.material.textfield.TextInputLayout>
+                                android:layout_weight="2.2"
+                                android:layout_marginEnd="8dp"
+                                android:hint="Alamat IP Server"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:placeholderText="192.168.0.109"
+                                app:placeholderTextColor="@color/text_muted">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etServerHost"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textUri"
+                                    android:singleLine="true"
+                                    android:hint="192.168.0.109"
+                                    android:textColorHint="#94A3B8"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <!-- Field 2: Port -->
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/tilServerPort"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Port"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:placeholderText="8080"
+                                app:placeholderTextColor="@color/text_muted">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etServerPort"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="number"
+                                    android:singleLine="true"
+                                    android:hint="8080"
+                                    android:textColorHint="#94A3B8"
+                                    android:maxLength="5"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                        </LinearLayout>
 
                         <!-- Buttons Row -->
                         <LinearLayout

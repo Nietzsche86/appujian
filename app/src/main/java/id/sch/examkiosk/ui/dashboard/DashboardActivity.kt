@@ -16,7 +16,6 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -29,6 +28,7 @@ import id.sch.examkiosk.data.model.ExamManifest
 import id.sch.examkiosk.data.model.ExamStatus
 import id.sch.examkiosk.data.sync.LocalSyncManager
 import id.sch.examkiosk.databinding.ActivityDashboardBinding
+import id.sch.examkiosk.ui.dialog.DeviceRequirementDialog
 import id.sch.examkiosk.ui.dialog.TokenInputDialog
 import id.sch.examkiosk.ui.kiosk.KioskExamActivity
 import id.sch.examkiosk.util.ExamScheduleHelper
@@ -135,7 +135,6 @@ class DashboardActivity : AppCompatActivity() {
         binding.tvSettingsSchoolName.text = storage.schoolName
         binding.tvSettingsSchoolTagline.text = storage.schoolTagline
         binding.tvRulesSchoolHeader.text = "${storage.schoolName} • Wajib dipatuhi seluruh peserta ujian."
-        binding.tvExamSubtitleBanner.text = "Tahun Ajaran 2026/2027 • ${storage.schoolName}"
 
         currentManifest?.let { m ->
             if (m.examTitle.isNotBlank()) {
@@ -347,6 +346,8 @@ class DashboardActivity : AppCompatActivity() {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.TOP
+                clipChildren = false
+                clipToPadding = false
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -373,12 +374,14 @@ class DashboardActivity : AppCompatActivity() {
                 }
             }
 
-            // Rule text
+            // Rule text (dengan padding vertikal & font padding agar huruf berekor g, j, p, q, y tidak terpotong)
             val tvRule = TextView(this).apply {
                 text = ruleText
                 setTextColor(textPrimaryColor)
-                textSize = 13f
-                setLineSpacing(4 * density, 1f)
+                textSize = 13.5f
+                includeFontPadding = true
+                setLineSpacing(5 * density, 1f)
+                setPaddingRelative(0, 0, 0, (6 * density).toInt())
                 layoutParams = LinearLayout.LayoutParams(
                     0,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -402,30 +405,57 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun setupServerConfig() {
         val secureStorage = ExamApp.instance.secureStorage
-        binding.etServerUrl.setText(secureStorage.serverUrl)
+        val currentUrl = secureStorage.serverUrl
+
+        // Ekstrak host dan port dari URL yang tersimpan di backend
+        val (currentHost, currentPort) = parseHostAndPort(currentUrl)
+        binding.etServerHost.setText(currentHost)
+        binding.etServerPort.setText(currentPort)
 
         binding.btnTestConnection.setOnClickListener {
-            val raw = binding.etServerUrl.text?.toString()?.trim() ?: ""
-            if (raw.isEmpty()) {
-                binding.tilServerUrl.error = "IP server tidak boleh kosong"
-                return@setOnClickListener
-            }
-            binding.tilServerUrl.error = null
-            val url = LocalSyncManager.normalizeUrl(raw)
+            val url = buildAndValidateServerUrl() ?: return@setOnClickListener
             testServerConnection(url)
         }
 
         binding.btnSyncExams.setOnClickListener {
-            val raw = binding.etServerUrl.text?.toString()?.trim() ?: ""
-            if (raw.isEmpty()) {
-                binding.tilServerUrl.error = "IP server tidak boleh kosong"
-                return@setOnClickListener
-            }
-            binding.tilServerUrl.error = null
-            val url = LocalSyncManager.normalizeUrl(raw)
+            val url = buildAndValidateServerUrl() ?: return@setOnClickListener
             secureStorage.serverUrl = url
             syncManifestAndExams(url)
         }
+    }
+
+    private fun parseHostAndPort(url: String): Pair<String, String> {
+        val clean = url.trim()
+            .removePrefix("http://")
+            .removePrefix("https://")
+            .substringBefore("/")
+
+        return if (clean.contains(":")) {
+            val host = clean.substringBefore(":")
+            val port = clean.substringAfter(":")
+            Pair(host, port)
+        } else {
+            Pair(clean, "8080")
+        }
+    }
+
+    private fun buildAndValidateServerUrl(): String? {
+        val host = binding.etServerHost.text?.toString()?.trim() ?: ""
+        var port = binding.etServerPort.text?.toString()?.trim() ?: ""
+
+        if (host.isEmpty()) {
+            binding.tilServerHost.error = "IP server tidak boleh kosong"
+            return null
+        }
+        binding.tilServerHost.error = null
+
+        if (port.isEmpty()) {
+            port = "8080"
+        }
+        binding.tilServerPort.error = null
+
+        val combined = "$host:$port"
+        return LocalSyncManager.normalizeUrl(combined)
     }
 
     private fun testServerConnection(url: String) {
@@ -542,30 +572,33 @@ class DashboardActivity : AppCompatActivity() {
         val currentGrade = storage.selectedGrade
         selectedGradeFilter = currentGrade
 
-        // Tab 4 Settings Sync Target Grade Chips
+        // Tab 4 Settings Sync Target Grade Segmented Buttons
         updateSyncGradeChips(currentGrade)
 
-        binding.chipGroupSyncGrade.setOnCheckedStateChangeListener { _, checkedIds ->
-            val grade = when {
-                checkedIds.contains(R.id.chipSyncGrade7) -> 7
-                checkedIds.contains(R.id.chipSyncGrade8) -> 8
-                checkedIds.contains(R.id.chipSyncGrade9) -> 9
-                else -> storage.selectedGrade
+        binding.toggleGroupSyncGrade.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val grade = when (checkedId) {
+                    R.id.btnSyncGrade7 -> 7
+                    R.id.btnSyncGrade8 -> 8
+                    R.id.btnSyncGrade9 -> 9
+                    else -> storage.selectedGrade
+                }
+                storage.selectedGrade = grade
+                selectedGradeFilter = grade
+                refreshExamList()
+                updateExamStatistics()
             }
-            storage.selectedGrade = grade
-            selectedGradeFilter = grade
-            refreshExamList()
-            updateExamStatistics()
         }
     }
 
     private fun updateSyncGradeChips(grade: Int) {
-        when (grade) {
-            7 -> binding.chipSyncGrade7.isChecked = true
-            8 -> binding.chipSyncGrade8.isChecked = true
-            9 -> binding.chipSyncGrade9.isChecked = true
-            else -> binding.chipSyncGrade7.isChecked = true
+        val targetId = when (grade) {
+            7 -> R.id.btnSyncGrade7
+            8 -> R.id.btnSyncGrade8
+            9 -> R.id.btnSyncGrade9
+            else -> R.id.btnSyncGrade7
         }
+        binding.toggleGroupSyncGrade.check(targetId)
     }
 
     private fun refreshExamList() {
@@ -642,11 +675,8 @@ class DashboardActivity : AppCompatActivity() {
         val isRingerSilentOrVibrate = audioManager?.ringerMode != AudioManager.RINGER_MODE_NORMAL
 
         if (!isAirplaneOn || !isWifiOff || !isBluetoothOff || !isRingerSilentOrVibrate) {
-            AlertDialog.Builder(this)
-                .setTitle("Pengaturan Belum Sesuai Standar")
-                .setMessage("Sebelum ujian dimulai, pastikan:\n• Mode Pesawat AKTIF\n• Wi-Fi NONAKTIF\n• Bluetooth NONAKTIF\n• Mode Suara HENING / GETAR\n\nSilakan sesuaikan perangkat Anda.")
-                .setPositiveButton("Mengerti", null)
-                .show()
+            val dialog = DeviceRequirementDialog.newInstance()
+            dialog.show(supportFragmentManager, DeviceRequirementDialog.TAG)
             return
         }
 

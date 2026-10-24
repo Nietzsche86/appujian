@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="6dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/stroke_border"
+    app:cardBackgroundColor="@color/surface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <!-- Header: Warning Icon + Title -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/card_sensor_bad_border"
+                app:cardBackgroundColor="@color/card_sensor_bad_bg">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_warning"
+                    app:tint="@color/badge_danger_text"
+                    android:contentDescription="Peringatan" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pengaturan Belum Sesuai"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Standar Keamanan Ujian Madrasah"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Sebelum ujian dimulai, perangkat Anda wajib memenuhi 4 persyaratan keamanan berikut:"
+            android:textColor="@color/text_secondary"
+            android:textSize="12.5sp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="@color/stroke_border" />
+
+        <!-- 4 Items Checklist Cards -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Item 1: Mode Pesawat -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDialogAirplane"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/stroke_border"
+                app:cardBackgroundColor="@color/surface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
+                    <ImageView
+                        android:id="@+id/ivDialogAirplaneIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_airplane"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Mode Pesawat" />
+
+                    <TextView
+                        android:id="@+id/tvDialogAirplaneStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:text="Mode Pesawat: Nonaktif (Wajib ON!)"
+                        android:textColor="@color/badge_danger_text"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivDialogAirplaneCheck"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_cancel"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Status Icon" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Item 2: Wi-Fi -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDialogWifi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/stroke_border"
+                app:cardBackgroundColor="@color/surface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
+                    <ImageView
+                        android:id="@+id/ivDialogWifiIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_wifi_off"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Wi-Fi" />
+
+                    <TextView
+                        android:id="@+id/tvDialogWifiStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:text="Wi-Fi: Aktif (Wajib Dimatikan!)"
+                        android:textColor="@color/badge_danger_text"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivDialogWifiCheck"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_cancel"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Status Icon" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Item 3: Bluetooth -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDialogBluetooth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/stroke_border"
+                app:cardBackgroundColor="@color/surface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
+                    <ImageView
+                        android:id="@+id/ivDialogBluetoothIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_bluetooth"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Bluetooth" />
+
+                    <TextView
+                        android:id="@+id/tvDialogBluetoothStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:text="Bluetooth: Aktif (Wajib Dimatikan!)"
+                        android:textColor="@color/badge_danger_text"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivDialogBluetoothCheck"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_cancel"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Status Icon" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Item 4: Mode Suara -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDialogRinger"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="@color/stroke_border"
+                app:cardBackgroundColor="@color/surface">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp">
+
+                    <ImageView
+                        android:id="@+id/ivDialogRingerIcon"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_volume_off"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Mode Hening" />
+
+                    <TextView
+                        android:id="@+id/tvDialogRingerStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:text="Mode Suara: Berdering (Wajib Hening!)"
+                        android:textColor="@color/badge_danger_text"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/ivDialogRingerCheck"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_cancel"
+                        app:tint="@color/badge_danger_text"
+                        android:contentDescription="Status Icon" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Buttons Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenSettings"
+                style="@style/Widget.ExamKiosk.Button.Outlined"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:text="Pengaturan"
+                android:textSize="12.5sp"
+                android:textColor="@color/primary"
+                app:strokeColor="@color/primary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnUnderstand"
+                style="@style/Widget.ExamKiosk.Button"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1.3"
+                android:layout_marginStart="6dp"
+                android:backgroundTint="@color/primary"
+                android:text="Saya Mengerti"
+                android:textColor="#FFFFFF"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

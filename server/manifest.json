@@ -6,7 +6,7 @@
     "Aturan 1",
     "Aturan 2"
   ],
-  "sync_timestamp": 1792799817,
+  "sync_timestamp": 1792801979,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -75,10 +75,10 @@
       "short_name": "MTK",
       "exam_date": "2026-10-24",
       "exam_day": "Sabtu",
-      "start_time": "06:58",
-      "end_time": "07:55",
+      "start_time": "07:30",
+      "end_time": "08:30",
       "grade_level": 9,
-      "duration_minutes": 58,
+      "duration_minutes": 60,
       "download_url": "http://192.168.0.109:8080/files/MATEMA-9-1792799684.enc",
       "file_sha256": "a27179994b1d901b9b90f1f8c0478cfa8d6c59fed0a02cde25022ae3eef8e9e3",
       "pbkdf2_salt_hex": "18bb557827ab52969c6b0a4be0729ea5",
