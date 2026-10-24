@@ -64,9 +64,10 @@ class ExamAdapter(
             }
             binding.tvShortNameBadge.text = shortCode
 
-            // 4. Nama Mapel Lengkap & Durasi
+            // 4. Nama Mapel Lengkap & Durasi (Otomatis dari selisih Jam Mulai & Selesai)
             binding.tvSubjectName.text = exam.subjectName
-            binding.tvDuration.text = "${exam.durationMinutes} Menit"
+            val totalMinutes = ExamScheduleHelper.getTotalDurationMinutes(exam)
+            binding.tvDuration.text = "$totalMinutes Menit"
 
             // 5. Status Aksi & Jadwal Jam Nyata HP
             val primaryColor = ContextCompat.getColor(context, R.color.primary)

@@ -173,6 +173,22 @@ def encrypt_pdf_exam(pdf_path: Path, output_enc_path: Path, token: str) -> dict:
         "enc_size": len(ciphertext)
     }
 
+def calculate_duration_from_times(start_time: str, end_time: str, fallback_duration: int = 60) -> int:
+    """
+    Menghitung durasi ujian dalam satuan menit dari selisih Jam Selesai & Jam Mulai.
+    Contoh: Mulai 07:00, Selesai 08:00 -> 60 menit.
+    """
+    try:
+        if start_time and end_time and ":" in start_time and ":" in end_time:
+            sh, sm = map(int, start_time.split(":")[:2])
+            eh, em = map(int, end_time.split(":")[:2])
+            diff = (eh * 60 + em) - (sh * 60 + sm)
+            if diff > 0:
+                return diff
+    except Exception:
+        pass
+    return fallback_duration
+
 def rebuild_manifest(server_base_url: str):
     """
     Membangun ulang berkas .enc dan manifest.json berdasarkan config terbaru.
@@ -232,16 +248,23 @@ def rebuild_manifest(server_base_url: str):
             ex["exam_date"] = exam_date
             config_dirty = True
 
+        start_time = ex.get("start_time", "07:00")
+        end_time = ex.get("end_time", "08:30")
+        auto_duration = calculate_duration_from_times(start_time, end_time, int(ex.get("duration_minutes", 60)))
+        if ex.get("duration_minutes") != auto_duration:
+            ex["duration_minutes"] = auto_duration
+            config_dirty = True
+
         exams_manifest.append({
             "id": ex["id"],
             "subject_name": ex["subject_name"],
             "short_name": short_name,
             "exam_date": exam_date,
             "exam_day": ex.get("exam_day", "Senin"),
-            "start_time": ex.get("start_time", "07:00"),
-            "end_time": ex.get("end_time", "08:30"),
+            "start_time": start_time,
+            "end_time": end_time,
             "grade_level": int(ex["grade_level"]),
-            "duration_minutes": int(ex["duration_minutes"]),
+            "duration_minutes": auto_duration,
             "download_url": download_url,
             "file_sha256": crypto_meta["file_sha256"],
             "pbkdf2_salt_hex": crypto_meta["salt_hex"],
@@ -454,8 +477,6 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 found = False
                 for ex in config.get("exams", []):
                     if ex["id"] == exam_id:
-                        if "duration_minutes" in payload:
-                            ex["duration_minutes"] = int(payload["duration_minutes"])
                         if "exam_date" in payload:
                             ex["exam_date"] = payload["exam_date"].strip()
                         if "exam_day" in payload:
@@ -466,6 +487,12 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                             ex["end_time"] = payload["end_time"].strip()
                         if "short_name" in payload:
                             ex["short_name"] = payload["short_name"].strip()
+                        # Durasi dihitung otomatis dari selisih Jam Selesai & Jam Mulai
+                        ex["duration_minutes"] = calculate_duration_from_times(
+                            ex.get("start_time", ""),
+                            ex.get("end_time", ""),
+                            int(payload.get("duration_minutes", ex.get("duration_minutes", 60)))
+                        )
                         found = True
                         break
 
@@ -540,7 +567,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             start_time = fields.get("start_time", "07:00").strip()
             end_time = fields.get("end_time", "08:30").strip()
             grade_level = int(fields.get("grade_level", 7))
-            duration_minutes = int(fields.get("duration_minutes", 90))
+            duration_minutes = calculate_duration_from_times(start_time, end_time, int(fields.get("duration_minutes", 60)))
             token = fields.get("token", "").strip().upper()
 
             if not short_name:

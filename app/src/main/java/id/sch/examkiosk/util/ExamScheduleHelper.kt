@@ -77,8 +77,9 @@ object ExamScheduleHelper {
         }
 
         // 2. Jika hari ini (atau examDate tidak disetel), validasi jam
+        val totalAllocated = getTotalDurationMinutes(exam)
         val startMin = parseMinutesOfDay(exam.startTime) ?: return ScheduleState.ACTIVE
-        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin + exam.durationMinutes)
+        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin + totalAllocated)
 
         val now = Calendar.getInstance()
         val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
@@ -90,19 +91,34 @@ object ExamScheduleHelper {
         }
     }
 
-    fun calculateEffectiveDurationMinutes(exam: ExamItem): Int {
+    /**
+     * Menghitung total durasi ujian yang dialokasikan dalam menit.
+     * Mengikuti selisih jam mulai dan jam selesai (misal 07:00 s.d 08:00 = 60 menit).
+     * Jika jam tidak disetel atau tidak valid, menggunakan fallback durationMinutes.
+     */
+    fun getTotalDurationMinutes(exam: ExamItem): Int {
         val startMin = parseMinutesOfDay(exam.startTime)
-        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin?.plus(exam.durationMinutes))
+        val endMin = parseMinutesOfDay(exam.endTime)
+        if (startMin != null && endMin != null && endMin > startMin) {
+            return endMin - startMin
+        }
+        return if (exam.durationMinutes > 0) exam.durationMinutes else 60
+    }
+
+    fun calculateEffectiveDurationMinutes(exam: ExamItem): Int {
+        val totalAllocated = getTotalDurationMinutes(exam)
+        val startMin = parseMinutesOfDay(exam.startTime)
+        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin?.plus(totalAllocated))
 
         if (endMin == null) {
-            return exam.durationMinutes
+            return totalAllocated
         }
 
         val now = Calendar.getInstance()
         val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
         val remainingMin = endMin - currentMin
 
-        return remainingMin.coerceIn(1, exam.durationMinutes)
+        return remainingMin.coerceIn(1, totalAllocated)
     }
 
     /**

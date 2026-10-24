@@ -608,23 +608,18 @@
         <div class="grid-2" style="margin-bottom: 0;">
             <div class="form-group">
                 <label>Jam Mulai</label>
-                <input type="time" id="editStartTime" class="form-control" value="07:00">
+                <input type="time" id="editStartTime" class="form-control" value="07:00" onchange="autoCalculateEditDuration()">
             </div>
             <div class="form-group">
                 <label>Jam Selesai (Batas Auto-Keluar)</label>
-                <input type="time" id="editEndTime" class="form-control" value="08:30">
+                <input type="time" id="editEndTime" class="form-control" value="08:30" onchange="autoCalculateEditDuration()">
             </div>
         </div>
 
         <div class="form-group">
-            <label>Durasi Ujian (Satuan Menit):</label>
-            <input type="number" id="inputDurationMinutes" class="form-control" min="10" max="300" step="5" style="font-size: 18px; font-weight: bold; color: var(--teal-light);">
-        </div>
-
-        <div style="display: flex; gap: 8px; margin-top: 10px;">
-            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(60)">60 Menit</button>
-            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(90)">90 Menit</button>
-            <button type="button" class="btn btn-sm btn-outline" onclick="setPresetDuration(120)">120 Menit</button>
+            <label>Waktu Pengerjaan (Otomatis Dihitung):</label>
+            <input type="number" id="inputDurationMinutes" class="form-control" readonly style="font-size: 18px; font-weight: bold; color: var(--teal-light); background-color: var(--surface-variant, #f1f5f9);">
+            <small style="color: var(--text-muted); font-size: 11px;">Otomatis mengikuti selisih Jam Mulai &amp; Jam Selesai tanpa perlu disetting manual.</small>
         </div>
 
         <div class="modal-actions">
@@ -671,11 +666,11 @@
             <div class="grid-2" style="margin-bottom: 0;">
                 <div class="form-group">
                     <label>Jam Mulai (Sesuai Jam HP)</label>
-                    <input type="time" name="start_time" class="form-control" value="07:00" required>
+                    <input type="time" name="start_time" id="addStartTime" class="form-control" value="07:00" required onchange="autoCalculateAddDuration()">
                 </div>
                 <div class="form-group">
                     <label>Jam Selesai (Batas Auto-Keluar)</label>
-                    <input type="time" name="end_time" class="form-control" value="08:30" required>
+                    <input type="time" name="end_time" id="addEndTime" class="form-control" value="08:30" required onchange="autoCalculateAddDuration()">
                 </div>
             </div>
             
@@ -689,8 +684,9 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Durasi Ujian (Menit)</label>
-                    <input type="number" name="duration_minutes" class="form-control" value="90" min="10" max="300" required>
+                    <label>Waktu Pengerjaan (Otomatis)</label>
+                    <input type="number" name="duration_minutes" id="addDurationMinutes" class="form-control" value="90" readonly style="background-color: var(--surface-variant, #f1f5f9); font-weight: bold; color: var(--teal-light, #059669);">
+                    <small style="color: var(--text-muted); font-size: 11px;">Otomatis mengikuti selisih Jam Mulai &amp; Jam Selesai.</small>
                 </div>
             </div>
 
@@ -989,6 +985,26 @@
         return '';
     }
 
+    function calculateDiffMinutes(startTime, endTime) {
+        if (!startTime || !endTime) return 60;
+        const [sh, sm] = startTime.split(':').map(Number);
+        const [eh, em] = endTime.split(':').map(Number);
+        const diff = (eh * 60 + em) - (sh * 60 + sm);
+        return diff > 0 ? diff : 60;
+    }
+
+    function autoCalculateAddDuration() {
+        const start = document.getElementById('addStartTime').value;
+        const end = document.getElementById('addEndTime').value;
+        document.getElementById('addDurationMinutes').value = calculateDiffMinutes(start, end);
+    }
+
+    function autoCalculateEditDuration() {
+        const start = document.getElementById('editStartTime').value;
+        const end = document.getElementById('editEndTime').value;
+        document.getElementById('inputDurationMinutes').value = calculateDiffMinutes(start, end);
+    }
+
     function openEditDuration(examId) {
         const ex = (serverData.exams || []).find(e => e.id === examId);
         if (!ex) {
@@ -998,7 +1014,6 @@
 
         document.getElementById('editExamId').value = ex.id;
         document.getElementById('modalExamTitle').textContent = `Mata Pelajaran: ${ex.subject_name}`;
-        document.getElementById('inputDurationMinutes').value = ex.duration_minutes || 90;
 
         const defaultDate = ex.exam_date || new Date().toISOString().split('T')[0];
         document.getElementById('editExamDate').value = defaultDate;
@@ -1009,20 +1024,17 @@
         document.getElementById('editStartTime').value = ex.start_time || '07:00';
         document.getElementById('editEndTime').value = ex.end_time || '08:30';
         document.getElementById('editShortName').value = ex.short_name || '';
+        autoCalculateEditDuration();
         document.getElementById('modalEditDuration').style.display = 'flex';
-    }
-
-    function setPresetDuration(mins) {
-        document.getElementById('inputDurationMinutes').value = mins;
     }
 
     async function saveDuration() {
         const examId = document.getElementById('editExamId').value;
-        const duration = parseInt(document.getElementById('inputDurationMinutes').value, 10);
-        const examDate = document.getElementById('editExamDate').value;
-        const examDay = document.getElementById('editExamDay').value;
         const startTime = document.getElementById('editStartTime').value;
         const endTime = document.getElementById('editEndTime').value;
+        const duration = calculateDiffMinutes(startTime, endTime);
+        const examDate = document.getElementById('editExamDate').value;
+        const examDay = document.getElementById('editExamDay').value;
         const shortName = document.getElementById('editShortName').value.trim();
 
         if (!examDate) {

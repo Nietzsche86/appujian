@@ -16,6 +16,7 @@ import id.sch.examkiosk.data.crypto.CryptoEngine
 import id.sch.examkiosk.data.model.ExamItem
 import id.sch.examkiosk.data.sync.LocalSyncManager
 import id.sch.examkiosk.databinding.DialogTokenInputBinding
+import id.sch.examkiosk.util.ExamScheduleHelper
 import kotlinx.coroutines.launch
 
 class TokenInputDialog : DialogFragment() {
@@ -51,7 +52,8 @@ class TokenInputDialog : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val currentExam = exam ?: return
-        binding.tvExamSubjectSubtitle.text = "${currentExam.subjectName} (Kelas ${currentExam.gradeLevel}) • ${currentExam.durationMinutes} Menit"
+        val totalMinutes = ExamScheduleHelper.getTotalDurationMinutes(currentExam)
+        binding.tvExamSubjectSubtitle.text = "${currentExam.subjectName} (Kelas ${currentExam.gradeLevel}) • $totalMinutes Menit"
 
         binding.btnCancelToken.setOnClickListener {
             dismiss()

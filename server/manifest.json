@@ -44,7 +44,7 @@
       "start_time": "18:54",
       "end_time": "19:00",
       "grade_level": 7,
-      "duration_minutes": 90,
+      "duration_minutes": 6,
       "download_url": "http://192.168.0.109:8080/files/DAYUM-7-1792776728.enc",
       "file_sha256": "9af0831cad961d63fc35e5bd7e97f39f9f2a30e18b126648b30521b27defa747",
       "pbkdf2_salt_hex": "cf83a9f71a42478984a021cd5aff9930",
