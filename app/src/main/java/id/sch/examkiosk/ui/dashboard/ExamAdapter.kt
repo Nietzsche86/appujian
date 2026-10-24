@@ -80,7 +80,7 @@ class ExamAdapter(
                 binding.btnExamAction.setTextColor(Color.parseColor("#64748B"))
             } else {
                 binding.btnExamAction.icon = null
-                val scheduleState = ExamScheduleHelper.getScheduleState(exam)
+                val scheduleState = item.scheduleState
 
                 when (scheduleState) {
                     ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {

@@ -1,12 +1,12 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "school_tagline": "Madrasah Unggulan",
-  "exam_title": "Ujian Akhir S",
+  "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
+  "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
   "exam_rules": [
     "Aturan 1",
     "Aturan 2"
   ],
-  "sync_timestamp": 1792798357,
+  "sync_timestamp": 1792799817,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -19,7 +19,7 @@
       "end_time": "08:30",
       "grade_level": 8,
       "duration_minutes": 90,
-      "download_url": "http://127.0.0.1:8080/files/HALO-8-1792773172.enc",
+      "download_url": "http://192.168.0.109:8080/files/HALO-8-1792773172.enc",
       "file_sha256": "0720f05bc5fb63df0cb4b4136f548959847d88ffd6b583e961c9079724c0cb3d",
       "pbkdf2_salt_hex": "ffbb58bbd9c6ab00904cace363c3c19e",
       "gcm_iv_hex": "ea61461f1a2bd9aecedf0abf"
@@ -34,7 +34,7 @@
       "end_time": "08:30",
       "grade_level": 7,
       "duration_minutes": 90,
-      "download_url": "http://127.0.0.1:8080/files/DAYUM-7-1792776728.enc",
+      "download_url": "http://192.168.0.109:8080/files/DAYUM-7-1792776728.enc",
       "file_sha256": "9af0831cad961d63fc35e5bd7e97f39f9f2a30e18b126648b30521b27defa747",
       "pbkdf2_salt_hex": "cf83a9f71a42478984a021cd5aff9930",
       "gcm_iv_hex": "d7d56f0d514190839578b5c5"
@@ -49,7 +49,7 @@
       "end_time": "09:00",
       "grade_level": 8,
       "duration_minutes": 90,
-      "download_url": "http://127.0.0.1:8080/files/MATEMA-8-1792782240.enc",
+      "download_url": "http://192.168.0.109:8080/files/MATEMA-8-1792782240.enc",
       "file_sha256": "3d44622824a01b0efaf810571241cef8b6180c2b9a7e7022d4cfab1b9839822b",
       "pbkdf2_salt_hex": "9db48c789204c366ef244782d9c85cfe",
       "gcm_iv_hex": "3cd9084384d231b5cd114320"
@@ -64,10 +64,25 @@
       "end_time": "08:30",
       "grade_level": 9,
       "duration_minutes": 90,
-      "download_url": "http://127.0.0.1:8080/files/IPA-9-1792795714.enc",
+      "download_url": "http://192.168.0.109:8080/files/IPA-9-1792795714.enc",
       "file_sha256": "973c60ca97a281d341e4d1d6ae3e3f2dbc9efa3e8b717e8929906fb484bd008d",
       "pbkdf2_salt_hex": "8c9a6739a127187487f662aae8d3c873",
       "gcm_iv_hex": "e4f82401ad51885bcd87fd99"
+    },
+    {
+      "id": "MATEMA-9-1792799684",
+      "subject_name": "Matematika",
+      "short_name": "MTK",
+      "exam_date": "2026-10-24",
+      "exam_day": "Sabtu",
+      "start_time": "06:58",
+      "end_time": "07:55",
+      "grade_level": 9,
+      "duration_minutes": 58,
+      "download_url": "http://192.168.0.109:8080/files/MATEMA-9-1792799684.enc",
+      "file_sha256": "a27179994b1d901b9b90f1f8c0478cfa8d6c59fed0a02cde25022ae3eef8e9e3",
+      "pbkdf2_salt_hex": "18bb557827ab52969c6b0a4be0729ea5",
+      "gcm_iv_hex": "5efda70cae8af7436d648da8"
     }
   ]
 }

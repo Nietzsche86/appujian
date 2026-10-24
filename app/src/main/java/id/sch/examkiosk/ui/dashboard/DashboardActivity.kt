@@ -47,12 +47,20 @@ class DashboardActivity : AppCompatActivity() {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    // Broadcast receiver untuk sensor hardware real-time
+    // Broadcast receiver untuk sensor hardware & jam real-time
     private val hardwareReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateHardwareStatus()
+            val action = intent?.action
+            if (action == Intent.ACTION_TIME_TICK ||
+                action == Intent.ACTION_TIME_CHANGED ||
+                action == Intent.ACTION_TIMEZONE_CHANGED) {
+                refreshExamList()
+            }
         }
     }
+
+    private var timeTickerJob: kotlinx.coroutines.Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,14 +84,31 @@ class DashboardActivity : AppCompatActivity() {
         refreshExamList()
         updateExamStatistics()
         updateSchoolIdentityUI()
+        startTimeTicker()
     }
 
     override fun onPause() {
         super.onPause()
+        stopTimeTicker()
         try {
             unregisterReceiver(hardwareReceiver)
         } catch (_: Exception) {
         }
+    }
+
+    private fun startTimeTicker() {
+        timeTickerJob?.cancel()
+        timeTickerJob = lifecycleScope.launch {
+            while (kotlinx.coroutines.isActive) {
+                kotlinx.coroutines.delay(3000L) // Periksa status jadwal ujian setiap 3 detik secara real-time
+                refreshExamList()
+            }
+        }
+    }
+
+    private fun stopTimeTicker() {
+        timeTickerJob?.cancel()
+        timeTickerJob = null
     }
 
     private fun setupHeader() {
@@ -167,6 +192,9 @@ class DashboardActivity : AppCompatActivity() {
             addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+            addAction(Intent.ACTION_TIME_TICK)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
         }
         ContextCompat.registerReceiver(
             this,
@@ -552,6 +580,7 @@ class DashboardActivity : AppCompatActivity() {
             val isDownloaded = syncManager.isExamFileValid(exam.id, exam.fileSha256)
             val isFinished = secureStorage.isExamFinished(exam.id)
             val isActive = secureStorage.activeExamId == exam.id
+            val scheduleState = ExamScheduleHelper.getScheduleState(exam)
 
             val status = when {
                 isFinished -> ExamStatus.SELESAI
@@ -563,7 +592,8 @@ class DashboardActivity : AppCompatActivity() {
             ExamItemUiModel(
                 exam = exam,
                 status = status,
-                isFilePresent = isDownloaded
+                isFilePresent = isDownloaded,
+                scheduleState = scheduleState
             )
         }
 

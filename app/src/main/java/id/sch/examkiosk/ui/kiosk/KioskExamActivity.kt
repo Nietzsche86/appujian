@@ -278,15 +278,12 @@ class KioskExamActivity : AppCompatActivity() {
                     binding.rvPdfPages.adapter = adapter
 
                     val totalPages = renderer.pageCount
-                    binding.tvStatusBarPage.text = getString(R.string.page_indicator, 1, totalPages)
+                    updatePageIndicator(binding.rvPdfPages, layoutManager, totalPages)
 
                     binding.rvPdfPages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                             super.onScrolled(recyclerView, dx, dy)
-                            val firstVisible = layoutManager.findFirstVisibleItemPosition()
-                            if (firstVisible != RecyclerView.NO_POSITION) {
-                                binding.tvStatusBarPage.text = getString(R.string.page_indicator, firstVisible + 1, totalPages)
-                            }
+                            updatePageIndicator(recyclerView, layoutManager, totalPages)
                         }
                     })
                 } catch (e: Exception) {
@@ -298,6 +295,50 @@ class KioskExamActivity : AppCompatActivity() {
                 finish()
             }
         }
+    }
+
+    private fun updatePageIndicator(recyclerView: RecyclerView, layoutManager: LinearLayoutManager, totalPages: Int) {
+        if (totalPages <= 0) return
+        if (totalPages == 1) {
+            binding.tvStatusBarPage.text = getString(R.string.page_indicator, 1, 1)
+            return
+        }
+
+        // 1. Jika sudah mentok di bagian paling bawah dokumen, pasti sedang di halaman terakhir
+        if (!recyclerView.canScrollVertically(1)) {
+            binding.tvStatusBarPage.text = getString(R.string.page_indicator, totalPages, totalPages)
+            return
+        }
+
+        // 2. Jika sudah mentok di bagian paling atas dokumen, pasti sedang di halaman pertama
+        if (!recyclerView.canScrollVertically(-1)) {
+            binding.tvStatusBarPage.text = getString(R.string.page_indicator, 1, totalPages)
+            return
+        }
+
+        val firstPos = layoutManager.findFirstVisibleItemPosition()
+        val lastPos = layoutManager.findLastVisibleItemPosition()
+        if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) return
+
+        val rvTop = recyclerView.paddingTop
+        val rvBottom = recyclerView.height - recyclerView.paddingBottom
+
+        var maxVisibleHeight = -1
+        var dominantPosition = firstPos
+
+        for (pos in firstPos..lastPos) {
+            val view = layoutManager.findViewByPosition(pos) ?: continue
+            val top = view.top.coerceAtLeast(rvTop)
+            val bottom = view.bottom.coerceAtMost(rvBottom)
+            val visibleHeight = bottom - top
+            if (visibleHeight > maxVisibleHeight) {
+                maxVisibleHeight = visibleHeight
+                dominantPosition = pos
+            }
+        }
+
+        val currentPage = (dominantPosition + 1).coerceIn(1, totalPages)
+        binding.tvStatusBarPage.text = getString(R.string.page_indicator, currentPage, totalPages)
     }
 
     private fun startExamTimer() {

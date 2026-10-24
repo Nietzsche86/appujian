@@ -1,7 +1,7 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
-  "school_tagline": "Madrasah Unggulan",
-  "exam_title": "Ujian Akhir S",
+  "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
+  "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
   "master_pin": "888999",
   "exam_rules": [
     "Aturan 1",
@@ -71,6 +71,22 @@
       "file_sha256": "973c60ca97a281d341e4d1d6ae3e3f2dbc9efa3e8b717e8929906fb484bd008d",
       "pbkdf2_salt_hex": "8c9a6739a127187487f662aae8d3c873",
       "gcm_iv_hex": "e4f82401ad51885bcd87fd99"
+    },
+    {
+      "id": "MATEMA-9-1792799684",
+      "subject_name": "Matematika",
+      "short_name": "MTK",
+      "exam_date": "2026-10-24",
+      "exam_day": "Sabtu",
+      "start_time": "06:58",
+      "end_time": "07:55",
+      "grade_level": 9,
+      "duration_minutes": 58,
+      "token": "MTK9",
+      "pdf_filename": "soal_matema-9-1792799684.pdf",
+      "file_sha256": "a27179994b1d901b9b90f1f8c0478cfa8d6c59fed0a02cde25022ae3eef8e9e3",
+      "pbkdf2_salt_hex": "18bb557827ab52969c6b0a4be0729ea5",
+      "gcm_iv_hex": "5efda70cae8af7436d648da8"
     }
   ]
 }
