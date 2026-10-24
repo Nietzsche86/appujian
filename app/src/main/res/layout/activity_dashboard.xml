@@ -325,6 +325,133 @@
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
 
+                <!-- Spesifikasi HP Layak Ujian -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Spesifikasi Perangkat Layak Ujian"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- 1. Versi Android -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardAndroidVersionStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivAndroidVersionIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_android"
+                                app:tint="@color/badge_ready_text"
+                                android:contentDescription="Versi Android" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvAndroidVersionStatus"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/badge_ready_text"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold"
+                                    tools:text="Versi Android: Android 13 (Memenuhi Standar)" />
+
+                                <TextView
+                                    android:id="@+id/tvAndroidVersionRequirement"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="11sp"
+                                    tools:text="HP Siswa: Android 13 • Standar minimal: Android 8 (Oreo)" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- 2. RAM -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardRamStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="@color/stroke_border"
+                        app:cardBackgroundColor="@color/surface">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivRamIcon"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_memory"
+                                app:tint="@color/badge_ready_text"
+                                android:contentDescription="RAM HP" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/tvRamStatus"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/badge_ready_text"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold"
+                                    tools:text="RAM HP: 4 GB (Memenuhi Standar)" />
+
+                                <TextView
+                                    android:id="@+id/tvRamRequirement"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="11sp"
+                                    tools:text="HP Siswa: 4 GB RAM • Standar minimal: 2 GB RAM" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
                 <!-- Container 2: Statistik Ujian Siswa -->
                 <TextView
                     android:layout_width="wrap_content"
@@ -522,17 +649,6 @@
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvRulesSchoolHeader"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:includeFontPadding="true"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp"
-                            tools:text="MTS ROUDHOTUT THOWALIB • Wajib dipatuhi seluruh peserta ujian." />
 
                         <View
                             android:layout_width="match_parent"
@@ -833,7 +949,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="Pilih Angkatan Anda Sebelum Sinkron"
+                                android:text="Kelas"
                                 android:textColor="@color/text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -933,7 +1049,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="8dp"
-                                android:text="Alamat Server Proktor Lab"
+                                android:text="Alamat Server"
                                 android:textColor="@color/text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -943,7 +1059,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:text="Masukkan alamat IP dan port server yang ditampilkan pada dashboard proktor."
+                            android:text="Masukan alamat IP dan Port server"
                             android:textColor="#334155"
                             android:textSize="12sp" />
 

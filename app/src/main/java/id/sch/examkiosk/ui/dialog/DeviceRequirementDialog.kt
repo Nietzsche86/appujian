@@ -1,5 +1,6 @@
 package id.sch.examkiosk.ui.dialog
 
+import android.app.ActivityManager
 import android.app.Dialog
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
@@ -8,6 +9,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.media.AudioManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -18,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import id.sch.examkiosk.R
 import id.sch.examkiosk.databinding.DialogDeviceRequirementBinding
+import java.util.Locale
 
 class DeviceRequirementDialog : DialogFragment() {
 
@@ -170,6 +173,55 @@ class DeviceRequirementDialog : DialogFragment() {
             binding.tvDialogRingerStatus.text = "Mode Suara: Berdering (Wajib Hening!)"
             binding.ivDialogRingerCheck.setImageResource(R.drawable.ic_cancel)
             binding.ivDialogRingerCheck.setColorFilter(badText)
+        }
+
+        // 5. Versi Android (Minimal Android 8 Oreo - API 26)
+        val osRelease = Build.VERSION.RELEASE ?: "Unknown"
+        val isAndroidVersionOk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
+        if (isAndroidVersionOk) {
+            binding.cardDialogAndroid.setCardBackgroundColor(okBg)
+            binding.cardDialogAndroid.strokeColor = okBorder
+            binding.ivDialogAndroidIcon.setColorFilter(okText)
+            binding.tvDialogAndroidStatus.setTextColor(okText)
+            binding.tvDialogAndroidStatus.text = "Android: Android $osRelease (Memenuhi Standar)"
+            binding.ivDialogAndroidCheck.setImageResource(R.drawable.ic_check_circle)
+            binding.ivDialogAndroidCheck.setColorFilter(okText)
+        } else {
+            binding.cardDialogAndroid.setCardBackgroundColor(badBg)
+            binding.cardDialogAndroid.strokeColor = badBorder
+            binding.ivDialogAndroidIcon.setColorFilter(badText)
+            binding.tvDialogAndroidStatus.setTextColor(badText)
+            binding.tvDialogAndroidStatus.text = "Android: Android $osRelease (Wajib Minimal Android 8 Oreo)"
+            binding.ivDialogAndroidCheck.setImageResource(R.drawable.ic_cancel)
+            binding.ivDialogAndroidCheck.setColorFilter(badText)
+        }
+
+        // 6. RAM (Minimal 2 GB)
+        val actManager = ctx.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(memInfo)
+        val totalBytes = memInfo.totalMem
+        val totalGb = totalBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+        val formattedRam = String.format(Locale.US, "%.1f", totalGb).removeSuffix(".0")
+        val isRamOk = totalBytes >= (1.75 * 1024 * 1024 * 1024)
+
+        if (isRamOk) {
+            binding.cardDialogRam.setCardBackgroundColor(okBg)
+            binding.cardDialogRam.strokeColor = okBorder
+            binding.ivDialogRamIcon.setColorFilter(okText)
+            binding.tvDialogRamStatus.setTextColor(okText)
+            binding.tvDialogRamStatus.text = "RAM HP: $formattedRam GB (Memenuhi Standar)"
+            binding.ivDialogRamCheck.setImageResource(R.drawable.ic_check_circle)
+            binding.ivDialogRamCheck.setColorFilter(okText)
+        } else {
+            binding.cardDialogRam.setCardBackgroundColor(badBg)
+            binding.cardDialogRam.strokeColor = badBorder
+            binding.ivDialogRamIcon.setColorFilter(badText)
+            binding.tvDialogRamStatus.setTextColor(badText)
+            binding.tvDialogRamStatus.text = "RAM HP: $formattedRam GB (Wajib Minimal 2 GB)"
+            binding.ivDialogRamCheck.setImageResource(R.drawable.ic_cancel)
+            binding.ivDialogRamCheck.setColorFilter(badText)
         }
     }
 

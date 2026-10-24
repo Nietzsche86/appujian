@@ -1,5 +1,6 @@
 package id.sch.examkiosk.ui.dashboard
 
+import android.app.ActivityManager
 import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -9,6 +10,7 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.media.AudioManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
@@ -37,6 +39,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.util.Locale
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -137,7 +140,6 @@ class DashboardActivity : AppCompatActivity() {
         binding.tvSettingsSchoolNpsn.text = storage.schoolNpsn
         binding.tvSettingsSchoolNsm.text = storage.schoolNsm
         binding.tvSettingsSchoolAddress.text = storage.schoolAddress
-        binding.tvRulesSchoolHeader.text = "${storage.schoolName} • Wajib dipatuhi seluruh peserta ujian."
 
         currentManifest?.let { m ->
             if (m.examTitle.isNotBlank()) {
@@ -232,7 +234,20 @@ class DashboardActivity : AppCompatActivity() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         val isRingerSilentOrVibrate = audioManager?.ringerMode != AudioManager.RINGER_MODE_NORMAL
 
-        val isAllOk = isAirplaneOn && isWifiOff && isBluetoothOff && isRingerSilentOrVibrate
+        // 5. Versi Android (Minimal Android 8 Oreo - API 26)
+        val osRelease = Build.VERSION.RELEASE ?: "Unknown"
+        val isAndroidVersionOk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
+        // 6. RAM (Minimal 2 GB)
+        val actManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(memInfo)
+        val totalBytes = memInfo.totalMem
+        val totalGb = totalBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+        val formattedRam = String.format(Locale.US, "%.1f", totalGb).removeSuffix(".0")
+        val isRamOk = totalBytes >= (1.75 * 1024 * 1024 * 1024)
+
+        val isAllOk = isAirplaneOn && isWifiOff && isBluetoothOff && isRingerSilentOrVibrate && isAndroidVersionOk && isRamOk
 
         // Update Header Alert Card
         if (isAllOk) {
@@ -303,6 +318,36 @@ class DashboardActivity : AppCompatActivity() {
             binding.tvRingerStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.ivRingerIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.cardRingerStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
+        }
+
+        // 5. Spesifikasi Versi Android
+        if (isAndroidVersionOk) {
+            binding.tvAndroidVersionStatus.text = "Versi Android: Android $osRelease (Memenuhi Standar)"
+            binding.tvAndroidVersionStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_ready_text))
+            binding.ivAndroidVersionIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_ready_text))
+            binding.cardAndroidVersionStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_ok_border)
+            binding.tvAndroidVersionRequirement.text = "HP Siswa: Android $osRelease • Standar minimal: Android 8 (Oreo)"
+        } else {
+            binding.tvAndroidVersionStatus.text = "Versi Android: Android $osRelease (Di Bawah Standar!)"
+            binding.tvAndroidVersionStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
+            binding.ivAndroidVersionIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
+            binding.cardAndroidVersionStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
+            binding.tvAndroidVersionRequirement.text = "HP Siswa: Android $osRelease • Standar minimal: Android 8 (Oreo)"
+        }
+
+        // 6. Spesifikasi RAM
+        if (isRamOk) {
+            binding.tvRamStatus.text = "RAM HP: $formattedRam GB (Memenuhi Standar)"
+            binding.tvRamStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_ready_text))
+            binding.ivRamIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_ready_text))
+            binding.cardRamStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_ok_border)
+            binding.tvRamRequirement.text = "HP Siswa: $formattedRam GB RAM • Standar minimal: 2 GB RAM"
+        } else {
+            binding.tvRamStatus.text = "RAM HP: $formattedRam GB (Di Bawah Standar!)"
+            binding.tvRamStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
+            binding.ivRamIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
+            binding.cardRamStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
+            binding.tvRamRequirement.text = "HP Siswa: $formattedRam GB RAM • Standar minimal: 2 GB RAM"
         }
     }
 
@@ -672,7 +717,7 @@ class DashboardActivity : AppCompatActivity() {
             return
         }
 
-        // 1. Cek syarat hardware sebelum masuk ujian
+        // 1. Cek syarat hardware & spesifikasi HP sebelum masuk ujian
         val isAirplaneOn = Settings.Global.getInt(
             contentResolver,
             Settings.Global.AIRPLANE_MODE_ON,
@@ -688,7 +733,14 @@ class DashboardActivity : AppCompatActivity() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
         val isRingerSilentOrVibrate = audioManager?.ringerMode != AudioManager.RINGER_MODE_NORMAL
 
-        if (!isAirplaneOn || !isWifiOff || !isBluetoothOff || !isRingerSilentOrVibrate) {
+        val isAndroidVersionOk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
+        val actManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val memInfo = ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(memInfo)
+        val isRamOk = memInfo.totalMem >= (1.75 * 1024 * 1024 * 1024)
+
+        if (!isAirplaneOn || !isWifiOff || !isBluetoothOff || !isRingerSilentOrVibrate || !isAndroidVersionOk || !isRamOk) {
             val dialog = DeviceRequirementDialog.newInstance()
             dialog.show(supportFragmentManager, DeviceRequirementDialog.TAG)
             return

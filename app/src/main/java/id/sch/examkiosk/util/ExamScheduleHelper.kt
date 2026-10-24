@@ -119,7 +119,7 @@ object ExamScheduleHelper {
                 val month = parts[1].toInt() - 1
                 val day = parts[2].toInt()
                 val cal = Calendar.getInstance().apply { set(year, month, day) }
-                val sdf = SimpleDateFormat("d MMM", Locale("id", "ID"))
+                val sdf = SimpleDateFormat("d MMMM yyyy", Locale("id", "ID"))
                 val dateFormatted = sdf.format(cal.time)
                 if (dayName.isNotBlank()) "$dayName, $dateFormatted" else dateFormatted
             } else {

@@ -74,11 +74,15 @@ class ExamAdapter(
             if (item.status == ExamStatus.SELESAI) {
                 binding.btnExamAction.text = "Selesai"
                 binding.btnExamAction.setIconResource(R.drawable.ic_check_circle)
-                binding.btnExamAction.iconTint = ColorStateList.valueOf(Color.parseColor("#64748B"))
-                binding.btnExamAction.isEnabled = false
-                binding.btnExamAction.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E2E8F0"))
-                binding.btnExamAction.setTextColor(Color.parseColor("#64748B"))
+                binding.btnExamAction.iconTint = ContextCompat.getColorStateList(context, R.color.btn_exam_finished_text)
+                binding.btnExamAction.isEnabled = true
+                binding.btnExamAction.backgroundTintList = ContextCompat.getColorStateList(context, R.color.btn_exam_finished_bg)
+                binding.btnExamAction.strokeColor = ContextCompat.getColorStateList(context, R.color.btn_exam_finished_stroke)
+                binding.btnExamAction.strokeWidth = (1 * context.resources.displayMetrics.density).toInt()
+                binding.btnExamAction.rippleColor = ContextCompat.getColorStateList(context, R.color.btn_exam_finished_ripple)
+                binding.btnExamAction.setTextColor(ContextCompat.getColorStateList(context, R.color.btn_exam_finished_text))
             } else {
+                binding.btnExamAction.strokeWidth = 0
                 binding.btnExamAction.icon = null
                 val scheduleState = item.scheduleState
 
