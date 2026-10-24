@@ -84,5 +84,8 @@
       "pbkdf2_salt_hex": "18bb557827ab52969c6b0a4be0729ea5",
       "gcm_iv_hex": "5efda70cae8af7436d648da8"
     }
-  ]
+  ],
+  "school_npsn": "20278144",
+  "school_nsm": "121232010001",
+  "school_address": "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"
 }

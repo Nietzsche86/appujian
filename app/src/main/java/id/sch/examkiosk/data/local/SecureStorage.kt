@@ -27,6 +27,18 @@ class SecureStorage(context: Context) {
         get() = prefs.getString(KEY_SCHOOL_TAGLINE, "Madrasah Tsanawiyah Unggulan & Berkarakter") ?: "Madrasah Tsanawiyah Unggulan & Berkarakter"
         set(value) = prefs.edit().putString(KEY_SCHOOL_TAGLINE, value).apply()
 
+    var schoolNpsn: String
+        get() = prefs.getString(KEY_SCHOOL_NPSN, "20278144") ?: "20278144"
+        set(value) = prefs.edit().putString(KEY_SCHOOL_NPSN, value).apply()
+
+    var schoolNsm: String
+        get() = prefs.getString(KEY_SCHOOL_NSM, "121232010001") ?: "121232010001"
+        set(value) = prefs.edit().putString(KEY_SCHOOL_NSM, value).apply()
+
+    var schoolAddress: String
+        get() = prefs.getString(KEY_SCHOOL_ADDRESS, "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat") ?: "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"
+        set(value) = prefs.edit().putString(KEY_SCHOOL_ADDRESS, value).apply()
+
     var serverUrl: String
         get() = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trim()).apply()
@@ -88,10 +100,13 @@ class SecureStorage(context: Context) {
 
     companion object {
         private const val PREFS_FILENAME = "secure_exam_prefs"
-        private const val DEFAULT_SERVER_URL = "http://192.168.1.100:8080"
+        private const val DEFAULT_SERVER_URL = ""
 
         private const val KEY_SCHOOL_NAME = "school_name"
         private const val KEY_SCHOOL_TAGLINE = "school_tagline"
+        private const val KEY_SCHOOL_NPSN = "school_npsn"
+        private const val KEY_SCHOOL_NSM = "school_nsm"
+        private const val KEY_SCHOOL_ADDRESS = "school_address"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_MASTER_PIN_HASH = "master_pin_hash"
         private const val KEY_ACTIVE_EXAM_ID = "active_exam_id"

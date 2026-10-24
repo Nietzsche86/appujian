@@ -108,6 +108,9 @@ def load_or_init_config() -> dict:
             default_config = {
                 "school_name": "MTS ROUDHOTUT THOWALIB",
                 "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
+                "school_npsn": "20278144",
+                "school_nsm": "121232010001",
+                "school_address": "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat",
                 "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
                 "master_pin": "888999",
                 "exam_rules": [
@@ -267,6 +270,9 @@ def rebuild_manifest(server_base_url: str):
     manifest = {
         "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
         "school_tagline": config.get("school_tagline", "Madrasah Tsanawiyah Unggulan & Berkarakter"),
+        "school_npsn": config.get("school_npsn", "20278144"),
+        "school_nsm": config.get("school_nsm", "121232010001"),
+        "school_address": config.get("school_address", "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"),
         "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
         "exam_rules": config.get("exam_rules", default_rules),
         "sync_timestamp": int(time.time()),
@@ -337,6 +343,9 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             self.send_json({
                 "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
                 "school_tagline": config.get("school_tagline", "Madrasah Tsanawiyah Unggulan & Berkarakter"),
+                "school_npsn": config.get("school_npsn", "20278144"),
+                "school_nsm": config.get("school_nsm", "121232010001"),
+                "school_address": config.get("school_address", "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"),
                 "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
                 "exam_rules": config.get("exam_rules", []),
                 "master_pin": config.get("master_pin", "888999"),
@@ -414,6 +423,12 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                     config["school_name"] = payload["school_name"].strip()
                 if "school_tagline" in payload:
                     config["school_tagline"] = payload["school_tagline"].strip()
+                if "school_npsn" in payload:
+                    config["school_npsn"] = payload["school_npsn"].strip()
+                if "school_nsm" in payload:
+                    config["school_nsm"] = payload["school_nsm"].strip()
+                if "school_address" in payload:
+                    config["school_address"] = payload["school_address"].strip()
                 if "exam_title" in payload and payload["exam_title"].strip():
                     config["exam_title"] = payload["exam_title"].strip()
                 if "master_pin" in payload and payload["master_pin"].strip():

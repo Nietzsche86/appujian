@@ -134,6 +134,9 @@ class DashboardActivity : AppCompatActivity() {
         binding.tvHeaderSchoolName.text = storage.schoolName
         binding.tvSettingsSchoolName.text = storage.schoolName
         binding.tvSettingsSchoolTagline.text = storage.schoolTagline
+        binding.tvSettingsSchoolNpsn.text = storage.schoolNpsn
+        binding.tvSettingsSchoolNsm.text = storage.schoolNsm
+        binding.tvSettingsSchoolAddress.text = storage.schoolAddress
         binding.tvRulesSchoolHeader.text = "${storage.schoolName} • Wajib dipatuhi seluruh peserta ujian."
 
         currentManifest?.let { m ->
@@ -434,8 +437,10 @@ class DashboardActivity : AppCompatActivity() {
             val host = clean.substringBefore(":")
             val port = clean.substringAfter(":")
             Pair(host, port)
-        } else {
+        } else if (clean.isNotBlank()) {
             Pair(clean, "8080")
+        } else {
+            Pair("", "")
         }
     }
 
@@ -499,6 +504,15 @@ class DashboardActivity : AppCompatActivity() {
                 }
                 if (manifest.schoolTagline.isNotBlank()) {
                     secureStorage.schoolTagline = manifest.schoolTagline
+                }
+                if (manifest.schoolNpsn.isNotBlank()) {
+                    secureStorage.schoolNpsn = manifest.schoolNpsn
+                }
+                if (manifest.schoolNsm.isNotBlank()) {
+                    secureStorage.schoolNsm = manifest.schoolNsm
+                }
+                if (manifest.schoolAddress.isNotBlank()) {
+                    secureStorage.schoolAddress = manifest.schoolAddress
                 }
 
                 secureStorage.cachedManifest = json.encodeToString(ExamManifest.serializer(), manifest)

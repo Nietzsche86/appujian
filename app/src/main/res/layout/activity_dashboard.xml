@@ -716,22 +716,85 @@
                             android:layout_marginBottom="14dp"
                             android:background="@color/stroke_border" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <!-- Tabel Identitas: Sisi Kiri NPSN, Sisi Kanan NSM -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="E-UJIAN MTS RTH • Versi 2.0"
-                            android:textColor="#475569"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                            android:gravity="center"
+                            android:orientation="horizontal">
 
+                            <!-- Kolom Kiri: NPSN -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="NPSN: "
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvSettingsSchoolNpsn"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    tools:text="20278144" />
+                            </LinearLayout>
+
+                            <!-- Vertical divider between NPSN and NSM -->
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="14dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="@color/stroke_border" />
+
+                            <!-- Kolom Kanan: NSM -->
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="center"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="NSM: "
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvSettingsSchoolNsm"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold"
+                                    tools:text="121232010001" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Alamat Lengkap (Rata Tengah) -->
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvSettingsSchoolAddress"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="Sistem Ujian Terenkripsi AES-256-GCM &amp; Kiosk LockTask"
-                            android:textColor="@color/primary"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            android:lineSpacingExtra="2dp"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11.5sp"
+                            tools:text="Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -903,9 +966,7 @@
                                 app:boxCornerRadiusBottomEnd="12dp"
                                 app:boxCornerRadiusBottomStart="12dp"
                                 app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:placeholderText="192.168.0.109"
-                                app:placeholderTextColor="@color/text_muted">
+                                app:boxCornerRadiusTopStart="12dp">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/etServerHost"
@@ -913,8 +974,6 @@
                                     android:layout_height="wrap_content"
                                     android:inputType="textUri"
                                     android:singleLine="true"
-                                    android:hint="192.168.0.109"
-                                    android:textColorHint="#94A3B8"
                                     android:textColor="@color/text_primary"
                                     android:textSize="14sp" />
                             </com.google.android.material.textfield.TextInputLayout>
@@ -930,9 +989,7 @@
                                 app:boxCornerRadiusBottomEnd="12dp"
                                 app:boxCornerRadiusBottomStart="12dp"
                                 app:boxCornerRadiusTopEnd="12dp"
-                                app:boxCornerRadiusTopStart="12dp"
-                                app:placeholderText="8080"
-                                app:placeholderTextColor="@color/text_muted">
+                                app:boxCornerRadiusTopStart="12dp">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/etServerPort"
@@ -940,8 +997,6 @@
                                     android:layout_height="wrap_content"
                                     android:inputType="number"
                                     android:singleLine="true"
-                                    android:hint="8080"
-                                    android:textColorHint="#94A3B8"
                                     android:maxLength="5"
                                     android:textColor="@color/text_primary"
                                     android:textSize="14sp" />

@@ -464,6 +464,20 @@
                 <label>Sub-nama / Tagline Madrasah</label>
                 <input type="text" id="inputSchoolTagline" class="form-control" placeholder="Contoh: Madrasah Tsanawiyah Unggulan &amp; Berkarakter">
             </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div class="form-group">
+                    <label>NPSN Madrasah</label>
+                    <input type="text" id="inputSchoolNpsn" class="form-control" placeholder="Contoh: 20278144">
+                </div>
+                <div class="form-group">
+                    <label>NSM Madrasah</label>
+                    <input type="text" id="inputSchoolNsm" class="form-control" placeholder="Contoh: 121232010001">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap Madrasah</label>
+                <textarea id="inputSchoolAddress" class="form-control" rows="2" style="font-size: 12.5px; line-height: 1.5; resize: vertical;" placeholder="Contoh: Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"></textarea>
+            </div>
             <div class="form-group">
                 <label>Judul / Jenis Ujian Aktif</label>
                 <input type="text" id="inputExamTitle" class="form-control" placeholder="Contoh: Penilaian Akhir Semester (PAS) Ganjil">
@@ -744,6 +758,9 @@
                 const formFields = [
                     { id: 'inputSchoolName', val: data.school_name ?? "MTS ROUDHOTUT THOWALIB" },
                     { id: 'inputSchoolTagline', val: data.school_tagline ?? "Madrasah Tsanawiyah Unggulan & Berkarakter" },
+                    { id: 'inputSchoolNpsn', val: data.school_npsn ?? "20278144" },
+                    { id: 'inputSchoolNsm', val: data.school_nsm ?? "121232010001" },
+                    { id: 'inputSchoolAddress', val: data.school_address ?? "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat" },
                     { id: 'inputExamTitle', val: data.exam_title ?? "Penilaian Akhir Semester (PAS) Ganjil" },
                     { id: 'inputMasterPin', val: data.master_pin ?? "888999" }
                 ];
@@ -856,6 +873,9 @@
     async function saveIdentitySettings() {
         const schoolName = document.getElementById('inputSchoolName').value.trim();
         const schoolTagline = document.getElementById('inputSchoolTagline').value.trim();
+        const schoolNpsn = document.getElementById('inputSchoolNpsn').value.trim();
+        const schoolNsm = document.getElementById('inputSchoolNsm').value.trim();
+        const schoolAddress = document.getElementById('inputSchoolAddress').value.trim();
         const examTitle = document.getElementById('inputExamTitle').value.trim();
         const masterPin = document.getElementById('inputMasterPin').value.trim();
 
@@ -885,6 +905,9 @@
                 body: JSON.stringify({
                     school_name: schoolName,
                     school_tagline: schoolTagline,
+                    school_npsn: schoolNpsn,
+                    school_nsm: schoolNsm,
+                    school_address: schoolAddress,
                     exam_title: examTitle,
                     master_pin: masterPin
                 })
