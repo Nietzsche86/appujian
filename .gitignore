@@ -11,3 +11,7 @@ app/build/
 *.hprof
 __pycache__/
 *.pyc
+*.jks
+*.keystore
+keystore_base64.txt
+keystore_info.txt
