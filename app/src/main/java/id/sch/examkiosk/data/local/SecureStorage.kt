@@ -28,15 +28,15 @@ class SecureStorage(context: Context) {
         set(value) = prefs.edit().putString(KEY_SCHOOL_TAGLINE, value).apply()
 
     var schoolNpsn: String
-        get() = prefs.getString(KEY_SCHOOL_NPSN, "20278144") ?: "20278144"
+        get() = prefs.getString(KEY_SCHOOL_NPSN, "20278365") ?: "20278365"
         set(value) = prefs.edit().putString(KEY_SCHOOL_NPSN, value).apply()
 
     var schoolNsm: String
-        get() = prefs.getString(KEY_SCHOOL_NSM, "121232010001") ?: "121232010001"
+        get() = prefs.getString(KEY_SCHOOL_NSM, "121232050172") ?: "121232050172"
         set(value) = prefs.edit().putString(KEY_SCHOOL_NSM, value).apply()
 
     var schoolAddress: String
-        get() = prefs.getString(KEY_SCHOOL_ADDRESS, "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat") ?: "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"
+        get() = prefs.getString(KEY_SCHOOL_ADDRESS, "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat.") ?: "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat."
         set(value) = prefs.edit().putString(KEY_SCHOOL_ADDRESS, value).apply()
 
     var serverUrl: String

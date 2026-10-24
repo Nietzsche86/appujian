@@ -29,6 +29,7 @@ import id.sch.examkiosk.security.EnvironmentMonitor
 import id.sch.examkiosk.security.KioskEnforcer
 import id.sch.examkiosk.security.PenaltyManager
 import id.sch.examkiosk.security.ViolationReason
+import id.sch.examkiosk.ui.dialog.ConfirmFinishDialog
 import id.sch.examkiosk.ui.dialog.SupervisorPinDialog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -469,14 +470,10 @@ class KioskExamActivity : AppCompatActivity() {
                 Toast.makeText(this, "Penalti pelanggaran telah direset oleh pengawas.", Toast.LENGTH_SHORT).show()
             },
             onFinishEarly = {
-                AlertDialog.Builder(this)
-                    .setTitle("Konfirmasi Akhiri Ujian")
-                    .setMessage("Apakah siswa ini benar-benar telah selesai mengisi LJK fisik?")
-                    .setPositiveButton("Ya, Selesaikan") { _, _ ->
-                        finishExam(isExpired = false)
-                    }
-                    .setNegativeButton("Batal", null)
-                    .show()
+                val confirmDialog = ConfirmFinishDialog.newInstance {
+                    finishExam(isExpired = false)
+                }
+                confirmDialog.show(supportFragmentManager, ConfirmFinishDialog.TAG)
             }
         )
         dialog.show(supportFragmentManager, SupervisorPinDialog.TAG)

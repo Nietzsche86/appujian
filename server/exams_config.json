@@ -4,8 +4,16 @@
   "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
   "master_pin": "888999",
   "exam_rules": [
-    "Aturan 1",
-    "Aturan 2"
+    "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
+    "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening, dan Wi-Fi/Bluetooth mati.",
+    "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras mencoba keluar.",
+    "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
+    "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
+    "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
+    "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
+    "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
+    "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
+    "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
   ],
   "exams": [
     {
@@ -28,14 +36,14 @@
       "id": "DAYUM-7-1792776728",
       "subject_name": "DAYUM",
       "short_name": "DYM",
-      "exam_day": "Senin",
-      "start_time": "07:00",
-      "end_time": "08:30",
+      "exam_day": "Sabtu",
+      "start_time": "18:54",
+      "end_time": "19:00",
       "grade_level": 7,
       "duration_minutes": 90,
       "token": "DDDD",
       "pdf_filename": "soal_dayum-7-1792776728.pdf",
-      "exam_date": "2026-10-26",
+      "exam_date": "2026-10-24",
       "file_sha256": "9af0831cad961d63fc35e5bd7e97f39f9f2a30e18b126648b30521b27defa747",
       "pbkdf2_salt_hex": "cf83a9f71a42478984a021cd5aff9930",
       "gcm_iv_hex": "d7d56f0d514190839578b5c5"
@@ -89,7 +97,7 @@
       "gcm_iv_hex": "5efda70cae8af7436d648da8"
     }
   ],
-  "school_npsn": "20278144",
-  "school_nsm": "121232010001",
-  "school_address": "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"
+  "school_npsn": "20278365",
+  "school_nsm": "121232050172",
+  "school_address": "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat."
 }

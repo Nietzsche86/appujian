@@ -184,7 +184,7 @@ class DeviceRequirementDialog : DialogFragment() {
             binding.cardDialogAndroid.strokeColor = okBorder
             binding.ivDialogAndroidIcon.setColorFilter(okText)
             binding.tvDialogAndroidStatus.setTextColor(okText)
-            binding.tvDialogAndroidStatus.text = "Android: Android $osRelease (Memenuhi Standar)"
+            binding.tvDialogAndroidStatus.text = "Versi: Android $osRelease (Memenuhi Standar)"
             binding.ivDialogAndroidCheck.setImageResource(R.drawable.ic_check_circle)
             binding.ivDialogAndroidCheck.setColorFilter(okText)
         } else {
@@ -192,7 +192,7 @@ class DeviceRequirementDialog : DialogFragment() {
             binding.cardDialogAndroid.strokeColor = badBorder
             binding.ivDialogAndroidIcon.setColorFilter(badText)
             binding.tvDialogAndroidStatus.setTextColor(badText)
-            binding.tvDialogAndroidStatus.text = "Android: Android $osRelease (Wajib Minimal Android 8 Oreo)"
+            binding.tvDialogAndroidStatus.text = "Versi: Android $osRelease (Wajib Minimal Android 8 Oreo)"
             binding.ivDialogAndroidCheck.setImageResource(R.drawable.ic_cancel)
             binding.ivDialogAndroidCheck.setColorFilter(badText)
         }
@@ -211,7 +211,7 @@ class DeviceRequirementDialog : DialogFragment() {
             binding.cardDialogRam.strokeColor = okBorder
             binding.ivDialogRamIcon.setColorFilter(okText)
             binding.tvDialogRamStatus.setTextColor(okText)
-            binding.tvDialogRamStatus.text = "RAM HP: $formattedRam GB (Memenuhi Standar)"
+            binding.tvDialogRamStatus.text = "RAM: $formattedRam GB (Memenuhi Standar)"
             binding.ivDialogRamCheck.setImageResource(R.drawable.ic_check_circle)
             binding.ivDialogRamCheck.setColorFilter(okText)
         } else {
@@ -219,7 +219,7 @@ class DeviceRequirementDialog : DialogFragment() {
             binding.cardDialogRam.strokeColor = badBorder
             binding.ivDialogRamIcon.setColorFilter(badText)
             binding.tvDialogRamStatus.setTextColor(badText)
-            binding.tvDialogRamStatus.text = "RAM HP: $formattedRam GB (Wajib Minimal 2 GB)"
+            binding.tvDialogRamStatus.text = "RAM: $formattedRam GB (Wajib Minimal 2 GB)"
             binding.ivDialogRamCheck.setImageResource(R.drawable.ic_cancel)
             binding.ivDialogRamCheck.setColorFilter(badText)
         }

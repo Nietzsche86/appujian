@@ -1,12 +1,23 @@
 {
   "school_name": "MTS ROUDHOTUT THOWALIB",
   "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
+  "school_npsn": "20278365",
+  "school_nsm": "121232050172",
+  "school_address": "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat.",
   "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
   "exam_rules": [
-    "Aturan 1",
-    "Aturan 2"
+    "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
+    "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening, dan Wi-Fi/Bluetooth mati.",
+    "Aplikasi mengunci layar secara otomatis (Mode Kiosk). Dilarang keras mencoba keluar.",
+    "Percobaan kecurangan (membuka aplikasi lain, reboot HP, atau swipe keluar) memicu PENALTI KUNCI LAYAR BERJENJANG.",
+    "Waktu ujian tetap berjalan normal di latar belakang selama masa penalti.",
+    "Soal ujian akan otomatis terkunci atau selesai ketika waktu jam ujian berakhir.",
+    "Jawaban wajib disalin ke Lembar Jawaban Komputer (LJK) fisik yang disediakan pengawas.",
+    "Jika ada kendala teknis atau baterai lemah, segera angkat tangan dan hubungi Pengawas Ujian.",
+    "Pengawas memiliki Master PIN darurat untuk membuka penalti ban jika diperlukan.",
+    "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
   ],
-  "sync_timestamp": 1792801979,
+  "sync_timestamp": 1792843638,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
   "exams": [
     {
@@ -28,10 +39,10 @@
       "id": "DAYUM-7-1792776728",
       "subject_name": "DAYUM",
       "short_name": "DYM",
-      "exam_date": "2026-10-26",
-      "exam_day": "Senin",
-      "start_time": "07:00",
-      "end_time": "08:30",
+      "exam_date": "2026-10-24",
+      "exam_day": "Sabtu",
+      "start_time": "18:54",
+      "end_time": "19:00",
       "grade_level": 7,
       "duration_minutes": 90,
       "download_url": "http://192.168.0.109:8080/files/DAYUM-7-1792776728.enc",
@@ -84,8 +95,5 @@
       "pbkdf2_salt_hex": "18bb557827ab52969c6b0a4be0729ea5",
       "gcm_iv_hex": "5efda70cae8af7436d648da8"
     }
-  ],
-  "school_npsn": "20278144",
-  "school_nsm": "121232010001",
-  "school_address": "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat"
+  ]
 }

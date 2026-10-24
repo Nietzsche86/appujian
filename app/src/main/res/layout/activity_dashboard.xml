@@ -366,7 +366,7 @@
                                 android:layout_height="20dp"
                                 android:src="@drawable/ic_android"
                                 app:tint="@color/badge_ready_text"
-                                android:contentDescription="Versi Android" />
+                                android:contentDescription="Versi" />
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -382,7 +382,7 @@
                                     android:textColor="@color/badge_ready_text"
                                     android:textSize="13sp"
                                     android:textStyle="bold"
-                                    tools:text="Versi Android: Android 13 (Memenuhi Standar)" />
+                                    tools:text="Versi: Android 13 (Memenuhi Standar)" />
 
                                 <TextView
                                     android:id="@+id/tvAndroidVersionRequirement"
@@ -391,7 +391,8 @@
                                     android:layout_marginTop="2dp"
                                     android:textColor="@color/text_secondary"
                                     android:textSize="11sp"
-                                    tools:text="HP Siswa: Android 13 • Standar minimal: Android 8 (Oreo)" />
+                                    android:text="Minimal: Android 8 (Oreo)"
+                                    tools:text="Minimal: Android 8 (Oreo)" />
                             </LinearLayout>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -421,7 +422,7 @@
                                 android:layout_height="20dp"
                                 android:src="@drawable/ic_memory"
                                 app:tint="@color/badge_ready_text"
-                                android:contentDescription="RAM HP" />
+                                android:contentDescription="RAM" />
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -437,7 +438,7 @@
                                     android:textColor="@color/badge_ready_text"
                                     android:textSize="13sp"
                                     android:textStyle="bold"
-                                    tools:text="RAM HP: 4 GB (Memenuhi Standar)" />
+                                    tools:text="RAM: 4 GB (Memenuhi Standar)" />
 
                                 <TextView
                                     android:id="@+id/tvRamRequirement"
@@ -446,7 +447,8 @@
                                     android:layout_marginTop="2dp"
                                     android:textColor="@color/text_secondary"
                                     android:textSize="11sp"
-                                    tools:text="HP Siswa: 4 GB RAM • Standar minimal: 2 GB RAM" />
+                                    android:text="Minimal RAM: 2 GB"
+                                    tools:text="Minimal RAM: 2 GB" />
                             </LinearLayout>
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -686,28 +688,71 @@
 
                 <!-- Container 1: Banner Jenis Ujian Aktif -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardExamTitleBanner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
-                    app:strokeColor="#059669"
-                    app:cardBackgroundColor="#064E3B">
+                    app:strokeColor="#A7F3D0"
+                    app:cardBackgroundColor="#ECFDF5">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:orientation="vertical"
-                        android:padding="16dp">
+                        android:paddingHorizontal="20dp"
+                        android:paddingVertical="18dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:background="@drawable/bg_badge_rounded"
+                            android:backgroundTint="#D1FAE5"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp">
+
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:src="@drawable/ic_book"
+                                app:tint="@color/primary"
+                                android:contentDescription="Icon Ujian" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="AGENDA UJIAN AKTIF"
+                                android:textColor="@color/primary"
+                                android:textSize="10.5sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.06" />
+                        </LinearLayout>
 
                         <TextView
                             android:id="@+id/tvExamTitleBanner"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp"
+                            android:layout_marginTop="10dp"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            android:textColor="#065F46"
+                            android:textSize="17sp"
                             android:textStyle="bold"
                             tools:text="Penilaian Akhir Semester (PAS) Ganjil" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:gravity="center"
+                            android:textAlignment="center"
+                            android:text="Pilih dan kerjakan paket soal di bawah sesuai jadwal dan arahan pengawas"
+                            android:textColor="#047857"
+                            android:textSize="11.5sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -862,7 +907,7 @@
                                     android:textColor="@color/text_primary"
                                     android:textSize="12sp"
                                     android:textStyle="bold"
-                                    tools:text="20278144" />
+                                    tools:text="20278365" />
                             </LinearLayout>
 
                             <!-- Vertical divider between NPSN and NSM -->
@@ -895,7 +940,7 @@
                                     android:textColor="@color/text_primary"
                                     android:textSize="12sp"
                                     android:textStyle="bold"
-                                    tools:text="121232010001" />
+                                    tools:text="121232050172" />
                             </LinearLayout>
                         </LinearLayout>
 
@@ -910,7 +955,7 @@
                             android:lineSpacingExtra="2dp"
                             android:textColor="@color/text_secondary"
                             android:textSize="11.5sp"
-                            tools:text="Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat" />
+                            tools:text="Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat." />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

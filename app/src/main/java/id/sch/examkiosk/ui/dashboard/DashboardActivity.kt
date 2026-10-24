@@ -322,33 +322,31 @@ class DashboardActivity : AppCompatActivity() {
 
         // 5. Spesifikasi Versi Android
         if (isAndroidVersionOk) {
-            binding.tvAndroidVersionStatus.text = "Versi Android: Android $osRelease (Memenuhi Standar)"
+            binding.tvAndroidVersionStatus.text = "Versi: Android $osRelease (Memenuhi Standar)"
             binding.tvAndroidVersionStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_ready_text))
             binding.ivAndroidVersionIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_ready_text))
             binding.cardAndroidVersionStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_ok_border)
-            binding.tvAndroidVersionRequirement.text = "HP Siswa: Android $osRelease • Standar minimal: Android 8 (Oreo)"
         } else {
-            binding.tvAndroidVersionStatus.text = "Versi Android: Android $osRelease (Di Bawah Standar!)"
+            binding.tvAndroidVersionStatus.text = "Versi: Android $osRelease (Di Bawah Standar!)"
             binding.tvAndroidVersionStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.ivAndroidVersionIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.cardAndroidVersionStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
-            binding.tvAndroidVersionRequirement.text = "HP Siswa: Android $osRelease • Standar minimal: Android 8 (Oreo)"
         }
+        binding.tvAndroidVersionRequirement.text = "Minimal: Android 8 (Oreo)"
 
         // 6. Spesifikasi RAM
         if (isRamOk) {
-            binding.tvRamStatus.text = "RAM HP: $formattedRam GB (Memenuhi Standar)"
+            binding.tvRamStatus.text = "RAM: $formattedRam GB (Memenuhi Standar)"
             binding.tvRamStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_ready_text))
             binding.ivRamIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_ready_text))
             binding.cardRamStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_ok_border)
-            binding.tvRamRequirement.text = "HP Siswa: $formattedRam GB RAM • Standar minimal: 2 GB RAM"
         } else {
-            binding.tvRamStatus.text = "RAM HP: $formattedRam GB (Di Bawah Standar!)"
+            binding.tvRamStatus.text = "RAM: $formattedRam GB (Di Bawah Standar!)"
             binding.tvRamStatus.setTextColor(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.ivRamIcon.setColorFilter(ContextCompat.getColor(this, R.color.badge_danger_text))
             binding.cardRamStatus.strokeColor = ContextCompat.getColor(this, R.color.card_sensor_bad_border)
-            binding.tvRamRequirement.text = "HP Siswa: $formattedRam GB RAM • Standar minimal: 2 GB RAM"
         }
+        binding.tvRamRequirement.text = "Minimal RAM: 2 GB"
     }
 
     /**

@@ -12,13 +12,13 @@ data class ExamManifest(
     val schoolTagline: String = "Madrasah Tsanawiyah Unggulan & Berkarakter",
 
     @SerialName("school_npsn")
-    val schoolNpsn: String = "20278144",
+    val schoolNpsn: String = "20278365",
 
     @SerialName("school_nsm")
-    val schoolNsm: String = "121232010001",
+    val schoolNsm: String = "121232050172",
 
     @SerialName("school_address")
-    val schoolAddress: String = "Jl. Raya Timur No. 45, Kec. Taraju, Kab. Tasikmalaya, Jawa Barat",
+    val schoolAddress: String = "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat.",
 
     @SerialName("exam_title")
     val examTitle: String = "Penilaian Akhir Semester (PAS) Ganjil",

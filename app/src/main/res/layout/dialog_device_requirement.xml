@@ -308,7 +308,7 @@
                         android:layout_height="20dp"
                         android:src="@drawable/ic_android"
                         app:tint="@color/badge_ready_text"
-                        android:contentDescription="Versi Android" />
+                        android:contentDescription="Versi" />
 
                     <TextView
                         android:id="@+id/tvDialogAndroidStatus"
@@ -316,7 +316,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
                         android:layout_weight="1"
-                        android:text="Android: Minimal Versi 8 (Oreo)"
+                        android:text="Versi: Minimal Android 8 (Oreo)"
                         android:textColor="@color/badge_ready_text"
                         android:textSize="12.5sp"
                         android:textStyle="bold" />
