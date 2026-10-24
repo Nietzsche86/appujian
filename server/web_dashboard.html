@@ -1218,17 +1218,22 @@
         <div class="stat-card">
             <div class="stat-header">
                 <span class="stat-label"><i class="fa-solid fa-key"></i> Master PIN Pengawas</span>
-                <button class="btn btn-sm btn-icon" onclick="togglePinVisibility()" title="Lihat/Sembunyikan PIN">
-                    <i class="fa-regular fa-eye" id="pinToggleIcon"></i>
-                </button>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-sm btn-icon" onclick="togglePinVisibility()" title="Lihat/Sembunyikan PIN">
+                        <i class="fa-regular fa-eye" id="pinToggleIcon"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="openChangePinModal()" style="padding: 4px 10px; font-size: 11px;" title="Ganti Master PIN Kapan Saja">
+                        <i class="fa-solid fa-pen-to-square"></i> Ganti
+                    </button>
+                </div>
             </div>
             <div class="stat-body">
-                <div class="stat-value mono" id="displayMasterPin">••••••</div>
+                <div class="stat-value mono" id="displayMasterPin" onclick="openChangePinModal()" style="cursor: pointer;" title="Klik untuk mengganti Master Key">••••••</div>
                 <button class="btn btn-sm" onclick="copyMasterPin()" title="Salin PIN">
-                    <i class="fa-solid fa-clone"></i>
+                    <i class="fa-solid fa-clone"></i> Salin
                 </button>
             </div>
-            <span class="form-hint">Kunci darurat bypass penalti ban di HP</span>
+            <span class="form-hint">Kunci darurat bypass di HP • <a href="javascript:void(0)" onclick="openChangePinModal()" style="color: var(--emerald-400); text-decoration: underline; font-weight: 600;">Ganti Kapan Saja &rarr;</a></span>
         </div>
 
         <!-- Card 3: Total Paket Soal -->
@@ -1443,6 +1448,9 @@
                     <span class="card-title">
                         <i class="fa-solid fa-shield-halved"></i> Ujian &amp; Keamanan Offline
                     </span>
+                    <button class="btn btn-sm" type="button" onclick="loadData(true)" title="Muat ulang dari server">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
                 </div>
 
                 <div class="form-group">
@@ -1453,22 +1461,40 @@
 
                 <div class="form-group">
                     <label class="form-label">
-                        <span>Master PIN Pengawas (6-Digit Offline Bypass)</span>
+                        <span>Master Key / PIN Pengawas</span>
+                        <span class="badge-code" id="pinLiveStatusBadge" style="cursor: pointer;" onclick="openChangePinModal()">Bisa diganti kapan saja</span>
                     </label>
                     <div class="input-group-pass">
-                        <input type="password" id="inputMasterPin" class="form-control mono" maxlength="8" placeholder="888999" style="font-weight: 700; letter-spacing: 0.15em;">
+                        <input type="password" id="inputMasterPin" class="form-control mono" maxlength="32" placeholder="888999" style="font-weight: 700; letter-spacing: 0.15em;">
                         <button type="button" class="pass-toggle-btn" onclick="toggleInputPinVisibility()" title="Lihat/Sembunyikan PIN">
                             <i class="fa-regular fa-eye" id="inputPinToggleIcon"></i>
                         </button>
                     </div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;">
+                        <button type="button" class="btn btn-sm" onclick="quickRandomPin('number')" style="font-size: 11px;">
+                            <i class="fa-solid fa-dice"></i> Acak 6 Angka
+                        </button>
+                        <button type="button" class="btn btn-sm" onclick="quickRandomPin('alpha')" style="font-size: 11px;">
+                            <i class="fa-solid fa-shuffle"></i> Acak Alfabet
+                        </button>
+                        <button type="button" class="btn btn-sm" onclick="copyMasterPin()" style="font-size: 11px;">
+                            <i class="fa-solid fa-copy"></i> Salin PIN
+                        </button>
+                    </div>
                     <span class="form-hint">PIN darurat di ruang ujian untuk membuka penalti ban siswa atau konfirmasi paksa</span>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    <button class="btn btn-primary" id="btnSaveSecurity" onclick="saveSecuritySettings()">
+                        <i class="fa-regular fa-floppy-disk"></i> Simpan Master Key &amp; Ujian
+                    </button>
                 </div>
 
                 <div style="background: var(--surface-subtle); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; display: flex; gap: 12px; align-items: flex-start; margin-top: 10px;">
                     <i class="fa-solid fa-circle-info" style="color: var(--amber-400); font-size: 16px; margin-top: 2px;"></i>
                     <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
                         <b>Protokol Keamanan Mandiri:</b><br>
-                        Master PIN disimpan dalam bentuk SHA-256 hash di HP siswa saat sinkronisasi, sehingga ponsel siswa tidak menyimpan teks sandi terbuka dan tetap aman offline.
+                        Master key pengawas dapat Anda ganti kapan saja. Master key disimpan dalam bentuk SHA-256 hash di HP siswa saat sinkronisasi, sehingga ponsel siswa tidak menyimpan teks sandi terbuka dan tetap aman offline.
                     </div>
                 </div>
             </div>
@@ -1714,6 +1740,52 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- MODAL 3: GANTI MASTER KEY / PIN PENGAWAS   -->
+<!-- ========================================== -->
+<div class="modal-backdrop" id="modalChangePin">
+    <div class="modal-box" style="max-width: 460px;">
+        <div class="modal-header-bar">
+            <span class="modal-title">
+                <i class="fa-solid fa-key"></i> Ganti Master Key / PIN Pengawas
+            </span>
+            <button class="modal-close-btn" onclick="closeModal('modalChangePin')">&times;</button>
+        </div>
+
+        <div style="background: var(--surface-subtle); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+            Master Key dapat Anda ubah kapan saja. Digunakan pengawas di ruang ujian untuk membuka penalti ban darurat atau konfirmasi penyelesaian ujian.
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <span>Master Key / PIN Baru</span>
+                <span class="form-hint">Bebas diisi angka/huruf</span>
+            </label>
+            <div class="input-group-pass">
+                <input type="text" id="modalInputMasterPin" class="form-control mono" maxlength="32" placeholder="Contoh: 888999" style="font-size: 18px; font-weight: 700; letter-spacing: 0.15em;">
+                <button type="button" class="pass-toggle-btn" onclick="toggleModalPinVisibility()" title="Lihat/Sembunyikan">
+                    <i class="fa-regular fa-eye-slash" id="modalPinToggleIcon"></i>
+                </button>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-sm" onclick="modalGeneratePin('numeric')" style="font-size: 11px;">
+                    <i class="fa-solid fa-dice"></i> Acak 6 Digit (Angka)
+                </button>
+                <button type="button" class="btn btn-sm" onclick="modalGeneratePin('alpha')" style="font-size: 11px;">
+                    <i class="fa-solid fa-shuffle"></i> Acak Alfabet
+                </button>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn" onclick="closeModal('modalChangePin')">Batal</button>
+            <button type="button" class="btn btn-primary" id="btnSubmitModalPin" onclick="submitModalChangePin()">
+                <i class="fa-solid fa-check"></i> Terapkan PIN Baru
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast Alert Container -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -1846,7 +1918,119 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    /* PIN Visibility */
+    /* PIN Visibility & Management */
+    let isModalPinRevealed = true;
+
+    function openChangePinModal() {
+        const currentPin = serverData.master_pin || document.getElementById('inputMasterPin').value || '888999';
+        const input = document.getElementById('modalInputMasterPin');
+        input.value = currentPin;
+        input.type = 'text';
+        isModalPinRevealed = true;
+        const icon = document.getElementById('modalPinToggleIcon');
+        if (icon) icon.className = 'fa-regular fa-eye-slash';
+
+        openModal('modalChangePin');
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 150);
+    }
+
+    function toggleModalPinVisibility() {
+        isModalPinRevealed = !isModalPinRevealed;
+        const input = document.getElementById('modalInputMasterPin');
+        const icon = document.getElementById('modalPinToggleIcon');
+        if (isModalPinRevealed) {
+            input.type = 'text';
+            icon.className = 'fa-regular fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fa-regular fa-eye';
+        }
+    }
+
+    function modalGeneratePin(type) {
+        let res = '';
+        if (type === 'numeric') {
+            for (let i = 0; i < 6; i++) {
+                res += Math.floor(Math.random() * 10).toString();
+            }
+        } else {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            for (let i = 0; i < 6; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+        }
+        document.getElementById('modalInputMasterPin').value = res;
+        showToast("Master key acak dibuat: " + res, "fa-wand-magic-sparkles");
+    }
+
+    function quickRandomPin(type) {
+        let res = '';
+        if (type === 'number') {
+            for (let i = 0; i < 6; i++) {
+                res += Math.floor(Math.random() * 10).toString();
+            }
+        } else {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            for (let i = 0; i < 6; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+        }
+        const input = document.getElementById('inputMasterPin');
+        input.value = res;
+        input.type = 'text';
+        isInputPinRevealed = true;
+        const icon = document.getElementById('inputPinToggleIcon');
+        if (icon) icon.className = 'fa-regular fa-eye-slash';
+        showToast("PIN baru: " + res + ". Klik 'Simpan Master Key & Ujian' untuk menerapkan.", "fa-wand-magic-sparkles");
+    }
+
+    async function submitModalChangePin() {
+        const newPin = document.getElementById('modalInputMasterPin').value.trim();
+        if (!newPin) {
+            alert("Master Key / PIN Pengawas tidak boleh kosong!");
+            document.getElementById('modalInputMasterPin').focus();
+            return;
+        }
+
+        const btn = document.getElementById('btnSubmitModalPin');
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ master_pin: newPin })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                serverData.master_pin = newPin;
+                const inputPin = document.getElementById('inputMasterPin');
+                if (inputPin) inputPin.value = newPin;
+
+                const displayPin = document.getElementById('displayMasterPin');
+                if (displayPin) {
+                    displayPin.textContent = isPinRevealed ? newPin : '••••••';
+                }
+
+                closeModal('modalChangePin');
+                showToast(`Master Key pengawas berhasil diubah menjadi: ${newPin}`, 'fa-key');
+                await loadData(true);
+            } else {
+                alert("Gagal menyimpan PIN: " + (data.error || "Terjadi kesalahan"));
+            }
+        } catch (err) {
+            alert("Kesalahan koneksi ke server: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+
     function togglePinVisibility() {
         isPinRevealed = !isPinRevealed;
         const icon = document.getElementById('pinToggleIcon');
@@ -2224,6 +2408,50 @@
     }
 
     /* Save Settings APIs */
+    async function saveSecuritySettings() {
+        const examTitle = document.getElementById('inputExamTitle').value.trim();
+        const masterPin = document.getElementById('inputMasterPin').value.trim();
+
+        if (!masterPin) {
+            alert("Master Key / PIN Pengawas tidak boleh kosong!");
+            document.getElementById('inputMasterPin').focus();
+            return;
+        }
+
+        const btn = document.getElementById('btnSaveSecurity');
+        const origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    exam_title: examTitle,
+                    master_pin: masterPin
+                })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                serverData.master_pin = masterPin;
+                const displayPin = document.getElementById('displayMasterPin');
+                if (displayPin) {
+                    displayPin.textContent = isPinRevealed ? masterPin : '••••••';
+                }
+                showToast("Master PIN pengawas & judul ujian berhasil disimpan!", "fa-shield-halved");
+                await loadData(true);
+            } else {
+                alert("Gagal: " + (data.error || "Terjadi kesalahan"));
+            }
+        } catch (e) {
+            alert("Kesalahan koneksi ke server: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+
     async function saveIdentitySettings() {
         const schoolName = document.getElementById('inputSchoolName').value.trim();
         const schoolTagline = document.getElementById('inputSchoolTagline').value.trim();
