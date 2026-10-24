@@ -27,7 +27,7 @@ Repositori ini berisi kode sumber aplikasi Android Kiosk Exam Reader untuk ujian
 
 ### Pola Arsitektur
 * Gunakan arsitektur sederhana: `MVVM` tanpa dependency injection berat (gunakan manual injection / singleton terkelola).
-* Package root: `id.sch.examkiosk`
+* Package root: `id.mtsrth.exam`
 
 ### Struktur Direktori
 * `data/crypto/`: Logika PBKDF2, derivasi kunci, dan stream decryptor AES-GCM 256-bit.

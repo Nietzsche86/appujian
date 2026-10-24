@@ -9,7 +9,7 @@
 }
 
 # Keep Data Models
--keep class id.sch.examkiosk.data.model.** { *; }
+-keep class id.mtsrth.exam.data.model.** { *; }
 
 # OkHttp
 -dontwarn okhttp3.**

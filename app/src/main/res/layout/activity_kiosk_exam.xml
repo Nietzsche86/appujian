@@ -116,7 +116,7 @@
     </LinearLayout>
 
     <!-- PDF Viewer Area Wrapped in ZoomableLayout -->
-    <id.sch.examkiosk.ui.kiosk.ZoomableLayout
+    <id.mtsrth.exam.ui.kiosk.ZoomableLayout
         android:id="@+id/zoomablePdfContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -130,7 +130,7 @@
             android:clipToPadding="false"
             android:padding="8dp"
             android:scrollbars="vertical" />
-    </id.sch.examkiosk.ui.kiosk.ZoomableLayout>
+    </id.mtsrth.exam.ui.kiosk.ZoomableLayout>
 
     <!-- Kiosk Mode Screen Pinning Blocker (Black Overlay) -->
     <LinearLayout
