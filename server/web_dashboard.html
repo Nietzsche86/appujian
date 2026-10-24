@@ -637,7 +637,7 @@
             border: 1px solid var(--border-emerald);
         }
 
-        /* Tables */
+        /* Tables & Responsive Mobile Scroll */
         .table-card {
             background: var(--surface-card);
             backdrop-filter: blur(16px);
@@ -648,9 +648,46 @@
             box-shadow: var(--shadow-sm);
         }
 
+        .mobile-table-hint {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            font-size: 11.5px;
+            color: var(--emerald-400);
+            background: var(--emerald-bg);
+            border-bottom: 1px solid var(--border-emerald);
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .mobile-table-hint {
+                display: flex;
+            }
+        }
+
         .table-responsive {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
             width: 100%;
+            position: relative;
+        }
+
+        .table-responsive::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-responsive::-webkit-scrollbar-track {
+            background: var(--surface-subtle);
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: var(--radius-full);
+        }
+
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: var(--emerald-500);
         }
 
         table {
@@ -658,6 +695,59 @@
             border-collapse: collapse;
             font-size: 13px;
             text-align: left;
+        }
+
+        /* Memanjang pada layar HP / Tablet agar tidak berantakan */
+        .table-exams {
+            min-width: 860px;
+            width: 100%;
+        }
+
+        .table-logs {
+            min-width: 580px;
+            width: 100%;
+        }
+
+        /* Kolom Header & Cell Memanjang Khusus Jadwal & Waktu */
+        .col-schedule {
+            width: 260px;
+            min-width: 260px;
+            white-space: nowrap;
+        }
+
+        .col-code {
+            width: 85px;
+            min-width: 85px;
+            white-space: nowrap;
+        }
+
+        .col-subject {
+            min-width: 200px;
+        }
+
+        .col-grade {
+            width: 100px;
+            min-width: 100px;
+            white-space: nowrap;
+        }
+
+        .col-duration {
+            width: 140px;
+            min-width: 140px;
+            white-space: nowrap;
+        }
+
+        .col-token {
+            width: 130px;
+            min-width: 130px;
+            white-space: nowrap;
+        }
+
+        .col-action {
+            width: 110px;
+            min-width: 110px;
+            white-space: nowrap;
+            text-align: right;
         }
 
         thead th {
@@ -1325,17 +1415,21 @@
 
         <!-- Table Container -->
         <div class="table-card">
+            <div class="mobile-table-hint">
+                <i class="fa-solid fa-arrows-left-right"></i>
+                <span>Geser tabel ke samping untuk melihat kolom lengkap</span>
+            </div>
             <div class="table-responsive">
-                <table>
+                <table class="table-exams">
                     <thead>
                         <tr>
-                            <th>Jadwal &amp; Waktu</th>
-                            <th>Kode</th>
-                            <th>Mata Pelajaran</th>
-                            <th>Tingkat</th>
-                            <th>Durasi Waktu</th>
-                            <th>Token Akses</th>
-                            <th style="text-align: right;">Aksi</th>
+                            <th class="col-schedule">Jadwal &amp; Waktu</th>
+                            <th class="col-code">Kode</th>
+                            <th class="col-subject">Mata Pelajaran</th>
+                            <th class="col-grade">Tingkat</th>
+                            <th class="col-duration">Durasi Waktu</th>
+                            <th class="col-token">Token Akses</th>
+                            <th class="col-action" style="text-align: right;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="examTableBody">
@@ -1371,13 +1465,17 @@
         </div>
 
         <div class="table-card">
+            <div class="mobile-table-hint">
+                <i class="fa-solid fa-arrows-left-right"></i>
+                <span>Geser tabel ke samping untuk melihat log lengkap</span>
+            </div>
             <div class="table-responsive">
-                <table>
+                <table class="table-logs">
                     <thead>
                         <tr>
-                            <th style="width: 140px;">Waktu</th>
-                            <th style="width: 180px;">IP Perangkat Siswa</th>
-                            <th>Aktivitas Server</th>
+                            <th style="width: 140px; min-width: 140px; white-space: nowrap;">Waktu</th>
+                            <th style="width: 180px; min-width: 180px; white-space: nowrap;">IP Perangkat Siswa</th>
+                            <th style="min-width: 260px;">Aktivitas Server</th>
                         </tr>
                     </thead>
                     <tbody id="logTableBody">
@@ -2302,41 +2400,41 @@
 
             html += `
             <tr>
-                <td>
-                    <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 4px;">
-                        <span class="badge-code" style="background: var(--surface-subtle); color: var(--text-main); border-color: var(--border);">
+                <td class="col-schedule">
+                    <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 5px; flex-wrap: nowrap;">
+                        <span class="badge-code" style="background: var(--surface-subtle); color: var(--text-main); border-color: var(--border); white-space: nowrap;">
                             <i class="fa-regular fa-calendar"></i> ${escapeHtml(examDay)}
                         </span>
-                        ${examDate ? `<span class="badge-code" style="background: var(--amber-bg); color: var(--amber-400); border-color: var(--amber-border);">${escapeHtml(examDate)}</span>` : ''}
+                        ${examDate ? `<span class="badge-code" style="background: var(--amber-bg); color: var(--amber-400); border-color: var(--amber-border); white-space: nowrap;">${escapeHtml(examDate)}</span>` : ''}
                     </div>
-                    <div class="mono" style="font-size: 13px; font-weight: 700; color: var(--text-main);">
-                        <i class="fa-regular fa-clock" style="color: var(--emerald-400);"></i> ${escapeHtml(startTime)} - ${escapeHtml(endTime)}
+                    <div class="mono" style="font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-regular fa-clock" style="color: var(--emerald-400);"></i> <span>${escapeHtml(startTime)} - ${escapeHtml(endTime)} WIB</span>
                     </div>
                 </td>
-                <td>
+                <td class="col-code">
                     <span class="badge-code">${escapeHtml(shortName)}</span>
                 </td>
-                <td>
+                <td class="col-subject">
                     <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(ex.subject_name)}</div>
                     <small class="mono" style="color: var(--text-muted); font-size: 11px;">ID: ${escapeHtml(ex.id)}</small>
                 </td>
-                <td>
+                <td class="col-grade">
                     <span class="badge-grade">Kelas ${ex.grade_level}</span>
                 </td>
-                <td>
+                <td class="col-duration">
                     <span class="duration-interactive" onclick="openEditDuration('${escapeHtml(ex.id)}')" title="Klik untuk ubah jadwal & durasi">
                         <i class="fa-solid fa-stopwatch" style="color: var(--emerald-400);"></i>
                         <span>${ex.duration_minutes} Menit</span>
                         <i class="fa-solid fa-pen"></i>
                     </span>
                 </td>
-                <td>
+                <td class="col-token">
                     <span class="badge-token mono" onclick="copyExamToken('${escapeHtml(ex.token)}')" title="Klik untuk menyalin token">
                         <i class="fa-solid fa-key" style="font-size: 10px;"></i>
                         <span>${escapeHtml(ex.token)}</span>
                     </span>
                 </td>
-                <td style="text-align: right;">
+                <td class="col-action" style="text-align: right;">
                     <div style="display: inline-flex; gap: 6px;">
                         <button class="btn btn-sm" onclick="openEditDuration('${escapeHtml(ex.id)}')" title="Ubah Jadwal">
                             <i class="fa-solid fa-pen"></i>
