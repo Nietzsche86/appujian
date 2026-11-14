@@ -26,10 +26,18 @@ jobs:
           gradle-version: '8.6'
           cache-read-only: false
 
-      - name: 4. Compile Debug APK
+      - name: 4. Prepare Debug Keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            tr -d '\r\n ' < debug.keystore.base64 | base64 -d > debug.keystore
+          else
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: 5. Compile Debug APK
         run: gradle assembleDebug --stacktrace --no-daemon
 
-      - name: 5. Upload APK Artifact
+      - name: 6. Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: E-UJIAN-MTS-RTH-Debug

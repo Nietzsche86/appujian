@@ -45,7 +45,7 @@ jobs:
             echo "::error::Secret KEYSTORE_BASE64 belum diisi di repository secrets!"
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > app/release-key.jks
+          echo "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > app/release-key.jks
 
       - name: 5. Compile Signed Release APK
         env:
