@@ -301,9 +301,9 @@ fun SupervisorPinComposeDialog(
                             text = if (isVerified) {
                                 "PIN valid. Pilih tindakan pengendalian sesi."
                             } else if (hasDailyPin) {
-                                "Masukkan PIN Pengawas hari $todayLabel untuk membuka akses."
+                                "Masukkan PIN Pengawas hari $todayLabel atau PIN Darurat Permanen."
                             } else {
-                                "Masukkan Master PIN pengawas untuk membuka akses."
+                                "Masukkan PIN Darurat Permanen pengawas untuk membuka akses."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.slateSecondary
@@ -326,8 +326,8 @@ fun SupervisorPinComposeDialog(
                                 },
                                 label = {
                                     Text(
-                                        if (hasDailyPin) "PIN PENGAWAS ($todayLabel)".uppercase()
-                                        else "MASTER PIN PENGAWAS"
+                                        if (hasDailyPin) "PIN HARIAN ($todayLabel) / DARURAT".uppercase()
+                                        else "PIN DARURAT PENGAWAS"
                                     )
                                 },
                                 placeholder = { Text("••••••") },

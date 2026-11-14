@@ -58,16 +58,31 @@ object SupervisorPinHelper {
             return PinVerifyResult.Failure("PIN pengawas tidak boleh kosong")
         }
 
-        // Anti-clock-rollback check untuk mencegah bypass rotasi PIN harian dengan memundurkan tanggal HP
+        val actualHash = LocalSyncManager.calculateSha256(pin)
+
+        // Lapis 1: PIN Darurat Permanen (Super Admin / Proktor)
+        // Selalu aktif di semua hari (Senin-Minggu) & tetap tembus meski jam perangkat bermasalah.
+        val masterHash = storage.masterPinHash
+        val isEmergencyMaster = if (masterHash.isNotBlank()) {
+            actualHash.equals(masterHash, ignoreCase = true)
+        } else {
+            pin == "888999"
+        }
+        if (isEmergencyMaster) {
+            storage.advanceMaxKnownTimestamp(nowMillis)
+            return PinVerifyResult.Success
+        }
+
+        // Lapis 2: PIN Pengawas Harian (Senin - Sabtu)
+        // Dilindungi pengecekan anti-rollback waktu agar tanggal HP tidak bisa dimundurkan demi memakai PIN kemarin.
         val maxKnown = storage.maxKnownTimestampMillis
         if (maxKnown > 0L && nowMillis + CLOCK_DRIFT_TOLERANCE_MILLIS < maxKnown) {
             return PinVerifyResult.Failure(
-                "Waktu/tanggal perangkat terdeteksi dimundurkan! Perbaiki jam perangkat terlebih dahulu."
+                "Waktu/tanggal perangkat terdeteksi dimundurkan! Perbaiki jam atau gunakan PIN Darurat Permanen."
             )
         }
         storage.advanceMaxKnownTimestamp(nowMillis)
 
-        val actualHash = LocalSyncManager.calculateSha256(pin)
         val todayKey = getTodayDayKey(nowMillis)
         val dailyHashes = storage.getDailyPinHashes()
         val expectedDailyHash = if (todayKey != null) dailyHashes[todayKey].orEmpty() else ""
@@ -77,22 +92,10 @@ object SupervisorPinHelper {
                 PinVerifyResult.Success
             } else {
                 val dayLabel = getTodayDayLabelId(nowMillis)
-                PinVerifyResult.Failure("PIN Pengawas hari $dayLabel tidak valid!")
+                PinVerifyResult.Failure("PIN Pengawas hari $dayLabel atau PIN Darurat tidak valid!")
             }
         }
 
-        // Fallback ke Master PIN jika PIN harian untuk hari ini kosong atau hari Minggu
-        val masterHash = storage.masterPinHash
-        val isMasterValid = if (masterHash.isNotBlank()) {
-            actualHash.equals(masterHash, ignoreCase = true)
-        } else {
-            pin == "888999"
-        }
-
-        return if (isMasterValid) {
-            PinVerifyResult.Success
-        } else {
-            PinVerifyResult.Failure("Master PIN pengawas tidak valid!")
-        }
+        return PinVerifyResult.Failure("PIN Darurat Permanen tidak valid!")
     }
 }

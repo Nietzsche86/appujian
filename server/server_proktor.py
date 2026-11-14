@@ -34,6 +34,8 @@ FILES_DIR = BASE_DIR / "files"
 CONFIG_FILE = BASE_DIR / "exams_config.json"
 MANIFEST_FILE = BASE_DIR / "manifest.json"
 HTML_FILE = BASE_DIR / "web_dashboard.html"
+LOGO_FILE = BASE_DIR / "logo_sekolah.png"
+APP_LOGO_FALLBACK = BASE_DIR.parent / "app" / "src" / "main" / "res" / "drawable" / "logo_sekolah.png"
 
 # Hari efektif pelaksanaan ujian untuk rotasi PIN Pengawas Harian (Senin - Sabtu)
 DAILY_PIN_KEYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday")
@@ -379,7 +381,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         # Respons uji koneksi dari perangkat siswa hanya untuk endpoint valid proktor
         clean_path = urlparse(self.path).path.strip("/")
-        valid = clean_path in ("", "admin", "api/ping", "api/data", "manifest.json")
+        valid = clean_path in ("", "admin", "api/ping", "api/data", "manifest.json", "logo_sekolah.png", "favicon.ico")
         if not valid and clean_path.startswith("files/"):
             filename = clean_path.replace("files/", "")
             valid = (FILES_DIR / filename).is_file()
@@ -432,6 +434,22 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 self.wfile.write(content)
             else:
                 self.send_error(404, "HTML template tidak ditemukan")
+            return
+
+        # 1b. Logo Sekolah & Favicon
+        if clean_path in ("logo_sekolah.png", "favicon.ico"):
+            logo_path = LOGO_FILE if LOGO_FILE.exists() else APP_LOGO_FALLBACK
+            if logo_path.exists():
+                with open(logo_path, "rb") as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(content)))
+                self.send_header("Cache-Control", "public, max-age=3600")
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                self.send_error(404, "Logo sekolah tidak ditemukan")
             return
 
         # 2. Endpoint Data Web API (Status, Konfigurasi, & Log)

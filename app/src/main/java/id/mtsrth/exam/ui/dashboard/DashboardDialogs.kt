@@ -530,7 +530,7 @@ fun MakeupExamComposeDialog(
                 }
 
                 Text(
-                    text = "Jadwal ujian ini telah lewat. Pengawas wajib mengisi ${if (hasDailyPin) "PIN Hari $todayLabel" else "Master PIN"} beserta Token Soal agar waktu berjalan penuh $totalMinutes menit.",
+                    text = "Jadwal ujian ini telah lewat. Pengawas wajib mengisi ${if (hasDailyPin) "PIN Hari $todayLabel atau PIN Darurat Permanen" else "PIN Darurat Permanen"} beserta Token Soal agar waktu berjalan penuh $totalMinutes menit.",
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.slateSecondary
                 )
@@ -543,8 +543,8 @@ fun MakeupExamComposeDialog(
                     },
                     label = {
                         Text(
-                            if (hasDailyPin) "PIN PENGAWAS ($todayLabel)".uppercase()
-                            else "MASTER PIN PENGAWAS"
+                            if (hasDailyPin) "PIN HARIAN ($todayLabel) / DARURAT".uppercase()
+                            else "PIN DARURAT PENGAWAS"
                         )
                     },
                     placeholder = { Text("••••••") },
