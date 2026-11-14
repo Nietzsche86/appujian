@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -57,18 +58,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import id.mtsrth.exam.ExamApp
 import id.mtsrth.exam.R
 import id.mtsrth.exam.data.sync.LocalSyncManager
+import id.mtsrth.exam.ui.components.KeyboardAwareDialog
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 import kotlin.math.roundToInt
@@ -89,7 +92,7 @@ fun JumpToPageDialog(
     }
     val ctaSolidBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
 
-    Dialog(onDismissRequest = onDismiss) {
+    KeyboardAwareDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,
@@ -254,6 +257,7 @@ fun SupervisorPinComposeDialog(
     val colors = PrestigeTheme.colors
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val ctaSolidBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
 
     var pinText by remember { mutableStateOf("") }
@@ -261,7 +265,7 @@ fun SupervisorPinComposeDialog(
     var isVerified by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    KeyboardAwareDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,
@@ -324,7 +328,13 @@ fun SupervisorPinComposeDialog(
                                 placeholder = { Text("••••••") },
                                 singleLine = true,
                                 isError = errorMessage != null,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.NumberPassword,
+                                    imeAction = ImeAction.Done
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = { keyboardController?.hide() }
+                                ),
                                 visualTransformation = if (pinVisible) VisualTransformation.None else PasswordVisualTransformation(),
                                 trailingIcon = {
                                     IconButton(onClick = { pinVisible = !pinVisible }) {
@@ -494,7 +504,7 @@ fun ConfirmFinishComposeDialog(
 ) {
     val colors = PrestigeTheme.colors
 
-    Dialog(onDismissRequest = onDismiss) {
+    KeyboardAwareDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,

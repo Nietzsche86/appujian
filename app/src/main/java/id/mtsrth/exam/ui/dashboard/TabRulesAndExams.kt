@@ -36,11 +36,13 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Shield
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,7 +55,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +86,8 @@ import id.mtsrth.exam.ui.components.bounceClick
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 import id.mtsrth.exam.util.ExamScheduleHelper
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 private val DEFAULT_EXAM_RULES = listOf(
     "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
@@ -371,11 +379,20 @@ fun ExamsScheduleTab(
     onGoToDashboardTab: () -> Unit,
     onGoToRulesTab: () -> Unit,
     onGoToSettingsTab: () -> Unit,
+    onFixNotificationPermission: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = PrestigeTheme.colors
     val haptic = LocalHapticFeedback.current
     val isSyncing = uiState.syncState is SyncState.Syncing
+
+    var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            nowMillis = System.currentTimeMillis()
+            delay(1000L)
+        }
+    }
 
     val activeItems = uiState.examItems.filter { it.status != ExamStatus.SELESAI }
     val finishedItems = uiState.examItems.filter { it.status == ExamStatus.SELESAI }
@@ -490,6 +507,14 @@ fun ExamsScheduleTab(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("preflight_rules_pill")
+                )
+            }
+
+            if (!uiState.isNotificationPermissionGranted || !uiState.isExactAlarmAllowed) {
+                NotificationPermissionWarningCard(
+                    hasNotificationPermission = uiState.isNotificationPermissionGranted,
+                    hasExactAlarmPermission = uiState.isExactAlarmAllowed,
+                    onFixClick = onFixNotificationPermission
                 )
             }
 
@@ -645,6 +670,7 @@ fun ExamsScheduleTab(
                         displayedItems.forEach { item ->
                             ExamItemPrestigeCard(
                                 item = item,
+                                nowMillis = nowMillis,
                                 isDownloading = uiState.downloadingExamId == item.exam.id,
                                 onActionClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -835,8 +861,95 @@ private fun ExamStatMetricRow(
 }
 
 @Composable
+private fun NotificationPermissionWarningCard(
+    hasNotificationPermission: Boolean,
+    hasExactAlarmPermission: Boolean,
+    onFixClick: () -> Unit
+) {
+    val colors = PrestigeTheme.colors
+    val title = if (!hasNotificationPermission) {
+        "Izin Notifikasi Pengingat Belum Aktif"
+    } else {
+        "Izin Alarm Tepat Waktu Belum Aktif"
+    }
+    val message = if (!hasNotificationPermission) {
+        "Aktifkan izin notifikasi agar pengingat 5 menit sebelum ujian muncul di HP."
+    } else if (!hasExactAlarmPermission) {
+        "Aktifkan izin Alarm & Pengingat agar notifikasi 5 menit sebelum ujian muncul tepat waktu."
+    } else {
+        ""
+    }
+
+    TonalPrestigeCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("card_notification_permission_warning"),
+        containerColor = colors.warmAmberSoftBg,
+        shadowElevation = 1.dp,
+        cornerRadius = 16.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.warmAmber.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.NotificationsActive,
+                    contentDescription = "Peringatan Izin Pengingat",
+                    tint = colors.warmAmber,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.inkSlate,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.slateSecondary
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = onFixClick,
+                modifier = Modifier
+                    .height(48.dp)
+                    .testTag("btn_fix_notification_permission"),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colors.warmAmber,
+                    contentColor = Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 14.dp)
+            ) {
+                Text(
+                    text = "Aktifkan",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ExamItemPrestigeCard(
     item: ExamItemUiModel,
+    nowMillis: Long,
     isDownloading: Boolean,
     onActionClick: () -> Unit
 ) {
@@ -854,13 +967,12 @@ private fun ExamItemPrestigeCard(
         exam.subjectName.filter { it.isLetterOrDigit() }.take(4).uppercase().ifEmpty { "MAPEL" }
     }
     val totalMinutes = ExamScheduleHelper.getTotalDurationMinutes(exam)
-    val urgencyLabel = if (item.status != ExamStatus.SELESAI) {
-        ExamScheduleHelper.getScheduleUrgencyLabel(exam)
-    } else null
-
     val isFinished = item.status == ExamStatus.SELESAI
     val isInProgress = item.status == ExamStatus.SEDANG_UJIAN
-    val scheduleState = item.scheduleState
+    val scheduleState = ExamScheduleHelper.getScheduleState(exam, nowMillis)
+    val urgencyLabel = if (!isFinished) {
+        ExamScheduleHelper.getScheduleUrgencyLabel(exam, nowMillis)
+    } else null
     val ctaSolidBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
 
     val (buttonText, buttonBg, buttonFg, buttonEnabled) = when {
@@ -1053,19 +1165,43 @@ private fun ExamItemPrestigeCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.slateSecondary
                         )
-                        if (urgencyLabel != null) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "• $urgencyLabel",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE) colors.deepEmerald else colors.warmAmber
-                            )
-                        } else if (item.isFilePresent && !isFinished) {
+                        if (item.isFilePresent && !isFinished) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "• Siap Offline",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = colors.vibrantTeal
+                            )
+                        }
+                    }
+                    if (urgencyLabel != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        val isActiveState = scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE
+                        val pillBg = if (isActiveState) colors.vibrantTealSoftBg else colors.warmAmberSoftBg
+                        val pillFg = if (isActiveState) colors.deepEmerald else colors.warmAmber
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(pillBg)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag("exam_countdown_${exam.id}"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Timer,
+                                contentDescription = "Hitung Mundur",
+                                tint = pillFg,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = urgencyLabel,
+                                fontFamily = JetBrainsMonoFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = pillFg,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

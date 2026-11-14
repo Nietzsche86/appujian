@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
@@ -77,7 +78,9 @@ class DashboardActivity : AppCompatActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ ->
+        updateNotificationPermissionState()
         ExamReminderScheduler.rescheduleFromStorage(this)
+        ExamReminderScheduler.checkDueRemindersNow(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -183,6 +186,9 @@ class DashboardActivity : AppCompatActivity() {
                             ExamApp.instance.secureStorage.serverUrl = url
                             syncManifestAndExams(url)
                         }
+                    },
+                    onFixNotificationPermission = {
+                        fixNotificationOrExactAlarmPermission()
                     }
                 )
 
@@ -224,9 +230,12 @@ class DashboardActivity : AppCompatActivity() {
         super.onResume()
         registerHardwareReceiver()
         updateHardwareStatus()
+        updateNotificationPermissionState()
         refreshExamList()
         updateExamStatistics()
         syncSchoolIdentityToUiState()
+        ExamReminderScheduler.rescheduleFromStorage(this)
+        ExamReminderScheduler.checkDueRemindersNow(this)
         startTimeTicker()
     }
 
@@ -277,15 +286,81 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
+            val granted = ExamReminderScheduler.canPostNotifications(this)
             val storage = ExamApp.instance.secureStorage
             if (!granted && !storage.notificationPermissionPrompted) {
                 storage.notificationPermissionPrompted = true
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+
+    private fun updateNotificationPermissionState() {
+        uiStateFlow.update {
+            it.copy(
+                isNotificationPermissionGranted = ExamReminderScheduler.canPostNotifications(this),
+                isExactAlarmAllowed = ExamReminderScheduler.canScheduleExactAlarms(this)
+            )
+        }
+    }
+
+    private fun fixNotificationOrExactAlarmPermission() {
+        if (!ExamReminderScheduler.canPostNotifications(this) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val storage = ExamApp.instance.secureStorage
+            if (!storage.notificationPermissionPrompted ||
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+            ) {
+                storage.notificationPermissionPrompted = true
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                openAppNotificationSettings()
+            }
+            return
+        }
+
+        if (!ExamReminderScheduler.canScheduleExactAlarms(this) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            try {
+                val intent = Intent(
+                    Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                    Uri.parse("package:$packageName")
+                )
+                startActivity(intent)
+            } catch (_: Exception) {
+                openAppDetailsSettings()
+            }
+            return
+        }
+
+        ExamReminderScheduler.rescheduleFromStorage(this)
+        ExamReminderScheduler.checkDueRemindersNow(this)
+        updateNotificationPermissionState()
+        Toast.makeText(
+            this,
+            "Izin notifikasi dan pengingat ujian sudah aktif",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun openAppNotificationSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            }
+            startActivity(intent)
+        } catch (_: Exception) {
+            openAppDetailsSettings()
+        }
+    }
+
+    private fun openAppDetailsSettings() {
+        try {
+            val intent = Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", packageName, null)
+            )
+            startActivity(intent)
+        } catch (_: Exception) {
+            openSystemSettingsSafe(Settings.ACTION_SETTINGS)
         }
     }
 
@@ -308,7 +383,9 @@ class DashboardActivity : AppCompatActivity() {
                 serverHost = host,
                 serverPort = port.ifBlank { "8080" },
                 serverHistory = storage.getServerHistory(),
-                lastSyncTimestamp = storage.lastSyncTimestamp
+                lastSyncTimestamp = storage.lastSyncTimestamp,
+                isNotificationPermissionGranted = ExamReminderScheduler.canPostNotifications(this),
+                isExactAlarmAllowed = ExamReminderScheduler.canScheduleExactAlarms(this)
             )
         }
     }
@@ -317,8 +394,9 @@ class DashboardActivity : AppCompatActivity() {
         timeTickerJob?.cancel()
         timeTickerJob = lifecycleScope.launch {
             while (isActive) {
-                delay(3000L)
+                ExamReminderScheduler.checkDueRemindersNow(this@DashboardActivity)
                 refreshExamList()
+                delay(1000L)
             }
         }
     }

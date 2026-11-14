@@ -103,6 +103,26 @@ class SecureStorage(context: Context) {
         prefs.edit().putStringSet(KEY_SCHEDULED_REMINDERS, ids).apply()
     }
 
+    fun isReminderNotified(key: String): Boolean {
+        val current = prefs.getStringSet(KEY_NOTIFIED_REMINDERS, emptySet()) ?: emptySet()
+        return current.contains(key)
+    }
+
+    fun markReminderNotified(key: String) {
+        val current = prefs.getStringSet(KEY_NOTIFIED_REMINDERS, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (current.add(key)) {
+            prefs.edit().putStringSet(KEY_NOTIFIED_REMINDERS, current).apply()
+        }
+    }
+
+    fun pruneNotifiedReminderKeys(validKeys: Set<String>) {
+        val current = prefs.getStringSet(KEY_NOTIFIED_REMINDERS, emptySet()) ?: return
+        val retained = current.filter { validKeys.contains(it) }.toSet()
+        if (retained.size != current.size) {
+            prefs.edit().putStringSet(KEY_NOTIFIED_REMINDERS, retained).apply()
+        }
+    }
+
     fun getServerHistory(): List<String> {
         val raw = prefs.getString(KEY_SERVER_HISTORY, "") ?: ""
         return raw.split("|").map { it.trim() }.filter { it.isNotEmpty() }
@@ -164,5 +184,6 @@ class SecureStorage(context: Context) {
         private const val KEY_KIOSK_COMFORT_MODE = "kiosk_comfort_mode"
         private const val KEY_NOTIFICATION_PROMPTED = "notification_permission_prompted"
         private const val KEY_SCHEDULED_REMINDERS = "scheduled_reminder_ids"
+        private const val KEY_NOTIFIED_REMINDERS = "notified_reminder_keys"
     }
 }

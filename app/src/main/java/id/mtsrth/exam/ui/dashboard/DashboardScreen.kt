@@ -20,8 +20,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -86,7 +88,8 @@ fun DashboardScreen(
     onServerPortChange: (String) -> Unit,
     onSelectServerPreset: (String, String) -> Unit,
     onTestConnection: () -> Unit,
-    onSyncExams: () -> Unit
+    onSyncExams: () -> Unit,
+    onFixNotificationPermission: () -> Unit
 ) {
     val colors = PrestigeTheme.colors
     val animatedBg by animateColorAsState(
@@ -125,6 +128,8 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
+                .imePadding()
         ) {
             AnimatedContent(
                 targetState = uiState.currentTab,
@@ -156,7 +161,8 @@ fun DashboardScreen(
                         onExamAction = onExamAction,
                         onGoToDashboardTab = { onSelectTab(DashboardTab.DASHBOARD) },
                         onGoToRulesTab = { onSelectTab(DashboardTab.RULES) },
-                        onGoToSettingsTab = { onSelectTab(DashboardTab.SETTINGS) }
+                        onGoToSettingsTab = { onSelectTab(DashboardTab.SETTINGS) },
+                        onFixNotificationPermission = onFixNotificationPermission
                     )
                     DashboardTab.SETTINGS -> SettingsSyncTab(
                         uiState = uiState,

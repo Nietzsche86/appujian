@@ -15,13 +15,60 @@ object ExamScheduleHelper {
 
     fun parseMinutesOfDay(timeStr: String): Int? {
         if (timeStr.isBlank()) return null
-        val parts = timeStr.trim().split(":")
+        val normalized = timeStr.trim().replace('.', ':')
+        val parts = normalized.split(":")
         if (parts.size >= 2) {
             val h = parts[0].toIntOrNull() ?: return null
             val m = parts[1].toIntOrNull() ?: return null
-            return h * 60 + m
+            if (h in 0..23 && m in 0..59) {
+                return h * 60 + m
+            }
         }
         return null
+    }
+
+    fun getExamStartMillis(exam: ExamItem, nowMillis: Long = System.currentTimeMillis()): Long? {
+        val startMin = parseMinutesOfDay(exam.startTime) ?: return null
+        val hour = startMin / 60
+        val minute = startMin % 60
+        return buildDateTimeMillis(exam.examDate, hour, minute, nowMillis)
+    }
+
+    fun getExamEndMillis(exam: ExamItem, nowMillis: Long = System.currentTimeMillis()): Long? {
+        val endMin = parseMinutesOfDay(exam.endTime)
+        if (endMin != null) {
+            val hour = endMin / 60
+            val minute = endMin % 60
+            return buildDateTimeMillis(exam.examDate, hour, minute, nowMillis)
+        }
+        val startMillis = getExamStartMillis(exam, nowMillis) ?: return null
+        val totalAllocated = getTotalDurationMinutes(exam)
+        return startMillis + totalAllocated * 60_000L
+    }
+
+    private fun buildDateTimeMillis(
+        dateStr: String,
+        hour: Int,
+        minute: Int,
+        referenceNowMillis: Long
+    ): Long? {
+        val cal = Calendar.getInstance().apply {
+            timeInMillis = referenceNowMillis
+        }
+        if (dateStr.isNotBlank()) {
+            val parts = dateStr.trim().split("-")
+            if (parts.size != 3) return null
+            val year = parts[0].toIntOrNull() ?: return null
+            val month = (parts[1].toIntOrNull() ?: return null) - 1
+            val day = parts[2].toIntOrNull() ?: return null
+            cal.set(year, month, day, hour, minute, 0)
+        } else {
+            cal.set(Calendar.HOUR_OF_DAY, hour)
+            cal.set(Calendar.MINUTE, minute)
+            cal.set(Calendar.SECOND, 0)
+        }
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
 
     /**
@@ -32,16 +79,19 @@ object ExamScheduleHelper {
      *  1 jika examDate sudah lewat (kemarin atau sebelumnya)
      * null jika format tanggal kosong/tidak valid
      */
-    fun compareExamDateWithToday(dateStr: String): Int? {
+    fun compareExamDateWithToday(
+        dateStr: String,
+        nowMillis: Long = System.currentTimeMillis()
+    ): Int? {
         if (dateStr.isBlank()) return null
         try {
             val parts = dateStr.trim().split("-")
             if (parts.size != 3) return null
             val year = parts[0].toInt()
-            val month = parts[1].toInt() - 1 // Calendar month is 0-based
+            val month = parts[1].toInt() - 1
             val day = parts[2].toInt()
 
-            val now = Calendar.getInstance()
+            val now = Calendar.getInstance().apply { timeInMillis = nowMillis }
             val todayYear = now.get(Calendar.YEAR)
             val todayMonth = now.get(Calendar.MONTH)
             val todayDay = now.get(Calendar.DAY_OF_MONTH)
@@ -56,45 +106,38 @@ object ExamScheduleHelper {
             }
 
             return when {
-                examCal.after(todayCal) -> -1 // Tanggal masa depan
-                examCal.before(todayCal) -> 1  // Tanggal masa lalu
-                else -> 0                      // Hari ini
+                examCal.after(todayCal) -> -1
+                examCal.before(todayCal) -> 1
+                else -> 0
             }
         } catch (_: Exception) {
             return null
         }
     }
 
-    fun getScheduleState(exam: ExamItem): ScheduleState {
-        // 1. Validasi kalender tanggal terlebih dahulu
-        val dateCompare = compareExamDateWithToday(exam.examDate)
+    fun getScheduleState(
+        exam: ExamItem,
+        nowMillis: Long = System.currentTimeMillis()
+    ): ScheduleState {
+        val dateCompare = compareExamDateWithToday(exam.examDate, nowMillis)
         if (dateCompare != null) {
-            if (dateCompare < 0) {
-                return ScheduleState.NOT_STARTED_YET // Hari ujian belum tiba
-            } else if (dateCompare > 0) {
-                return ScheduleState.EXPIRED // Hari ujian sudah lewat
-            }
+            if (dateCompare < 0) return ScheduleState.NOT_STARTED_YET
+            if (dateCompare > 0) return ScheduleState.EXPIRED
         }
 
-        // 2. Jika hari ini (atau examDate tidak disetel), validasi jam
-        val totalAllocated = getTotalDurationMinutes(exam)
-        val startMin = parseMinutesOfDay(exam.startTime) ?: return ScheduleState.ACTIVE
-        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin + totalAllocated)
-
-        val now = Calendar.getInstance()
-        val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        val startMillis = getExamStartMillis(exam, nowMillis) ?: return ScheduleState.ACTIVE
+        val endMillis = getExamEndMillis(exam, nowMillis)
+            ?: (startMillis + getTotalDurationMinutes(exam) * 60_000L)
 
         return when {
-            currentMin < startMin -> ScheduleState.NOT_STARTED_YET
-            currentMin >= endMin -> ScheduleState.EXPIRED
+            nowMillis < startMillis -> ScheduleState.NOT_STARTED_YET
+            nowMillis >= endMillis -> ScheduleState.EXPIRED
             else -> ScheduleState.ACTIVE
         }
     }
 
     /**
      * Menghitung total durasi ujian yang dialokasikan dalam menit.
-     * Mengikuti selisih jam mulai dan jam selesai (misal 07:00 s.d 08:00 = 60 menit).
-     * Jika jam tidak disetel atau tidak valid, menggunakan fallback durationMinutes.
      */
     fun getTotalDurationMinutes(exam: ExamItem): Int {
         val startMin = parseMinutesOfDay(exam.startTime)
@@ -107,22 +150,15 @@ object ExamScheduleHelper {
 
     fun calculateEffectiveDurationMinutes(exam: ExamItem): Int {
         val totalAllocated = getTotalDurationMinutes(exam)
-        val startMin = parseMinutesOfDay(exam.startTime)
-        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin?.plus(totalAllocated))
-
-        if (endMin == null) {
-            return totalAllocated
-        }
-
-        val now = Calendar.getInstance()
-        val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        val remainingMin = endMin - currentMin
-
+        val nowMillis = System.currentTimeMillis()
+        val endMillis = getExamEndMillis(exam, nowMillis) ?: return totalAllocated
+        val remainingMillis = endMillis - nowMillis
+        val remainingMin = ((remainingMillis + 59_999L) / 60_000L).toInt()
         return remainingMin.coerceIn(1, totalAllocated)
     }
 
     /**
-     * Memformat tanggal untuk tampilan card siswa, contoh: "Senin, 26 Okt"
+     * Memformat tanggal untuk tampilan card siswa, contoh: "Senin, 26 Oktober 2026"
      */
     fun formatDisplayDate(dateStr: String, dayName: String): String {
         if (dateStr.isBlank()) {
@@ -147,31 +183,46 @@ object ExamScheduleHelper {
     }
 
     /**
-     * Menghasilkan label urgensi waktu singkat untuk kartu soal (misal "Mulai 15 mnt lagi" atau "Tersisa 40 mnt").
+     * Menghasilkan hitung mundur dinamis real-time hingga hitungan detik:
+     * - Menjelang mulai (<= 3 jam): "Mulai 4m 32d lagi"
+     * - Sedang berlangsung: "Sisa 1j 29m 15d"
      */
-    fun getScheduleUrgencyLabel(exam: ExamItem): String? {
-        val dateCompare = compareExamDateWithToday(exam.examDate)
+    fun getScheduleUrgencyLabel(
+        exam: ExamItem,
+        nowMillis: Long = System.currentTimeMillis()
+    ): String? {
+        val dateCompare = compareExamDateWithToday(exam.examDate, nowMillis)
         if (dateCompare != null && dateCompare != 0) return null
 
-        val totalAllocated = getTotalDurationMinutes(exam)
-        val startMin = parseMinutesOfDay(exam.startTime) ?: return null
-        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin + totalAllocated)
-
-        val now = Calendar.getInstance()
-        val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        val startMillis = getExamStartMillis(exam, nowMillis) ?: return null
+        val endMillis = getExamEndMillis(exam, nowMillis)
+            ?: (startMillis + getTotalDurationMinutes(exam) * 60_000L)
 
         return when {
-            currentMin < startMin -> {
-                val diff = startMin - currentMin
-                if (diff <= 180) {
-                    if (diff >= 60) "Mulai ${diff / 60}j ${diff % 60}m lagi" else "Mulai $diff mnt lagi"
+            nowMillis < startMillis -> {
+                val diffMillis = startMillis - nowMillis
+                if (diffMillis <= 3 * 60 * 60 * 1000L) {
+                    "Mulai ${formatDynamicCountdown(diffMillis)} lagi"
                 } else null
             }
-            currentMin < endMin -> {
-                val left = endMin - currentMin
-                if (left >= 60) "Sisa ${left / 60}j ${left % 60}m" else "Sisa $left mnt"
+            nowMillis < endMillis -> {
+                val leftMillis = endMillis - nowMillis
+                "Sisa ${formatDynamicCountdown(leftMillis)}"
             }
             else -> null
+        }
+    }
+
+    private fun formatDynamicCountdown(millis: Long): String {
+        val totalSeconds = ((millis + 999L) / 1000L).coerceAtLeast(1L)
+        val hours = totalSeconds / 3600L
+        val minutes = (totalSeconds % 3600L) / 60L
+        val seconds = totalSeconds % 60L
+
+        return when {
+            hours > 0 -> "${hours}j ${minutes}m ${seconds}d"
+            minutes > 0 -> "${minutes}m ${seconds}d"
+            else -> "${seconds}d"
         }
     }
 

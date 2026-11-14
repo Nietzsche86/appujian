@@ -75,5 +75,7 @@ data class DashboardUiState(
     val connectionTestState: ConnectionTestState = ConnectionTestState.Idle,
     val syncState: SyncState = SyncState.Idle,
     val downloadingExamId: String? = null,
-    val isDarkMode: Boolean = false
+    val isDarkMode: Boolean = false,
+    val isNotificationPermissionGranted: Boolean = true,
+    val isExactAlarmAllowed: Boolean = true
 )

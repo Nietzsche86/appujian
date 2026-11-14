@@ -26,12 +26,17 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,6 +61,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 
@@ -401,3 +408,60 @@ fun ShimmerExamSkeletonList(
         }
     }
 }
+
+/**
+ * Dialog responsif yang otomatis bergeser ke atas dan dapat di-scroll saat keyboard (IME) muncul
+ * sehingga kolom input dan tombol aksi tidak pernah tertutup keyboard.
+ */
+@Composable
+fun KeyboardAwareDialog(
+    onDismissRequest: () -> Unit,
+    dismissOnClickOutside: Boolean = true,
+    dismissOnBackPress: Boolean = true,
+    maxWidth: Dp = 420.dp,
+    content: @Composable () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(
+            dismissOnBackPress = dismissOnBackPress,
+            dismissOnClickOutside = dismissOnClickOutside,
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        val outerInteraction = remember { MutableInteractionSource() }
+        val innerInteraction = remember { MutableInteractionSource() }
+        val scrollState = rememberScrollState()
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .imePadding()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .clickable(
+                    interactionSource = outerInteraction,
+                    indication = null,
+                    enabled = dismissOnClickOutside,
+                    onClick = onDismissRequest
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = maxWidth)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .clickable(
+                        interactionSource = innerInteraction,
+                        indication = null,
+                        onClick = {}
+                    )
+            ) {
+                content()
+            }
+        }
+    }
+}
+

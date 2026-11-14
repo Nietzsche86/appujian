@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AirplanemodeActive
 import androidx.compose.material.icons.rounded.Android
@@ -49,16 +51,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import id.mtsrth.exam.R
 import id.mtsrth.exam.data.crypto.CryptoEngine
 import id.mtsrth.exam.data.model.ExamItem
 import id.mtsrth.exam.data.sync.LocalSyncManager
+import id.mtsrth.exam.ui.components.KeyboardAwareDialog
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 import id.mtsrth.exam.util.ExamScheduleHelper
@@ -73,7 +78,7 @@ fun DeviceRequirementComposeDialog(
 ) {
     val colors = PrestigeTheme.colors
 
-    Dialog(onDismissRequest = onDismiss) {
+    KeyboardAwareDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,
@@ -239,6 +244,7 @@ fun TokenInputComposeDialog(
     val colors = PrestigeTheme.colors
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
 
     var tokenText by remember { mutableStateOf("") }
@@ -247,7 +253,11 @@ fun TokenInputComposeDialog(
 
     val totalMinutes = ExamScheduleHelper.getTotalDurationMinutes(exam)
 
-    Dialog(onDismissRequest = { if (!isDecrypting) onDismiss() }) {
+    KeyboardAwareDialog(
+        onDismissRequest = { if (!isDecrypting) onDismiss() },
+        dismissOnClickOutside = !isDecrypting,
+        dismissOnBackPress = !isDecrypting
+    ) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,
@@ -306,6 +316,13 @@ fun TokenInputComposeDialog(
                     singleLine = true,
                     enabled = !isDecrypting,
                     isError = errorMessage != null,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { keyboardController?.hide() }
+                    ),
                     textStyle = TextStyle(
                         fontFamily = JetBrainsMonoFontFamily,
                         fontWeight = FontWeight.Bold,
@@ -442,7 +459,7 @@ fun GradeSwitchConfirmationDialog(
 ) {
     val colors = PrestigeTheme.colors
 
-    Dialog(onDismissRequest = onDismiss) {
+    KeyboardAwareDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = colors.pureCrispWhite,
