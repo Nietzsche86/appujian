@@ -10,36 +10,42 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.KeyEvent
-import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AlertDialog
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import id.mtsrth.exam.ExamApp
-import id.mtsrth.exam.R
 import id.mtsrth.exam.data.crypto.CryptoEngine
 import id.mtsrth.exam.data.sync.LocalSyncManager
-import id.mtsrth.exam.databinding.ActivityKioskExamBinding
+import id.mtsrth.exam.notification.ExamReminderScheduler
 import id.mtsrth.exam.security.EnvironmentMonitor
 import id.mtsrth.exam.security.KioskEnforcer
 import id.mtsrth.exam.security.PenaltyManager
 import id.mtsrth.exam.security.ViolationReason
-import id.mtsrth.exam.ui.dialog.ConfirmFinishDialog
-import id.mtsrth.exam.ui.dialog.SupervisorPinDialog
+import id.mtsrth.exam.ui.theme.ExamKioskTheme
+import id.mtsrth.exam.util.ExamScheduleHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
+import java.util.Calendar
 
 class KioskExamActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityKioskExamBinding
     private lateinit var penaltyManager: PenaltyManager
     private lateinit var environmentMonitor: EnvironmentMonitor
     private lateinit var kioskEnforcer: KioskEnforcer
@@ -58,10 +64,20 @@ class KioskExamActivity : AppCompatActivity() {
     private var activeTempPdfFile: File? = null
     private var pdfAdapter: PdfPageAdapter? = null
 
+    private var zoomableLayoutRef: ZoomableLayout? = null
+    private var recyclerViewRef: RecyclerView? = null
+    private var layoutManagerRef: LinearLayoutManager? = null
+    private var isRecyclerAdapterAttached = false
+
+    private val uiStateFlow = MutableStateFlow(KioskUiState())
+
+    private var showPageJumperDialog by mutableStateOf(false)
+    private var showSupervisorDialog by mutableStateOf(false)
+    private var showConfirmFinishDialog by mutableStateOf(false)
+
     // Exam countdown
     private var timerJob: Job? = null
     private var examRemainingSeconds: Long = 0L
-    private var examElapsedBaseTime: Long = 0L
 
     // Anti-cheat navigation guard
     private var backGestureAttemptCount = 0
@@ -74,12 +90,15 @@ class KioskExamActivity : AppCompatActivity() {
             val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
             if (level >= 0 && scale > 0) {
                 val batteryPct = (level * 100) / scale
-                binding.tvStatusBarBattery.text = "$batteryPct%"
+                uiStateFlow.update { it.copy(batteryPct = batteryPct) }
             }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val storage = ExamApp.instance.secureStorage
+        val initialDarkMode = storage.isDarkMode
+        applyEdgeToEdgeTheme(initialDarkMode)
         super.onCreate(savedInstanceState)
 
         // 1. Enforce Window Security Flags (Anti-Screenshot / Recording & Keep Screen On)
@@ -89,14 +108,94 @@ class KioskExamActivity : AppCompatActivity() {
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        binding = ActivityKioskExamBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
         extractIntentExtras()
+        if (examId.isNotBlank()) {
+            ExamReminderScheduler.cancelExamReminder(this, examId)
+        }
         initSecurityEngines()
-        setupStatusBar()
-        setupListeners()
+        setupInitialExamState()
         setupBackNavigationLock()
+
+        setContent {
+            val uiState by uiStateFlow.collectAsStateWithLifecycle()
+
+            ExamKioskTheme(darkTheme = uiState.isDarkMode) {
+                KioskExamScreen(
+                    uiState = uiState,
+                    onAttachPdfViews = { zoomable, recycler ->
+                        zoomableLayoutRef = zoomable
+                        if (recyclerViewRef !== recycler) {
+                            recyclerViewRef = recycler
+                            isRecyclerAdapterAttached = false
+                        }
+                        bindAdapterIfReady()
+                    },
+                    onToggleComfortMode = {
+                        val nextComfort = !uiStateFlow.value.isComfortMode
+                        ExamApp.instance.secureStorage.kioskComfortMode = nextComfort
+                        uiStateFlow.update { it.copy(isComfortMode = nextComfort) }
+                    },
+                    onOpenPageJumper = {
+                        if (uiStateFlow.value.totalPages > 1) {
+                            showPageJumperDialog = true
+                        }
+                    },
+                    onOpenSupervisorDialog = {
+                        showSupervisorDialog = true
+                    },
+                    onReactivatePin = {
+                        kioskEnforcer.startEnforcement()
+                    }
+                )
+
+                if (showPageJumperDialog) {
+                    JumpToPageDialog(
+                        currentPage = uiState.currentPage,
+                        totalPages = uiState.totalPages,
+                        onJumpToPage = { page -> jumpToPage(page) },
+                        onDismiss = { showPageJumperDialog = false }
+                    )
+                }
+
+                if (showSupervisorDialog) {
+                    SupervisorPinComposeDialog(
+                        onResetPenalty = {
+                            showSupervisorDialog = false
+                            penaltyManager.resetViolationsAndBan()
+                            uiStateFlow.update {
+                                it.copy(
+                                    isBanActive = false,
+                                    isPermanentLockout = false,
+                                    banRemainingSeconds = 0L,
+                                    banStatusMessage = null
+                                )
+                            }
+                            Toast.makeText(
+                                this@KioskExamActivity,
+                                "Penalti pelanggaran telah direset oleh pengawas.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onFinishEarly = {
+                            showSupervisorDialog = false
+                            showConfirmFinishDialog = true
+                        },
+                        onDismiss = { showSupervisorDialog = false }
+                    )
+                }
+
+                if (showConfirmFinishDialog) {
+                    ConfirmFinishComposeDialog(
+                        subjectName = uiState.subjectName,
+                        onConfirm = {
+                            showConfirmFinishDialog = false
+                            finishExam(isExpired = false)
+                        },
+                        onDismiss = { showConfirmFinishDialog = false }
+                    )
+                }
+            }
+        }
 
         // 2. Start Kiosk Screen Pinning & Anti-Cheat
         kioskEnforcer.startEnforcement()
@@ -133,6 +232,27 @@ class KioskExamActivity : AppCompatActivity() {
         )
     }
 
+    private fun applyEdgeToEdgeTheme(isDark: Boolean) {
+        enableEdgeToEdge(
+            statusBarStyle = if (isDark) {
+                SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                )
+            },
+            navigationBarStyle = if (isDark) {
+                SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            } else {
+                SystemBarStyle.light(
+                    android.graphics.Color.TRANSPARENT,
+                    android.graphics.Color.TRANSPARENT
+                )
+            }
+        )
+    }
+
     private fun extractIntentExtras() {
         examId = intent.getStringExtra(EXTRA_EXAM_ID) ?: ""
         subjectName = intent.getStringExtra(EXTRA_SUBJECT_NAME) ?: "Ujian"
@@ -153,18 +273,12 @@ class KioskExamActivity : AppCompatActivity() {
 
         kioskEnforcer = KioskEnforcer(this) { isPinned ->
             runOnUiThread {
-                if (isPinned) {
-                    binding.overlayKioskBlocker.visibility = View.GONE
-                } else {
-                    binding.overlayKioskBlocker.visibility = View.VISIBLE
-                }
+                uiStateFlow.update { it.copy(isPinned = isPinned) }
             }
         }
     }
 
-    private fun setupStatusBar() {
-        binding.tvStatusBarSubject.text = "$subjectName • Kelas $gradeLevel"
-
+    private fun setupInitialExamState() {
         val secureStorage = ExamApp.instance.secureStorage
         val savedRemaining = secureStorage.remainingExamSeconds
         examRemainingSeconds = if (savedRemaining > 0 && secureStorage.activeExamId == examId) {
@@ -174,21 +288,18 @@ class KioskExamActivity : AppCompatActivity() {
         }
 
         secureStorage.activeExamId = examId
+
+        uiStateFlow.update {
+            it.copy(
+                subjectName = subjectName,
+                gradeLevel = gradeLevel,
+                remainingSeconds = examRemainingSeconds,
+                isDarkMode = secureStorage.isDarkMode,
+                isComfortMode = secureStorage.kioskComfortMode
+            )
+        }
+
         startExamTimer()
-    }
-
-    private fun setupListeners() {
-        binding.btnReactivatePin.setOnClickListener {
-            kioskEnforcer.startEnforcement()
-        }
-
-        binding.btnSupervisorLock.setOnClickListener {
-            showSupervisorDialog()
-        }
-
-        binding.btnSupervisorEmergency.setOnClickListener {
-            showSupervisorDialog()
-        }
     }
 
     private fun setupBackNavigationLock() {
@@ -252,7 +363,11 @@ class KioskExamActivity : AppCompatActivity() {
             val encFile = syncManager.getExamFile(examId)
 
             if (!encFile.exists()) {
-                Toast.makeText(this@KioskExamActivity, "Berkas soal terenkripsi tidak ditemukan!", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@KioskExamActivity,
+                    "Berkas soal terenkripsi tidak ditemukan!",
+                    Toast.LENGTH_LONG
+                ).show()
                 finish()
                 return@launch
             }
@@ -270,50 +385,87 @@ class KioskExamActivity : AppCompatActivity() {
                 try {
                     val renderer = PdfRenderer(session.pfd)
                     pdfRenderer = renderer
-
-                    val adapter = PdfPageAdapter(renderer, lifecycleScope)
-                    pdfAdapter = adapter
-
-                    val layoutManager = LinearLayoutManager(this@KioskExamActivity)
-                    binding.rvPdfPages.layoutManager = layoutManager
-                    binding.rvPdfPages.adapter = adapter
+                    pdfAdapter = PdfPageAdapter(renderer, lifecycleScope)
 
                     val totalPages = renderer.pageCount
-                    updatePageIndicator(binding.rvPdfPages, layoutManager, totalPages)
-
-                    binding.rvPdfPages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                            super.onScrolled(recyclerView, dx, dy)
-                            updatePageIndicator(recyclerView, layoutManager, totalPages)
-                        }
-                    })
+                    uiStateFlow.update {
+                        it.copy(
+                            totalPages = totalPages,
+                            currentPage = 1,
+                            isPdfLoading = false
+                        )
+                    }
+                    bindAdapterIfReady()
                 } catch (e: Exception) {
-                    Toast.makeText(this@KioskExamActivity, "Gagal merender PDF: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@KioskExamActivity,
+                        "Gagal merender PDF: ${e.localizedMessage}",
+                        Toast.LENGTH_LONG
+                    ).show()
                     finish()
                 }
             }.onFailure { err ->
-                Toast.makeText(this@KioskExamActivity, "Dekripsi soal gagal: ${err.localizedMessage}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    this@KioskExamActivity,
+                    "Dekripsi soal gagal: ${err.localizedMessage}",
+                    Toast.LENGTH_LONG
+                ).show()
                 finish()
             }
         }
     }
 
-    private fun updatePageIndicator(recyclerView: RecyclerView, layoutManager: LinearLayoutManager, totalPages: Int) {
+    private fun bindAdapterIfReady() {
+        val recycler = recyclerViewRef ?: return
+        val adapter = pdfAdapter ?: return
+        val renderer = pdfRenderer ?: return
+        if (isRecyclerAdapterAttached && recycler.adapter === adapter) return
+
+        val layoutManager = LinearLayoutManager(this)
+        layoutManagerRef = layoutManager
+        recycler.layoutManager = layoutManager
+        recycler.adapter = adapter
+        isRecyclerAdapterAttached = true
+
+        val totalPages = renderer.pageCount
+        updatePageIndicator(recycler, layoutManager, totalPages)
+
+        recycler.clearOnScrollListeners()
+        recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                updatePageIndicator(recyclerView, layoutManager, totalPages)
+            }
+        })
+    }
+
+    private fun jumpToPage(pageNumber: Int) {
+        val total = uiStateFlow.value.totalPages
+        if (total <= 0) return
+        val clamped = pageNumber.coerceIn(1, total)
+        zoomableLayoutRef?.resetZoom()
+        layoutManagerRef?.scrollToPositionWithOffset(clamped - 1, 0)
+        uiStateFlow.update { it.copy(currentPage = clamped) }
+    }
+
+    private fun updatePageIndicator(
+        recyclerView: RecyclerView,
+        layoutManager: LinearLayoutManager,
+        totalPages: Int
+    ) {
         if (totalPages <= 0) return
         if (totalPages == 1) {
-            binding.tvStatusBarPage.text = getString(R.string.page_indicator, 1, 1)
+            uiStateFlow.update { it.copy(currentPage = 1, totalPages = 1) }
             return
         }
 
-        // 1. Jika sudah mentok di bagian paling bawah dokumen, pasti sedang di halaman terakhir
         if (!recyclerView.canScrollVertically(1)) {
-            binding.tvStatusBarPage.text = getString(R.string.page_indicator, totalPages, totalPages)
+            uiStateFlow.update { it.copy(currentPage = totalPages, totalPages = totalPages) }
             return
         }
 
-        // 2. Jika sudah mentok di bagian paling atas dokumen, pasti sedang di halaman pertama
         if (!recyclerView.canScrollVertically(-1)) {
-            binding.tvStatusBarPage.text = getString(R.string.page_indicator, 1, totalPages)
+            uiStateFlow.update { it.copy(currentPage = 1, totalPages = totalPages) }
             return
         }
 
@@ -339,15 +491,12 @@ class KioskExamActivity : AppCompatActivity() {
         }
 
         val currentPage = (dominantPosition + 1).coerceIn(1, totalPages)
-        binding.tvStatusBarPage.text = getString(R.string.page_indicator, currentPage, totalPages)
+        uiStateFlow.update { it.copy(currentPage = currentPage, totalPages = totalPages) }
     }
 
     private fun startExamTimer() {
         timerJob?.cancel()
-        examElapsedBaseTime = SystemClock.elapsedRealtime()
-
         var heartbeatCounter = 0
-        var isBlinkingRed = false
 
         timerJob = lifecycleScope.launch {
             while (isActive && examRemainingSeconds > 0) {
@@ -361,40 +510,14 @@ class KioskExamActivity : AppCompatActivity() {
                     ExamApp.instance.secureStorage.remainingExamSeconds = examRemainingSeconds
                 }
 
-                val hours = examRemainingSeconds / 3600
-                val minutes = (examRemainingSeconds % 3600) / 60
-                val seconds = examRemainingSeconds % 60
-                val timeFormatted = String.format("%02d:%02d:%02d", hours, minutes, seconds)
-
-                binding.tvStatusBarTimer.text = timeFormatted
-
-                // Styling warna timer dinamis
-                when {
-                    examRemainingSeconds <= 300 -> { // <= 5 Menit (Berkedip Merah)
-                        isBlinkingRed = !isBlinkingRed
-                        val colorRes = if (isBlinkingRed) R.color.timer_danger else R.color.timer_normal
-                        val color = ContextCompat.getColor(this@KioskExamActivity, colorRes)
-                        binding.tvStatusBarTimer.setTextColor(color)
-                        binding.ivTimerIcon.setColorFilter(color)
-                    }
-                    examRemainingSeconds <= 900 -> { // <= 15 Menit (Kuning)
-                        val yellow = ContextCompat.getColor(this@KioskExamActivity, R.color.timer_warning)
-                        binding.tvStatusBarTimer.setTextColor(yellow)
-                        binding.ivTimerIcon.setColorFilter(yellow)
-                    }
-                    else -> {
-                        val normal = ContextCompat.getColor(this@KioskExamActivity, R.color.timer_normal)
-                        binding.tvStatusBarTimer.setTextColor(normal)
-                        binding.ivTimerIcon.setColorFilter(normal)
-                    }
-                }
+                uiStateFlow.update { it.copy(remainingSeconds = examRemainingSeconds) }
 
                 // Cek jam nyata di HP jika batas jam selesai ditentukan
                 if (endTime.isNotBlank()) {
-                    val endMin = id.mtsrth.exam.util.ExamScheduleHelper.parseMinutesOfDay(endTime)
+                    val endMin = ExamScheduleHelper.parseMinutesOfDay(endTime)
                     if (endMin != null) {
-                        val now = java.util.Calendar.getInstance()
-                        val currentMin = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+                        val now = Calendar.getInstance()
+                        val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
                         if (currentMin >= endMin) {
                             finishExam(isExpired = true)
                             return@launch
@@ -418,15 +541,14 @@ class KioskExamActivity : AppCompatActivity() {
         val banDuration = penaltyManager.triggerViolation(reason)
 
         runOnUiThread {
-            // Sembunyikan kanvas soal seketika
-            binding.zoomablePdfContainer.visibility = View.INVISIBLE
-            binding.overlayViolationBan.visibility = View.VISIBLE
-            binding.tvViolationDescription.text = reason.description
-
-            if (penaltyManager.isPermanentLockout) {
-                binding.tvBanCountdown.text = getString(R.string.msg_permanent_ban)
-            } else {
-                updateBanCountdownText(banDuration)
+            uiStateFlow.update {
+                it.copy(
+                    isBanActive = true,
+                    isPermanentLockout = penaltyManager.isPermanentLockout,
+                    violationDescription = reason.description,
+                    banRemainingSeconds = banDuration,
+                    banStatusMessage = null
+                )
             }
         }
     }
@@ -439,44 +561,35 @@ class KioskExamActivity : AppCompatActivity() {
 
         runOnUiThread {
             if (remainingBan > 0) {
-                updateBanCountdownText(remainingBan)
+                uiStateFlow.update {
+                    it.copy(
+                        banRemainingSeconds = remainingBan,
+                        banStatusMessage = null
+                    )
+                }
             } else {
                 // Selesai ban, pastikan semua syarat terpenuhi kembali
                 val isAirplaneOk = environmentMonitor.checkAllImmediate()
                 val isKioskOk = kioskEnforcer.isPinned()
 
                 if (isAirplaneOk && isKioskOk) {
-                    binding.overlayViolationBan.visibility = View.GONE
-                    binding.zoomablePdfContainer.visibility = View.VISIBLE
+                    uiStateFlow.update {
+                        it.copy(
+                            isBanActive = false,
+                            banRemainingSeconds = 0L,
+                            banStatusMessage = null
+                        )
+                    }
                 } else {
-                    binding.tvBanCountdown.text = "Tunggu kepatuhan syarat ujian..."
+                    uiStateFlow.update {
+                        it.copy(
+                            banRemainingSeconds = 0L,
+                            banStatusMessage = "Tunggu kepatuhan syarat ujian..."
+                        )
+                    }
                 }
             }
         }
-    }
-
-    private fun updateBanCountdownText(seconds: Long) {
-        val min = seconds / 60
-        val sec = seconds % 60
-        binding.tvBanCountdown.text = getString(R.string.countdown_ban, min, sec)
-    }
-
-    private fun showSupervisorDialog() {
-        val dialog = SupervisorPinDialog.newInstance(
-            onResetPenalty = {
-                penaltyManager.resetViolationsAndBan()
-                binding.overlayViolationBan.visibility = View.GONE
-                binding.zoomablePdfContainer.visibility = View.VISIBLE
-                Toast.makeText(this, "Penalti pelanggaran telah direset oleh pengawas.", Toast.LENGTH_SHORT).show()
-            },
-            onFinishEarly = {
-                val confirmDialog = ConfirmFinishDialog.newInstance {
-                    finishExam(isExpired = false)
-                }
-                confirmDialog.show(supportFragmentManager, ConfirmFinishDialog.TAG)
-            }
-        )
-        dialog.show(supportFragmentManager, SupervisorPinDialog.TAG)
     }
 
     private fun finishExam(isExpired: Boolean) {
@@ -486,6 +599,7 @@ class KioskExamActivity : AppCompatActivity() {
         val secureStorage = ExamApp.instance.secureStorage
         secureStorage.markExamFinished(examId)
         secureStorage.resetActiveExamSession()
+        ExamReminderScheduler.rescheduleFromStorage(this)
 
         // 2. Lepaskan Kiosk Screen Pinning
         kioskEnforcer.stopEnforcement()

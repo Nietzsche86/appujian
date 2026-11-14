@@ -20,6 +20,7 @@ import webbrowser
 from datetime import datetime
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 try:
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -189,7 +190,7 @@ def calculate_duration_from_times(start_time: str, end_time: str, fallback_durat
         pass
     return fallback_duration
 
-def rebuild_manifest(server_base_url: str):
+def rebuild_manifest(server_base_url: str, force_reencrypt: bool = False):
     """
     Membangun ulang berkas .enc dan manifest.json berdasarkan config terbaru.
     """
@@ -213,8 +214,16 @@ def rebuild_manifest(server_base_url: str):
         pdf_file = RAW_PDFS_DIR / ex.get("pdf_filename", "")
         enc_file = FILES_DIR / f"{ex['id']}.enc"
 
-        # Optimasi: Gunakan enkripsi yang sudah ada jika .enc file dan metadatanya valid
-        if enc_file.exists() and ex.get("file_sha256") and ex.get("pbkdf2_salt_hex") and ex.get("gcm_iv_hex"):
+        # Optimasi: Gunakan enkripsi yang sudah ada hanya jika .enc valid & SHA-256 cocok serta tidak dipaksa enkripsi ulang
+        enc_valid = (
+            not force_reencrypt
+            and enc_file.exists()
+            and ex.get("file_sha256")
+            and ex.get("pbkdf2_salt_hex")
+            and ex.get("gcm_iv_hex")
+            and hashlib.sha256(enc_file.read_bytes()).hexdigest() == ex.get("file_sha256")
+        )
+        if enc_valid:
             crypto_meta = {
                 "file_sha256": ex["file_sha256"],
                 "salt_hex": ex["pbkdf2_salt_hex"],
@@ -319,6 +328,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(content)))
+        self.send_header("X-Eujian-Proktor", "MTS-RTH")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(content)
@@ -333,15 +343,45 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_HEAD(self):
-        # Respons uji koneksi dari tombol 'Tes Koneksi' Android
-        self.send_response(200)
+        # Respons uji koneksi dari perangkat siswa hanya untuk endpoint valid proktor
+        clean_path = urlparse(self.path).path.strip("/")
+        valid = clean_path in ("", "admin", "api/ping", "api/data", "manifest.json")
+        if not valid and clean_path.startswith("files/"):
+            filename = clean_path.replace("files/", "")
+            valid = (FILES_DIR / filename).is_file()
+
+        self.send_response(200 if valid else 404)
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Eujian-Proktor", "MTS-RTH")
         self.send_header("Content-Type", "text/plain")
         self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):
-        clean_path = self.path.split("?")[0].strip("/")
+        parsed = urlparse(self.path)
+        clean_path = parsed.path.strip("/")
+        query = parse_qs(parsed.query)
+
+        # 0. Endpoint Ping / Healthcheck Resmi untuk HP Siswa ('Tes Koneksi')
+        if clean_path == "api/ping":
+            config = load_or_init_config()
+            valid_exam_count = sum(
+                1 for ex in config.get("exams", [])
+                if (FILES_DIR / f"{ex['id']}.enc").exists() or (RAW_PDFS_DIR / ex.get("pdf_filename", "")).exists()
+            )
+            device = (query.get("device", [""])[0] or "").strip()
+            client_ip = self.client_address[0]
+            if device:
+                add_log(client_ip, f"Tes Koneksi Perangkat ({device})")
+            self.send_json({
+                "ok": True,
+                "app": "e-ujian-mts-rth",
+                "school_name": config.get("school_name", "MTS ROUDHOTUT THOWALIB"),
+                "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
+                "exam_count": valid_exam_count,
+                "timestamp": int(time.time())
+            })
+            return
 
         # 1. Halaman Web Dashboard Proktor
         if clean_path == "" or clean_path == "admin":
@@ -397,13 +437,22 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(content)))
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.send_header("X-Eujian-Proktor", "MTS-RTH")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(content)
 
             client_ip = self.client_address[0]
-            add_log(client_ip, "Sinkronisasi Berhasil (Unduh manifest.json)")
-            print(f"[SYNC] Siswa ({client_ip}) mengunduh manifest.json (total {len(manifest_data.get('exams', []))} paket soal)")
+            grade_param = (query.get("grade", [""])[0] or "").strip()
+            device_param = (query.get("device", [""])[0] or "").strip()
+            meta_parts = []
+            if grade_param:
+                meta_parts.append(f"Kelas {grade_param}")
+            if device_param:
+                meta_parts.append(device_param)
+            meta_suffix = f" ({' • '.join(meta_parts)})" if meta_parts else ""
+            add_log(client_ip, f"Sinkronisasi Berhasil{meta_suffix}")
+            print(f"[SYNC] Siswa ({client_ip}){meta_suffix} mengunduh manifest.json (total {len(manifest_data.get('exams', []))} paket soal)")
             return
 
         # 4. Endpoint berkas terenkripsi /files/<filename>.enc (untuk HP Siswa)
@@ -474,29 +523,39 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 exam_id = payload.get("id")
 
                 config = load_or_init_config()
-                found = False
+                target_exam = None
                 for ex in config.get("exams", []):
                     if ex["id"] == exam_id:
-                        if "exam_date" in payload:
-                            ex["exam_date"] = payload["exam_date"].strip()
-                        if "exam_day" in payload:
-                            ex["exam_day"] = payload["exam_day"].strip()
-                        if "start_time" in payload:
-                            ex["start_time"] = payload["start_time"].strip()
-                        if "end_time" in payload:
-                            ex["end_time"] = payload["end_time"].strip()
-                        if "short_name" in payload:
-                            ex["short_name"] = payload["short_name"].strip()
-                        # Durasi dihitung otomatis dari selisih Jam Selesai & Jam Mulai
-                        ex["duration_minutes"] = calculate_duration_from_times(
-                            ex.get("start_time", ""),
-                            ex.get("end_time", ""),
-                            int(payload.get("duration_minutes", ex.get("duration_minutes", 60)))
-                        )
-                        found = True
+                        target_exam = ex
                         break
 
-                if found:
+                if target_exam is not None:
+                    next_start = payload.get("start_time", target_exam.get("start_time", "")).strip()
+                    next_end = payload.get("end_time", target_exam.get("end_time", "")).strip()
+                    if ":" in next_start and ":" in next_end:
+                        sh, sm = map(int, next_start.split(":")[:2])
+                        eh, em = map(int, next_end.split(":")[:2])
+                        if (eh * 60 + em) <= (sh * 60 + sm):
+                            self.send_json({"ok": False, "error": "Jam Selesai harus lebih besar dari Jam Mulai!"}, 400)
+                            return
+
+                    if "exam_date" in payload:
+                        target_exam["exam_date"] = payload["exam_date"].strip()
+                    if "exam_day" in payload:
+                        target_exam["exam_day"] = payload["exam_day"].strip()
+                    if "start_time" in payload:
+                        target_exam["start_time"] = next_start
+                    if "end_time" in payload:
+                        target_exam["end_time"] = next_end
+                    if "short_name" in payload:
+                        target_exam["short_name"] = payload["short_name"].strip()
+                    # Durasi dihitung otomatis dari selisih Jam Selesai & Jam Mulai
+                    target_exam["duration_minutes"] = calculate_duration_from_times(
+                        target_exam.get("start_time", ""),
+                        target_exam.get("end_time", ""),
+                        int(payload.get("duration_minutes", target_exam.get("duration_minutes", 60)))
+                    )
+
                     save_config(config)
                     rebuild_manifest(self.server_base_url)
                     self.send_json({"ok": True, "message": "Jadwal dan tanggal ujian berhasil diperbarui!"})
@@ -531,7 +590,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
 
         # 4. Enkripsi Ulang Seluruh Paket
         if clean_path == "api/rebuild":
-            rebuild_manifest(self.server_base_url)
+            rebuild_manifest(self.server_base_url, force_reencrypt=True)
             self.send_json({"ok": True})
             return
 
@@ -576,6 +635,13 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
             if not subject_name or not token or not pdf_bytes:
                 self.send_json({"ok": False, "error": "Semua kolom dan berkas PDF wajib diisi!"}, 400)
                 return
+
+            if ":" in start_time and ":" in end_time:
+                sh, sm = map(int, start_time.split(":")[:2])
+                eh, em = map(int, end_time.split(":")[:2])
+                if (eh * 60 + em) <= (sh * 60 + sm):
+                    self.send_json({"ok": False, "error": "Jam Selesai harus lebih besar dari Jam Mulai!"}, 400)
+                    return
 
             # Validasi Magic Header berkas PDF
             if not pdf_bytes.startswith(b"%PDF-"):

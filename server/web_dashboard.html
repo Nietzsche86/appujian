@@ -1281,7 +1281,7 @@
             <!-- Server Status Badge -->
             <div class="status-badge">
                 <span class="status-dot"></span>
-                <span>ONLINE : 8080</span>
+                <span id="serverPortBadge">ONLINE : 8080</span>
             </div>
         </div>
     </header>
@@ -1411,6 +1411,11 @@
                     <i class="fa-solid fa-plus"></i> Tambah Soal PDF
                 </button>
             </div>
+        </div>
+
+        <div style="background: var(--emerald-bg); border: 1px solid var(--border-emerald); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 14px; display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--text-secondary);">
+            <i class="fa-solid fa-bell" style="color: var(--emerald-400); font-size: 14px;"></i>
+            <span><b>Pengingat Otomatis H-5 Menit:</b> Tanggal &amp; Jam Mulai yang diatur di sini otomatis menjadwalkan notifikasi pengingat 5 menit sebelum ujian di menu <b>Soal</b> HP siswa (aktif penuh offline).</span>
         </div>
 
         <!-- Table Container -->
@@ -1643,7 +1648,7 @@
                     <div class="phone-notch"></div>
                     <div class="phone-header">
                         <h4 id="phoneMockupSchoolName">MTS ROUDHOTUT THOWALIB</h4>
-                        <p>Tata Tertib &amp; Panduan Ujian</p>
+                        <p>Menu Panduan &amp; Tata Tertib Ujian</p>
                     </div>
                     <div id="phoneRulesList" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Injected live via JS -->
@@ -2277,13 +2282,17 @@
                 document.getElementById('displayMasterPin').textContent = data.master_pin || '888999';
             }
 
-            // Server URL box & IP chips
-            document.getElementById('serverUrlPrimary').textContent = data.server_url || 'http://127.0.0.1:8080';
+            // Server URL box, port badge & IP chips
+            const primaryServerUrl = data.server_url || 'http://127.0.0.1:8080';
+            document.getElementById('serverUrlPrimary').textContent = primaryServerUrl;
+            const parsedPort = primaryServerUrl.split(':').pop().replace('/', '') || '8080';
+            const portBadge = document.getElementById('serverPortBadge');
+            if (portBadge) portBadge.textContent = `ONLINE : ${parsedPort}`;
+
             const altBox = document.getElementById('altIpContainer');
             if (data.all_ips && data.all_ips.length > 0) {
-                const port = (data.server_url || ':8080').split(':').pop().replace('/', '');
                 altBox.innerHTML = data.all_ips.map(ip => {
-                    const fullIpUrl = `http://${ip}:${port}`;
+                    const fullIpUrl = `http://${ip}:${parsedPort}`;
                     return `<span class="ip-chip" onclick="copyServerUrl('${fullIpUrl}')" title="Klik untuk salin alamat"><i class="fa-solid fa-wifi"></i> ${escapeHtml(ip)}</span>`;
                 }).join('');
             } else {
@@ -2480,8 +2489,10 @@
 
         let html = '';
         filtered.forEach(log => {
-            const isSync = log.action.toLowerCase().includes('sync') || log.action.toLowerCase().includes('sinkronisasi');
-            const icon = isSync ? 'fa-arrows-rotate' : 'fa-cloud-arrow-down';
+            const lowerAction = log.action.toLowerCase();
+            const isSync = lowerAction.includes('sync') || lowerAction.includes('sinkronisasi');
+            const isPing = lowerAction.includes('tes koneksi') || lowerAction.includes('uji koneksi');
+            const icon = isPing ? 'fa-wifi' : (isSync ? 'fa-arrows-rotate' : 'fa-cloud-arrow-down');
             const badgeClass = isSync ? 'badge-grade' : 'badge-code';
 
             html += `
@@ -2681,6 +2692,10 @@
             alert("Tanggal pelaksanaan ujian wajib dipilih!");
             return;
         }
+        if (startTime && endTime && endTime <= startTime) {
+            alert("Jam Selesai harus lebih besar dari Jam Mulai!");
+            return;
+        }
 
         try {
             const res = await fetch('/api/update-duration', {
@@ -2726,6 +2741,13 @@
 
     async function submitAddExam(e) {
         e.preventDefault();
+        const addStart = document.getElementById('addStartTime').value;
+        const addEnd = document.getElementById('addEndTime').value;
+        if (addStart && addEnd && addEnd <= addStart) {
+            alert("Jam Selesai harus lebih besar dari Jam Mulai!");
+            return;
+        }
+
         const form = document.getElementById('formAddExam');
         const formData = new FormData(form);
         const submitBtn = document.getElementById('btnSubmitAdd');

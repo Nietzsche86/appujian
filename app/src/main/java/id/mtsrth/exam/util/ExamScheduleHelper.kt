@@ -145,4 +145,39 @@ object ExamScheduleHelper {
             dayName
         }
     }
+
+    /**
+     * Menghasilkan label urgensi waktu singkat untuk kartu soal (misal "Mulai 15 mnt lagi" atau "Tersisa 40 mnt").
+     */
+    fun getScheduleUrgencyLabel(exam: ExamItem): String? {
+        val dateCompare = compareExamDateWithToday(exam.examDate)
+        if (dateCompare != null && dateCompare != 0) return null
+
+        val totalAllocated = getTotalDurationMinutes(exam)
+        val startMin = parseMinutesOfDay(exam.startTime) ?: return null
+        val endMin = parseMinutesOfDay(exam.endTime) ?: (startMin + totalAllocated)
+
+        val now = Calendar.getInstance()
+        val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+
+        return when {
+            currentMin < startMin -> {
+                val diff = startMin - currentMin
+                if (diff <= 180) {
+                    if (diff >= 60) "Mulai ${diff / 60}j ${diff % 60}m lagi" else "Mulai $diff mnt lagi"
+                } else null
+            }
+            currentMin < endMin -> {
+                val left = endMin - currentMin
+                if (left >= 60) "Sisa ${left / 60}j ${left % 60}m" else "Sisa $left mnt"
+            }
+            else -> null
+        }
+    }
+
+    fun formatSyncTimestamp(timestampMillis: Long): String {
+        if (timestampMillis <= 0L) return "Belum pernah sinkron"
+        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+        return sdf.format(java.util.Date(timestampMillis))
+    }
 }

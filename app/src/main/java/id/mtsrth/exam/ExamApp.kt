@@ -2,6 +2,7 @@ package id.mtsrth.exam
 
 import android.app.Application
 import id.mtsrth.exam.data.local.SecureStorage
+import id.mtsrth.exam.notification.ExamReminderScheduler
 
 class ExamApp : Application() {
 
@@ -12,6 +13,7 @@ class ExamApp : Application() {
         super.onCreate()
         instance = this
         secureStorage = SecureStorage(applicationContext)
+        ExamReminderScheduler.ensureChannel(applicationContext)
     }
 
     companion object {

@@ -75,6 +75,46 @@ class SecureStorage(context: Context) {
         get() = prefs.getString(KEY_CACHED_MANIFEST, null)
         set(value) = prefs.edit().putString(KEY_CACHED_MANIFEST, value).apply()
 
+    var rulesAcknowledged: Boolean
+        get() = prefs.getBoolean(KEY_RULES_ACKNOWLEDGED, false)
+        set(value) = prefs.edit().putBoolean(KEY_RULES_ACKNOWLEDGED, value).apply()
+
+    var isDarkMode: Boolean
+        get() = prefs.getBoolean(KEY_DARK_MODE, false)
+        set(value) = prefs.edit().putBoolean(KEY_DARK_MODE, value).apply()
+
+    var lastSyncTimestamp: Long
+        get() = prefs.getLong(KEY_LAST_SYNC_TIMESTAMP, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_SYNC_TIMESTAMP, value).apply()
+
+    var kioskComfortMode: Boolean
+        get() = prefs.getBoolean(KEY_KIOSK_COMFORT_MODE, false)
+        set(value) = prefs.edit().putBoolean(KEY_KIOSK_COMFORT_MODE, value).apply()
+
+    var notificationPermissionPrompted: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFICATION_PROMPTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIFICATION_PROMPTED, value).apply()
+
+    fun getScheduledReminderIds(): Set<String> {
+        return prefs.getStringSet(KEY_SCHEDULED_REMINDERS, emptySet())?.toSet() ?: emptySet()
+    }
+
+    fun setScheduledReminderIds(ids: Set<String>) {
+        prefs.edit().putStringSet(KEY_SCHEDULED_REMINDERS, ids).apply()
+    }
+
+    fun getServerHistory(): List<String> {
+        val raw = prefs.getString(KEY_SERVER_HISTORY, "") ?: ""
+        return raw.split("|").map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    fun addServerToHistory(hostPort: String) {
+        val clean = hostPort.trim()
+        if (clean.isEmpty()) return
+        val updated = (listOf(clean) + getServerHistory().filterNot { it.equals(clean, ignoreCase = true) }).take(3)
+        prefs.edit().putString(KEY_SERVER_HISTORY, updated.joinToString("|")).apply()
+    }
+
     fun getFinishedExams(): Set<String> {
         return prefs.getStringSet(KEY_FINISHED_EXAMS, emptySet()) ?: emptySet()
     }
@@ -117,5 +157,12 @@ class SecureStorage(context: Context) {
         private const val KEY_FINISHED_EXAMS = "finished_exams"
         private const val KEY_CACHED_MANIFEST = "cached_manifest"
         private const val KEY_SELECTED_GRADE = "selected_grade"
+        private const val KEY_RULES_ACKNOWLEDGED = "rules_acknowledged"
+        private const val KEY_DARK_MODE = "dark_mode"
+        private const val KEY_LAST_SYNC_TIMESTAMP = "last_sync_timestamp"
+        private const val KEY_SERVER_HISTORY = "server_history"
+        private const val KEY_KIOSK_COMFORT_MODE = "kiosk_comfort_mode"
+        private const val KEY_NOTIFICATION_PROMPTED = "notification_permission_prompted"
+        private const val KEY_SCHEDULED_REMINDERS = "scheduled_reminder_ids"
     }
 }

@@ -1,66 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand & Theme (MTS Royal Emerald, Gold & Teal) -->
-    <color name="primary">#059669</color>
-    <color name="primary_dark">#047857</color>
+    <!-- Brand & Theme (Modern Emerald & Slate Prestige) -->
+    <color name="primary">#0B6E4F</color>
+    <color name="primary_dark">#064E3B</color>
     <color name="primary_light">#10B981</color>
-    <color name="primary_container">#ECFDF5</color>
-    <color name="on_primary_container">#065F46</color>
-    
-    <color name="teal">#0D9488</color>
-    <color name="teal_light">#14B8A6</color>
-    <color name="teal_container">#CCFBF1</color>
-    <color name="on_teal_container">#115E59</color>
+    <color name="primary_container">#E6F4EF</color>
+    <color name="on_primary_container">#064E3B</color>
+
+    <color name="teal">#10B981</color>
+    <color name="teal_light">#34D399</color>
+    <color name="teal_container">#ECFDF5</color>
+    <color name="on_teal_container">#064E3B</color>
 
     <color name="gold">#D97706</color>
     <color name="gold_light">#F59E0B</color>
-    <color name="gold_container">#FEF3C7</color>
+    <color name="gold_container">#FFFBEB</color>
     <color name="on_gold_container">#78350F</color>
 
-    <!-- Surfaces & Backgrounds -->
-    <color name="background">#F8FAFC</color>
+    <!-- Surfaces & Backgrounds (60% Neutral Surface) -->
+    <color name="background">#F4F7F6</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_variant">#F1F5F9</color>
+    <color name="surface_variant">#EBF0EE</color>
     <color name="stroke_border">#E2E8F0</color>
-    
+
     <!-- Typography -->
     <color name="text_primary">#0F172A</color>
-    <color name="text_secondary">#64748B</color>
+    <color name="text_secondary">#475569</color>
     <color name="text_muted">#94A3B8</color>
     <color name="text_on_primary">#FFFFFF</color>
-    
+
     <!-- Kiosk Status Bar & Fullscreen Overlay -->
-    <color name="kiosk_bar_bg">#09261E</color>
+    <color name="kiosk_bar_bg">#064E3B</color>
     <color name="kiosk_text_primary">#FFFFFF</color>
-    <color name="kiosk_text_secondary">#94A3B8</color>
+    <color name="kiosk_text_secondary">#A7F3D0</color>
     <color name="timer_normal">#FFFFFF</color>
-    <color name="timer_warning">#F59E0B</color>
-    <color name="timer_danger">#EF4444</color>
-    
-    <!-- Badges & Indicators -->
-    <color name="badge_ready_text">#059669</color>
+    <color name="timer_warning">#D97706</color>
+    <color name="timer_danger">#DC2626</color>
+
+    <!-- Badges & Indicators (10% Semantic Status) -->
+    <color name="badge_ready_text">#10B981</color>
     <color name="badge_ready_bg">#ECFDF5</color>
     <color name="badge_warning_text">#D97706</color>
-    <color name="badge_warning_bg">#FEF3C7</color>
+    <color name="badge_warning_bg">#FFFBEB</color>
     <color name="badge_danger_text">#DC2626</color>
     <color name="badge_danger_bg">#FEF2F2</color>
-    <color name="badge_finished_text">#0D9488</color>
-    <color name="badge_finished_bg">#CCFBF1</color>
-    
+    <color name="badge_finished_text">#0B6E4F</color>
+    <color name="badge_finished_bg">#E6F4EF</color>
+
     <!-- Ban Overlay -->
     <color name="ban_overlay_bg">#DC2626</color>
     <color name="kiosk_black_blocker">#000000</color>
 
     <!-- Navigation & Overhaul Palette -->
-    <color name="nav_active">#059669</color>
+    <color name="nav_active">#0B6E4F</color>
     <color name="nav_inactive">#64748B</color>
-    <color name="nav_indicator">#D1FAE5</color>
-    <color name="header_bg">#09261E</color>
+    <color name="nav_indicator">#E6F4EF</color>
+    <color name="header_bg">#064E3B</color>
     <color name="header_sub">#A7F3D0</color>
     <color name="card_sensor_ok_bg">#ECFDF5</color>
     <color name="card_sensor_ok_border">#A7F3D0</color>
     <color name="card_sensor_bad_bg">#FEF2F2</color>
     <color name="card_sensor_bad_border">#FECACA</color>
-    <color name="badge_short_name_bg">#0D9488</color>
+    <color name="badge_short_name_bg">#0B6E4F</color>
     <color name="badge_short_name_text">#FFFFFF</color>
 </resources>

@@ -1,17 +1,32 @@
 package id.mtsrth.exam.data.sync
 
 import android.content.Context
+import android.os.Build
 import id.mtsrth.exam.data.model.ExamManifest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
+import java.net.URLEncoder
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+
+@Serializable
+data class ServerPingResult(
+    val ok: Boolean = false,
+    val app: String = "",
+    @SerialName("school_name")
+    val schoolName: String = "",
+    @SerialName("exam_title")
+    val examTitle: String = "",
+    @SerialName("exam_count")
+    val examCount: Int = 0
+)
 
 class LocalSyncManager(private val context: Context) {
 
@@ -72,42 +87,70 @@ class LocalSyncManager(private val context: Context) {
         }
     }
 
-    suspend fun testConnection(serverUrl: String): Result<Boolean> = withContext(Dispatchers.IO) {
-        runCatching {
-            val normalizedUrl = normalizeUrl(serverUrl)
+    private fun encodedDeviceLabel(): String {
+        val raw = "${Build.MANUFACTURER} ${Build.MODEL}".trim().ifEmpty { "Android" }
+        return URLEncoder.encode(raw, "UTF-8")
+    }
 
-            // 1. Coba HEAD request terlebih dahulu
+    suspend fun testConnection(serverUrl: String): Result<ServerPingResult> = withContext(Dispatchers.IO) {
+        runCatching {
+            val normalizedBase = normalizeUrl(serverUrl).trimEnd('/')
+            val deviceParam = encodedDeviceLabel()
+
+            // 1. Uji endpoint resmi /api/ping agar tidak salah mengenali web server lain di LAN
             try {
-                val headReq = Request.Builder()
-                    .url(normalizedUrl)
-                    .head()
+                val pingReq = Request.Builder()
+                    .url("$normalizedBase/api/ping?device=$deviceParam")
+                    .get()
                     .build()
 
-                client.newCall(headReq).execute().use { resp ->
-                    if (resp.isSuccessful || resp.code in 200..404) {
-                        return@runCatching true
+                client.newCall(pingReq).execute().use { resp ->
+                    if (resp.isSuccessful) {
+                        val body = resp.body?.string().orEmpty()
+                        val ping = json.decodeFromString<ServerPingResult>(body)
+                        if (ping.ok && (ping.app.isBlank() || ping.app == "e-ujian-mts-rth")) {
+                            return@runCatching ping
+                        }
                     }
                 }
             } catch (_: Exception) {
             }
 
-            // 2. Fallback uji langsung endpoint /manifest.json
-            val manifestUrl = "${normalizedUrl.trimEnd('/')}/manifest.json"
-            val getReq = Request.Builder()
-                .url(manifestUrl)
+            // 2. Fallback uji endpoint /manifest.json dan validasi skema JSON
+            val manifestReq = Request.Builder()
+                .url("$normalizedBase/manifest.json")
                 .get()
                 .build()
 
-            client.newCall(getReq).execute().use { resp ->
-                resp.isSuccessful || resp.code in 200..404
+            client.newCall(manifestReq).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    throw IllegalStateException("Server merespons HTTP ${resp.code}")
+                }
+                val body = resp.body?.string()
+                    ?: throw IllegalStateException("Respons server kosong")
+                val manifest = json.decodeFromString<ExamManifest>(body)
+                ServerPingResult(
+                    ok = true,
+                    app = "e-ujian-mts-rth",
+                    schoolName = manifest.schoolName,
+                    examTitle = manifest.examTitle,
+                    examCount = manifest.exams.size
+                )
             }
         }
     }
 
-    suspend fun fetchManifest(serverUrl: String): Result<ExamManifest> = withContext(Dispatchers.IO) {
+    suspend fun fetchManifest(
+        serverUrl: String,
+        gradeLevel: Int? = null
+    ): Result<ExamManifest> = withContext(Dispatchers.IO) {
         runCatching {
             val normalizedBase = normalizeUrl(serverUrl).trimEnd('/')
-            val manifestUrl = "$normalizedBase/manifest.json"
+            val queryParams = buildList {
+                if (gradeLevel != null) add("grade=$gradeLevel")
+                add("device=${encodedDeviceLabel()}")
+            }.joinToString("&")
+            val manifestUrl = "$normalizedBase/manifest.json?$queryParams"
 
             val request = Request.Builder()
                 .url(manifestUrl)
