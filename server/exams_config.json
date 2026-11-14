@@ -3,6 +3,15 @@
   "school_tagline": "Madrasah Tsanawiyah Unggulan & Berkarakter",
   "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
   "master_pin": "888999",
+  "reminder_minutes_before": 5,
+  "daily_pins": {
+    "monday": "",
+    "tuesday": "",
+    "wednesday": "",
+    "thursday": "",
+    "friday": "",
+    "saturday": ""
+  },
   "exam_rules": [
     "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
     "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening, dan Wi-Fi/Bluetooth mati.",

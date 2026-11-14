@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.AirplanemodeActive
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.BluetoothDisabled
@@ -25,12 +26,15 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -46,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -57,12 +63,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.mtsrth.exam.R
 import id.mtsrth.exam.data.crypto.CryptoEngine
 import id.mtsrth.exam.data.model.ExamItem
 import id.mtsrth.exam.data.sync.LocalSyncManager
+import id.mtsrth.exam.security.SupervisorPinHelper
 import id.mtsrth.exam.ui.components.KeyboardAwareDialog
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
@@ -442,6 +452,287 @@ fun TokenInputComposeDialog(
                             )
                         } else {
                             Text("Buka Soal")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MakeupExamComposeDialog(
+    exam: ExamItem,
+    onDismiss: () -> Unit,
+    onVerified: (String) -> Unit
+) {
+    val colors = PrestigeTheme.colors
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val scope = rememberCoroutineScope()
+    val tokenFocusRequester = remember { FocusRequester() }
+
+    val hasDailyPin = remember { SupervisorPinHelper.hasDailyPinForToday() }
+    val todayLabel = remember { SupervisorPinHelper.getTodayDayLabelId() }
+    val totalMinutes = ExamScheduleHelper.getTotalDurationMinutes(exam)
+
+    var pinText by remember { mutableStateOf("") }
+    var pinVisible by remember { mutableStateOf(false) }
+    var tokenText by remember { mutableStateOf("") }
+    var isVerifying by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    KeyboardAwareDialog(
+        onDismissRequest = { if (!isVerifying) onDismiss() },
+        dismissOnClickOutside = !isVerifying,
+        dismissOnBackPress = !isVerifying
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = colors.pureCrispWhite,
+            shadowElevation = if (colors.isDark) 0.dp else 10.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(colors.warmAmberSoftBg),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.AdminPanelSettings,
+                            contentDescription = "Ujian Susulan",
+                            tint = colors.warmAmber,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Buka Ujian Susulan",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colors.inkSlate
+                        )
+                        Text(
+                            text = "${exam.subjectName} (Kelas ${exam.gradeLevel}) • Durasi $totalMinutes Menit",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.slateSecondary
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Jadwal ujian ini telah lewat. Pengawas wajib mengisi ${if (hasDailyPin) "PIN Hari $todayLabel" else "Master PIN"} beserta Token Soal agar waktu berjalan penuh $totalMinutes menit.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.slateSecondary
+                )
+
+                OutlinedTextField(
+                    value = pinText,
+                    onValueChange = {
+                        pinText = it
+                        errorMessage = null
+                    },
+                    label = {
+                        Text(
+                            if (hasDailyPin) "PIN PENGAWAS ($todayLabel)".uppercase()
+                            else "MASTER PIN PENGAWAS"
+                        )
+                    },
+                    placeholder = { Text("••••••") },
+                    singleLine = true,
+                    enabled = !isVerifying,
+                    isError = errorMessage != null,
+                    visualTransformation = if (pinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { pinVisible = !pinVisible }) {
+                            Icon(
+                                imageVector = if (pinVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
+                                contentDescription = if (pinVisible) "Sembunyikan PIN" else "Tampilkan PIN"
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { tokenFocusRequester.requestFocus() }
+                    ),
+                    textStyle = TextStyle(
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        letterSpacing = 2.sp,
+                        color = colors.inkSlate
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.warmAmber,
+                        unfocusedBorderColor = colors.subtleDivider,
+                        focusedLabelColor = colors.warmAmber
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_makeup_supervisor_pin")
+                )
+
+                OutlinedTextField(
+                    value = tokenText,
+                    onValueChange = {
+                        tokenText = it
+                        errorMessage = null
+                    },
+                    label = { Text("TOKEN SOAL UJIAN") },
+                    placeholder = { Text("Contoh: MTK88") },
+                    singleLine = true,
+                    enabled = !isVerifying,
+                    isError = errorMessage != null,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Characters,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { keyboardController?.hide() }
+                    ),
+                    textStyle = TextStyle(
+                        fontFamily = JetBrainsMonoFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        letterSpacing = 2.sp,
+                        color = colors.inkSlate
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = colors.deepEmerald,
+                        unfocusedBorderColor = colors.subtleDivider,
+                        focusedLabelColor = colors.deepEmerald
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(tokenFocusRequester)
+                        .testTag("input_makeup_exam_token")
+                )
+
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.coralRed,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        enabled = !isVerifying,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .testTag("btn_cancel_makeup")
+                    ) {
+                        Text("Batal")
+                    }
+                    Button(
+                        onClick = {
+                            val trimmedToken = tokenText.trim()
+                            when (val pinCheck = SupervisorPinHelper.verifyPin(pinText)) {
+                                is SupervisorPinHelper.PinVerifyResult.Failure -> {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    errorMessage = pinCheck.reason
+                                    return@Button
+                                }
+                                is SupervisorPinHelper.PinVerifyResult.Success -> Unit
+                            }
+
+                            if (trimmedToken.isEmpty()) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                errorMessage = "Token soal tidak boleh kosong"
+                                return@Button
+                            }
+
+                            isVerifying = true
+                            errorMessage = null
+                            scope.launch {
+                                val syncManager = LocalSyncManager(context)
+                                val cryptoEngine = CryptoEngine(context)
+                                val encFile = syncManager.getExamFile(exam.id)
+
+                                if (!encFile.exists()) {
+                                    isVerifying = false
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    errorMessage = "Berkas soal terenkripsi belum diunduh!"
+                                    return@launch
+                                }
+
+                                var resolvedToken = trimmedToken
+                                var result = cryptoEngine.decryptToUnlinkedPfd(
+                                    encryptedFile = encFile,
+                                    token = resolvedToken,
+                                    saltHex = exam.pbkdf2SaltHex,
+                                    ivHex = exam.gcmIvHex
+                                )
+                                val upper = trimmedToken.uppercase(Locale.ROOT)
+                                if (result.isFailure && upper != trimmedToken) {
+                                    val upperResult = cryptoEngine.decryptToUnlinkedPfd(
+                                        encryptedFile = encFile,
+                                        token = upper,
+                                        saltHex = exam.pbkdf2SaltHex,
+                                        ivHex = exam.gcmIvHex
+                                    )
+                                    if (upperResult.isSuccess) {
+                                        resolvedToken = upper
+                                        result = upperResult
+                                    }
+                                }
+                                isVerifying = false
+
+                                result.onSuccess { session ->
+                                    runCatching { session.pfd.close() }
+                                    runCatching { session.tempFile.delete() }
+                                    onVerified(resolvedToken)
+                                }.onFailure { err ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    errorMessage = if (err.localizedMessage?.contains("PDF") == true) {
+                                        err.localizedMessage ?: context.getString(R.string.error_invalid_token)
+                                    } else {
+                                        context.getString(R.string.error_invalid_token)
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isVerifying,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colors.warmAmber,
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(48.dp)
+                            .testTag("btn_submit_makeup")
+                    ) {
+                        if (isVerifying) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text("Buka Susulan")
                         }
                     }
                 }

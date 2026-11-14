@@ -21,8 +21,7 @@ object ExamReminderScheduler {
 
     const val CHANNEL_ID = "exam_reminder_5min"
     private const val CHANNEL_NAME = "Pengingat Ujian"
-    private const val CHANNEL_DESC = "Notifikasi pengingat 5 menit sebelum ujian dimulai"
-    private const val FIVE_MINUTES_MILLIS = 5 * 60 * 1000L
+    private const val CHANNEL_DESC = "Notifikasi pengingat sebelum ujian dimulai"
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -46,8 +45,13 @@ object ExamReminderScheduler {
         }
     }
 
-    fun reminderKey(examId: String, examDate: String, startTime: String): String {
-        return "${examId}|${examDate.trim()}|${startTime.trim()}"
+    fun reminderKey(
+        examId: String,
+        examDate: String,
+        startTime: String,
+        leadMinutes: Int = ExamApp.instance.secureStorage.reminderMinutesBefore
+    ): String {
+        return "${examId}|${examDate.trim()}|${startTime.trim()}|$leadMinutes"
     }
 
     fun ensureChannel(context: Context) {
@@ -79,7 +83,8 @@ object ExamReminderScheduler {
         }
         try {
             val manifest = json.decodeFromString<ExamManifest>(cached)
-            rescheduleForExams(context, manifest.exams, storage.selectedGrade)
+            storage.reminderMinutesBefore = manifest.reminderMinutesBefore
+            rescheduleForExams(context, manifest.exams, storage.selectedGrade, manifest.reminderMinutesBefore)
         } catch (_: Exception) {
         }
     }
@@ -87,16 +92,23 @@ object ExamReminderScheduler {
     fun rescheduleForExams(
         context: Context,
         allExams: List<ExamItem>,
-        selectedGrade: Int
+        selectedGrade: Int,
+        leadMinutes: Int = ExamApp.instance.secureStorage.reminderMinutesBefore
     ) {
         ensureChannel(context)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
         val storage = ExamApp.instance.secureStorage
 
-        // Batalkan alarm lama sebelum menjadwalkan ulang agar sinkron dengan kelas & status terbaru
+        // Batalkan alarm lama sebelum menjadwalkan ulang agar sinkron dengan kelas, waktu pengingat, & status terbaru
         cancelAllScheduled(context, alarmManager)
 
-        val validKeys = allExams.map { reminderKey(it.id, it.examDate, it.startTime) }.toSet()
+        val effectiveLead = leadMinutes.coerceIn(0, 120)
+        if (effectiveLead <= 0) {
+            return
+        }
+
+        val leadMillis = effectiveLead * 60_000L
+        val validKeys = allExams.map { reminderKey(it.id, it.examDate, it.startTime, effectiveLead) }.toSet()
         storage.pruneNotifiedReminderKeys(validKeys)
 
         val now = System.currentTimeMillis()
@@ -110,11 +122,11 @@ object ExamReminderScheduler {
             val startMillis = ExamScheduleHelper.getExamStartMillis(exam, now) ?: continue
             if (now >= startMillis) continue
 
-            val triggerMillis = startMillis - FIVE_MINUTES_MILLIS
-            val key = reminderKey(exam.id, exam.examDate, exam.startTime)
+            val triggerMillis = startMillis - leadMillis
+            val key = reminderKey(exam.id, exam.examDate, exam.startTime, effectiveLead)
 
             if (now >= triggerMillis) {
-                // Sudah berada di jendela H-5 menit sebelum ujian dimulai -> langsung tampilkan pengingat
+                // Sudah berada di jendela H-X menit sebelum ujian dimulai
                 ExamReminderReceiver.showNotificationNow(
                     context = context.applicationContext,
                     examId = exam.id,
@@ -122,7 +134,8 @@ object ExamReminderScheduler {
                     gradeLevel = exam.gradeLevel,
                     examDate = exam.examDate,
                     startTime = exam.startTime,
-                    startMillis = startMillis
+                    startMillis = startMillis,
+                    leadMinutes = effectiveLead
                 )
                 continue
             }
@@ -133,6 +146,7 @@ object ExamReminderScheduler {
                 context = context,
                 exam = exam,
                 startMillis = startMillis,
+                leadMinutes = effectiveLead,
                 flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
@@ -149,9 +163,10 @@ object ExamReminderScheduler {
      */
     fun checkDueRemindersNow(context: Context) {
         val storage = ExamApp.instance.secureStorage
-        if (!storage.activeExamId.isNullOrBlank()) return
-        val cached = storage.cachedManifest ?: return
+        val effectiveLead = storage.reminderMinutesBefore.coerceIn(0, 120)
+        if (effectiveLead <= 0) return
 
+        val cached = storage.cachedManifest ?: return
         val manifest = try {
             json.decodeFromString<ExamManifest>(cached)
         } catch (_: Exception) {
@@ -160,14 +175,16 @@ object ExamReminderScheduler {
 
         val now = System.currentTimeMillis()
         val selectedGrade = storage.selectedGrade
+        val leadMillis = effectiveLead * 60_000L
 
         for (exam in manifest.exams) {
             if (exam.gradeLevel != selectedGrade || storage.isExamFinished(exam.id)) continue
             val startMillis = ExamScheduleHelper.getExamStartMillis(exam, now) ?: continue
-            val triggerMillis = startMillis - FIVE_MINUTES_MILLIS
+            val triggerMillis = startMillis - leadMillis
             if (now in triggerMillis until startMillis) {
-                val key = reminderKey(exam.id, exam.examDate, exam.startTime)
+                val key = reminderKey(exam.id, exam.examDate, exam.startTime, effectiveLead)
                 if (!storage.isReminderNotified(key)) {
+                    // showNotificationNow otomatis menandai key & tidak memunculkan notif jika activeExamId aktif
                     ExamReminderReceiver.showNotificationNow(
                         context = context.applicationContext,
                         examId = exam.id,
@@ -175,7 +192,8 @@ object ExamReminderScheduler {
                         gradeLevel = exam.gradeLevel,
                         examDate = exam.examDate,
                         startTime = exam.startTime,
-                        startMillis = startMillis
+                        startMillis = startMillis,
+                        leadMinutes = effectiveLead
                     )
                 }
             }
@@ -263,6 +281,7 @@ object ExamReminderScheduler {
         context: Context,
         exam: ExamItem,
         startMillis: Long,
+        leadMinutes: Int,
         flags: Int
     ): PendingIntent {
         val intent = Intent(context, ExamReminderReceiver::class.java).apply {
@@ -273,6 +292,7 @@ object ExamReminderScheduler {
             putExtra(ExamReminderReceiver.EXTRA_EXAM_DATE, exam.examDate)
             putExtra(ExamReminderReceiver.EXTRA_START_TIME, exam.startTime)
             putExtra(ExamReminderReceiver.EXTRA_START_MILLIS, startMillis)
+            putExtra(ExamReminderReceiver.EXTRA_LEAD_MINUTES, leadMinutes)
         }
         return PendingIntent.getBroadcast(
             context,

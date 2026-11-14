@@ -58,6 +58,7 @@ class DashboardActivity : AppCompatActivity() {
 
     private var showDeviceRequirementDialog by mutableStateOf(false)
     private var pendingTokenExam by mutableStateOf<ExamItem?>(null)
+    private var pendingMakeupExam by mutableStateOf<ExamItem?>(null)
     private var pendingGradeSwitch by mutableStateOf<Int?>(null)
 
     private val hardwareReceiver = object : BroadcastReceiver() {
@@ -206,7 +207,18 @@ class DashboardActivity : AppCompatActivity() {
                         onDismiss = { pendingTokenExam = null },
                         onTokenVerified = { token ->
                             pendingTokenExam = null
-                            startExamActivity(exam, token)
+                            startExamActivity(exam, token, isMakeup = false)
+                        }
+                    )
+                }
+
+                pendingMakeupExam?.let { exam ->
+                    MakeupExamComposeDialog(
+                        exam = exam,
+                        onDismiss = { pendingMakeupExam = null },
+                        onVerified = { token ->
+                            pendingMakeupExam = null
+                            startExamActivity(exam, token, isMakeup = true)
                         }
                     )
                 }
@@ -384,6 +396,7 @@ class DashboardActivity : AppCompatActivity() {
                 serverPort = port.ifBlank { "8080" },
                 serverHistory = storage.getServerHistory(),
                 lastSyncTimestamp = storage.lastSyncTimestamp,
+                reminderMinutesBefore = storage.reminderMinutesBefore,
                 isNotificationPermissionGranted = ExamReminderScheduler.canPostNotifications(this),
                 isExactAlarmAllowed = ExamReminderScheduler.canScheduleExactAlarms(this)
             )
@@ -596,6 +609,11 @@ class DashboardActivity : AppCompatActivity() {
                 if (manifest.masterPinSha256.isNotBlank()) {
                     secureStorage.masterPinHash = manifest.masterPinSha256
                 }
+                secureStorage.reminderMinutesBefore = manifest.reminderMinutesBefore
+                secureStorage.setDailyPinHashes(manifest.dailyPinHashes)
+                if (manifest.syncTimestamp > 0L) {
+                    secureStorage.advanceMaxKnownTimestamp(manifest.syncTimestamp * 1000L)
+                }
                 if (manifest.schoolName.isNotBlank()) secureStorage.schoolName = manifest.schoolName
                 if (manifest.schoolTagline.isNotBlank()) secureStorage.schoolTagline = manifest.schoolTagline
                 if (manifest.schoolNpsn.isNotBlank()) secureStorage.schoolNpsn = manifest.schoolNpsn
@@ -672,6 +690,7 @@ class DashboardActivity : AppCompatActivity() {
                     it.copy(
                         lastSyncTimestamp = syncNow,
                         serverHistory = secureStorage.getServerHistory(),
+                        reminderMinutesBefore = manifest.reminderMinutesBefore,
                         syncState = finalSyncState
                     )
                 }
@@ -682,7 +701,8 @@ class DashboardActivity : AppCompatActivity() {
                 ExamReminderScheduler.rescheduleForExams(
                     context = this@DashboardActivity,
                     allExams = manifest.exams,
-                    selectedGrade = targetGrade
+                    selectedGrade = targetGrade,
+                    leadMinutes = manifest.reminderMinutesBefore
                 )
                 Toast.makeText(
                     this@DashboardActivity,
@@ -711,19 +731,27 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private fun loadCachedManifest() {
-        val cached = ExamApp.instance.secureStorage.cachedManifest
+        val secureStorage = ExamApp.instance.secureStorage
+        val cached = secureStorage.cachedManifest
         if (!cached.isNullOrEmpty()) {
             try {
                 val manifest = json.decodeFromString<ExamManifest>(cached)
+                secureStorage.reminderMinutesBefore = manifest.reminderMinutesBefore
+                secureStorage.setDailyPinHashes(manifest.dailyPinHashes)
+                if (manifest.syncTimestamp > 0L) {
+                    secureStorage.advanceMaxKnownTimestamp(manifest.syncTimestamp * 1000L)
+                }
                 currentManifest = manifest
                 allExams = manifest.exams
+                uiStateFlow.update { it.copy(reminderMinutesBefore = manifest.reminderMinutesBefore) }
                 syncSchoolIdentityToUiState()
                 refreshExamList()
                 updateExamStatistics()
                 ExamReminderScheduler.rescheduleForExams(
                     context = this,
                     allExams = manifest.exams,
-                    selectedGrade = ExamApp.instance.secureStorage.selectedGrade
+                    selectedGrade = secureStorage.selectedGrade,
+                    leadMinutes = manifest.reminderMinutesBefore
                 )
             } catch (_: Exception) {
             }
@@ -808,12 +836,7 @@ class DashboardActivity : AppCompatActivity() {
                 ).show()
             }
             ExamScheduleHelper.ScheduleState.EXPIRED -> {
-                val timeLabel = if (exam.endTime.isNotBlank()) "Batas pukul ${exam.endTime} WIB" else "Jadwal telah lewat"
-                Toast.makeText(
-                    this,
-                    "Waktu ujian ini telah berakhir ($timeLabel)!",
-                    Toast.LENGTH_LONG
-                ).show()
+                pendingMakeupExam = exam
             }
             ExamScheduleHelper.ScheduleState.ACTIVE -> {
                 pendingTokenExam = exam
@@ -866,8 +889,12 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun startExamActivity(exam: ExamItem, token: String) {
-        val effectiveDuration = ExamScheduleHelper.calculateEffectiveDurationMinutes(exam)
+    private fun startExamActivity(exam: ExamItem, token: String, isMakeup: Boolean = false) {
+        val effectiveDuration = if (isMakeup) {
+            ExamScheduleHelper.getTotalDurationMinutes(exam)
+        } else {
+            ExamScheduleHelper.calculateEffectiveDurationMinutes(exam)
+        }
 
         val intent = Intent(this, KioskExamActivity::class.java).apply {
             putExtra(KioskExamActivity.EXTRA_EXAM_ID, exam.id)
@@ -878,6 +905,7 @@ class DashboardActivity : AppCompatActivity() {
             putExtra(KioskExamActivity.EXTRA_SALT_HEX, exam.pbkdf2SaltHex)
             putExtra(KioskExamActivity.EXTRA_IV_HEX, exam.gcmIvHex)
             putExtra(KioskExamActivity.EXTRA_TOKEN, token)
+            putExtra(KioskExamActivity.EXTRA_IS_MAKEUP_EXAM, isMakeup)
         }
         startActivity(intent)
     }

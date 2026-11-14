@@ -26,8 +26,14 @@ data class ExamManifest(
     @SerialName("sync_timestamp")
     val syncTimestamp: Long = 0L,
 
+    @SerialName("reminder_minutes_before")
+    val reminderMinutesBefore: Int = 5,
+
     @SerialName("master_pin_sha256")
     val masterPinSha256: String = "",
+
+    @SerialName("daily_pin_hashes")
+    val dailyPinHashes: Map<String, String> = emptyMap(),
 
     @SerialName("exam_rules")
     val examRules: List<String> = emptyList(),

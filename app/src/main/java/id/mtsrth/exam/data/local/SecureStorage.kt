@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import org.json.JSONObject
 
 class SecureStorage(context: Context) {
 
@@ -47,9 +48,55 @@ class SecureStorage(context: Context) {
         get() = prefs.getString(KEY_MASTER_PIN_HASH, "") ?: ""
         set(value) = prefs.edit().putString(KEY_MASTER_PIN_HASH, value).apply()
 
+    var reminderMinutesBefore: Int
+        get() = prefs.getInt(KEY_REMINDER_MINUTES_BEFORE, 5).coerceIn(0, 120)
+        set(value) = prefs.edit().putInt(KEY_REMINDER_MINUTES_BEFORE, value.coerceIn(0, 120)).apply()
+
+    var maxKnownTimestampMillis: Long
+        get() = prefs.getLong(KEY_MAX_KNOWN_TIMESTAMP_MILLIS, 0L)
+        private set(value) = prefs.edit().putLong(KEY_MAX_KNOWN_TIMESTAMP_MILLIS, value).apply()
+
+    fun advanceMaxKnownTimestamp(candidateMillis: Long) {
+        if (candidateMillis > maxKnownTimestampMillis) {
+            maxKnownTimestampMillis = candidateMillis
+        }
+    }
+
+    fun getDailyPinHashes(): Map<String, String> {
+        val raw = prefs.getString(KEY_DAILY_PIN_HASHES, null) ?: return emptyMap()
+        return runCatching {
+            val jsonObj = JSONObject(raw)
+            val result = mutableMapOf<String, String>()
+            val keys = jsonObj.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val value = jsonObj.optString(key, "").trim()
+                if (value.isNotEmpty()) {
+                    result[key] = value
+                }
+            }
+            result.toMap()
+        }.getOrDefault(emptyMap())
+    }
+
+    fun setDailyPinHashes(hashes: Map<String, String>) {
+        val jsonObj = JSONObject()
+        for ((day, hash) in hashes) {
+            val clean = hash.trim()
+            if (clean.isNotEmpty()) {
+                jsonObj.put(day, clean)
+            }
+        }
+        prefs.edit().putString(KEY_DAILY_PIN_HASHES, jsonObj.toString()).apply()
+    }
+
     var activeExamId: String?
         get() = prefs.getString(KEY_ACTIVE_EXAM_ID, null)
         set(value) = prefs.edit().putString(KEY_ACTIVE_EXAM_ID, value).apply()
+
+    var activeExamIsMakeup: Boolean
+        get() = prefs.getBoolean(KEY_ACTIVE_EXAM_IS_MAKEUP, false)
+        set(value) = prefs.edit().putBoolean(KEY_ACTIVE_EXAM_IS_MAKEUP, value).apply()
 
     var remainingExamSeconds: Long
         get() = prefs.getLong(KEY_REMAINING_EXAM_SECONDS, 0L)
@@ -152,6 +199,7 @@ class SecureStorage(context: Context) {
     fun resetActiveExamSession() {
         prefs.edit()
             .remove(KEY_ACTIVE_EXAM_ID)
+            .remove(KEY_ACTIVE_EXAM_IS_MAKEUP)
             .remove(KEY_REMAINING_EXAM_SECONDS)
             .remove(KEY_VIOLATION_COUNT)
             .remove(KEY_REMAINING_BAN_SECONDS)
@@ -169,7 +217,11 @@ class SecureStorage(context: Context) {
         private const val KEY_SCHOOL_ADDRESS = "school_address"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_MASTER_PIN_HASH = "master_pin_hash"
+        private const val KEY_REMINDER_MINUTES_BEFORE = "reminder_minutes_before"
+        private const val KEY_DAILY_PIN_HASHES = "daily_pin_hashes"
+        private const val KEY_MAX_KNOWN_TIMESTAMP_MILLIS = "max_known_timestamp_millis"
         private const val KEY_ACTIVE_EXAM_ID = "active_exam_id"
+        private const val KEY_ACTIVE_EXAM_IS_MAKEUP = "active_exam_is_makeup"
         private const val KEY_REMAINING_EXAM_SECONDS = "remaining_exam_seconds"
         private const val KEY_VIOLATION_COUNT = "violation_count"
         private const val KEY_REMAINING_BAN_SECONDS = "remaining_ban_seconds"

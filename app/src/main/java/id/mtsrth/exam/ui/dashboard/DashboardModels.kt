@@ -76,6 +76,7 @@ data class DashboardUiState(
     val syncState: SyncState = SyncState.Idle,
     val downloadingExamId: String? = null,
     val isDarkMode: Boolean = false,
+    val reminderMinutesBefore: Int = 5,
     val isNotificationPermissionGranted: Boolean = true,
     val isExactAlarmAllowed: Boolean = true
 )

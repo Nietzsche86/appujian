@@ -25,6 +25,8 @@ class ExamReminderReceiver : BroadcastReceiver() {
         val examDate = intent.getStringExtra(EXTRA_EXAM_DATE) ?: ""
         val startTime = intent.getStringExtra(EXTRA_START_TIME) ?: ""
         val startMillis = intent.getLongExtra(EXTRA_START_MILLIS, 0L)
+        val defaultLead = ExamApp.instance.secureStorage.reminderMinutesBefore
+        val leadMinutes = intent.getIntExtra(EXTRA_LEAD_MINUTES, defaultLead)
 
         showNotificationNow(
             context = context.applicationContext,
@@ -33,7 +35,8 @@ class ExamReminderReceiver : BroadcastReceiver() {
             gradeLevel = gradeLevel,
             examDate = examDate,
             startTime = startTime,
-            startMillis = startMillis
+            startMillis = startMillis,
+            leadMinutes = leadMinutes
         )
     }
 
@@ -45,6 +48,7 @@ class ExamReminderReceiver : BroadcastReceiver() {
         const val EXTRA_EXAM_DATE = "extra_exam_date"
         const val EXTRA_START_TIME = "extra_start_time"
         const val EXTRA_START_MILLIS = "extra_start_millis"
+        const val EXTRA_LEAD_MINUTES = "extra_lead_minutes"
 
         fun showNotificationNow(
             context: Context,
@@ -53,12 +57,12 @@ class ExamReminderReceiver : BroadcastReceiver() {
             gradeLevel: Int,
             examDate: String,
             startTime: String,
-            startMillis: Long
+            startMillis: Long,
+            leadMinutes: Int = ExamApp.instance.secureStorage.reminderMinutesBefore
         ) {
             val storage = ExamApp.instance.secureStorage
-
-            // Jangan tampilkan notifikasi jika siswa sedang dalam sesi ujian Kiosk aktif
-            if (!storage.activeExamId.isNullOrBlank()) return
+            val effectiveLead = leadMinutes.coerceIn(0, 120)
+            if (effectiveLead <= 0) return
 
             // Jangan tampilkan jika soal sudah selesai dikerjakan atau kelas berbeda
             if (storage.isExamFinished(examId)) return
@@ -68,8 +72,15 @@ class ExamReminderReceiver : BroadcastReceiver() {
             val now = System.currentTimeMillis()
             if (startMillis > 0L && now >= startMillis) return
 
-            val dedupKey = ExamReminderScheduler.reminderKey(examId, examDate, startTime)
+            val dedupKey = ExamReminderScheduler.reminderKey(examId, examDate, startTime, effectiveLead)
             if (storage.isReminderNotified(dedupKey)) return
+
+            // Jika siswa sedang mengerjakan ujian saat pengingat seharusnya muncul:
+            // JANGAN beri notifikasi, dan tandai pengingat sebagai sudah dikonsumsi agar tidak muncul telat setelah selesai.
+            if (!storage.activeExamId.isNullOrBlank()) {
+                storage.markReminderNotified(dedupKey)
+                return
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val granted = ContextCompat.checkSelfPermission(
@@ -93,9 +104,9 @@ class ExamReminderReceiver : BroadcastReceiver() {
             )
 
             val minsLeft = if (startMillis > 0L) {
-                (((startMillis - now) + 59_999L) / 60_000L).toInt().coerceIn(1, 5)
+                (((startMillis - now) + 59_999L) / 60_000L).toInt().coerceIn(1, effectiveLead)
             } else {
-                5
+                effectiveLead
             }
 
             val scheduleDetail = if (startTime.isNotBlank()) "pukul $startTime WIB" else "sebentar lagi"

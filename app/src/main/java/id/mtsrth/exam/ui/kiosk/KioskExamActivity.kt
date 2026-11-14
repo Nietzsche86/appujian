@@ -58,6 +58,7 @@ class KioskExamActivity : AppCompatActivity() {
     private var saltHex: String = ""
     private var ivHex: String = ""
     private var token: String = ""
+    private var isMakeupExam: Boolean = false
 
     private var pdfRenderer: PdfRenderer? = null
     private var pdfPfd: ParcelFileDescriptor? = null
@@ -262,6 +263,7 @@ class KioskExamActivity : AppCompatActivity() {
         saltHex = intent.getStringExtra(EXTRA_SALT_HEX) ?: ""
         ivHex = intent.getStringExtra(EXTRA_IV_HEX) ?: ""
         token = intent.getStringExtra(EXTRA_TOKEN) ?: ""
+        isMakeupExam = intent.getBooleanExtra(EXTRA_IS_MAKEUP_EXAM, false)
     }
 
     private fun initSecurityEngines() {
@@ -281,13 +283,18 @@ class KioskExamActivity : AppCompatActivity() {
     private fun setupInitialExamState() {
         val secureStorage = ExamApp.instance.secureStorage
         val savedRemaining = secureStorage.remainingExamSeconds
-        examRemainingSeconds = if (savedRemaining > 0 && secureStorage.activeExamId == examId) {
-            savedRemaining
+        val isResumingSameExam = savedRemaining > 0 && secureStorage.activeExamId == examId
+        if (isResumingSameExam) {
+            examRemainingSeconds = savedRemaining
+            if (secureStorage.activeExamIsMakeup) {
+                isMakeupExam = true
+            }
         } else {
-            durationMinutes * 60L
+            examRemainingSeconds = durationMinutes * 60L
         }
 
         secureStorage.activeExamId = examId
+        secureStorage.activeExamIsMakeup = isMakeupExam
 
         uiStateFlow.update {
             it.copy(
@@ -512,8 +519,8 @@ class KioskExamActivity : AppCompatActivity() {
 
                 uiStateFlow.update { it.copy(remainingSeconds = examRemainingSeconds) }
 
-                // Cek jam nyata di HP jika batas jam selesai ditentukan
-                if (endTime.isNotBlank()) {
+                // Cek jam nyata di HP jika batas jam selesai ditentukan (dikecualikan untuk Ujian Susulan)
+                if (!isMakeupExam && endTime.isNotBlank()) {
                     val endMin = ExamScheduleHelper.parseMinutesOfDay(endTime)
                     if (endMin != null) {
                         val now = Calendar.getInstance()
@@ -646,5 +653,6 @@ class KioskExamActivity : AppCompatActivity() {
         const val EXTRA_SALT_HEX = "extra_salt_hex"
         const val EXTRA_IV_HEX = "extra_iv_hex"
         const val EXTRA_TOKEN = "extra_token"
+        const val EXTRA_IS_MAKEUP_EXAM = "extra_is_makeup_exam"
     }
 }

@@ -35,6 +35,9 @@ CONFIG_FILE = BASE_DIR / "exams_config.json"
 MANIFEST_FILE = BASE_DIR / "manifest.json"
 HTML_FILE = BASE_DIR / "web_dashboard.html"
 
+# Hari efektif pelaksanaan ujian untuk rotasi PIN Pengawas Harian (Senin - Sabtu)
+DAILY_PIN_KEYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday")
+
 # Thread lock untuk sinkronisasi baca/tulis konfigurasi
 CONFIG_LOCK = threading.RLock()
 
@@ -89,18 +92,37 @@ def get_local_ip() -> str:
             return ip
     return "127.0.0.1"
 
+def normalize_reminder_minutes(value, default: int = 5) -> int:
+    try:
+        parsed = int(value)
+        return max(0, min(120, parsed))
+    except Exception:
+        return default
+
+def normalize_daily_pins(raw_pins) -> dict:
+    src = raw_pins if isinstance(raw_pins, dict) else {}
+    return {day: str(src.get(day, "") or "").strip() for day in DAILY_PIN_KEYS}
+
 def load_or_init_config() -> dict:
     with CONFIG_LOCK:
         if CONFIG_FILE.exists():
             try:
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        data["reminder_minutes_before"] = normalize_reminder_minutes(data.get("reminder_minutes_before", 5))
+                        data["daily_pins"] = normalize_daily_pins(data.get("daily_pins"))
+                        return data
             except Exception as e:
                 # Jangan langsung menimpa data jika hanya error baca sesaat
                 time.sleep(0.05)
                 try:
                     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                        return json.load(f)
+                        data = json.load(f)
+                        if isinstance(data, dict):
+                            data["reminder_minutes_before"] = normalize_reminder_minutes(data.get("reminder_minutes_before", 5))
+                            data["daily_pins"] = normalize_daily_pins(data.get("daily_pins"))
+                            return data
                 except Exception:
                     print(f"[WARN] Gagal membaca konfigurasi: {e}")
 
@@ -114,6 +136,8 @@ def load_or_init_config() -> dict:
                 "school_address": "Kp. Bojong Jaya, Des. Pasirkiamis, Kec. Pasirwangi, Kab. Garut, Jawa Barat.",
                 "exam_title": "Penilaian Akhir Semester (PAS) Ganjil",
                 "master_pin": "888999",
+                "reminder_minutes_before": 5,
+                "daily_pins": {day: "" for day in DAILY_PIN_KEYS},
                 "exam_rules": [
                     "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
                     "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening, dan Wi-Fi/Bluetooth mati.",
@@ -286,6 +310,14 @@ def rebuild_manifest(server_base_url: str, force_reencrypt: bool = False):
     master_pin = config.get("master_pin", "888999")
     master_pin_sha256 = hashlib.sha256(master_pin.strip().encode('utf-8')).hexdigest()
 
+    reminder_minutes = normalize_reminder_minutes(config.get("reminder_minutes_before", 5))
+    daily_pins = normalize_daily_pins(config.get("daily_pins"))
+    daily_pin_hashes = {
+        day: hashlib.sha256(pin.encode('utf-8')).hexdigest()
+        for day, pin in daily_pins.items()
+        if pin
+    }
+
     default_rules = [
         "Siswa wajib memasuki ruang ujian 15 menit sebelum ujian dimulai.",
         "Perangkat Android WAJIB dalam Mode Pesawat, Mode Hening, dan Wi-Fi/Bluetooth mati.",
@@ -308,7 +340,9 @@ def rebuild_manifest(server_base_url: str, force_reencrypt: bool = False):
         "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
         "exam_rules": config.get("exam_rules", default_rules),
         "sync_timestamp": int(time.time()),
+        "reminder_minutes_before": reminder_minutes,
         "master_pin_sha256": master_pin_sha256,
+        "daily_pin_hashes": daily_pin_hashes,
         "exams": exams_manifest
     }
 
@@ -412,6 +446,8 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 "exam_title": config.get("exam_title", "Penilaian Akhir Semester (PAS) Ganjil"),
                 "exam_rules": config.get("exam_rules", []),
                 "master_pin": config.get("master_pin", "888999"),
+                "reminder_minutes_before": normalize_reminder_minutes(config.get("reminder_minutes_before", 5)),
+                "daily_pins": normalize_daily_pins(config.get("daily_pins")),
                 "server_url": self.server_base_url,
                 "all_ips": get_all_local_ips(),
                 "exams": config.get("exams", []),
@@ -505,6 +541,10 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                     config["exam_title"] = payload["exam_title"].strip()
                 if "master_pin" in payload and payload["master_pin"].strip():
                     config["master_pin"] = payload["master_pin"].strip()
+                if "reminder_minutes_before" in payload:
+                    config["reminder_minutes_before"] = normalize_reminder_minutes(payload["reminder_minutes_before"])
+                if "daily_pins" in payload and isinstance(payload["daily_pins"], dict):
+                    config["daily_pins"] = normalize_daily_pins(payload["daily_pins"])
                 if "exam_rules" in payload and isinstance(payload["exam_rules"], list):
                     config["exam_rules"] = [r.strip() for r in payload["exam_rules"] if r.strip()]
 

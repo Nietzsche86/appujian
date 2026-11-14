@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AccessTime
+import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.CalendarToday
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.CloudDownload
@@ -510,8 +511,9 @@ fun ExamsScheduleTab(
                 )
             }
 
-            if (!uiState.isNotificationPermissionGranted || !uiState.isExactAlarmAllowed) {
+            if (uiState.reminderMinutesBefore > 0 && (!uiState.isNotificationPermissionGranted || !uiState.isExactAlarmAllowed)) {
                 NotificationPermissionWarningCard(
+                    reminderMinutesBefore = uiState.reminderMinutesBefore,
                     hasNotificationPermission = uiState.isNotificationPermissionGranted,
                     hasExactAlarmPermission = uiState.isExactAlarmAllowed,
                     onFixClick = onFixNotificationPermission
@@ -862,6 +864,7 @@ private fun ExamStatMetricRow(
 
 @Composable
 private fun NotificationPermissionWarningCard(
+    reminderMinutesBefore: Int,
     hasNotificationPermission: Boolean,
     hasExactAlarmPermission: Boolean,
     onFixClick: () -> Unit
@@ -873,9 +876,9 @@ private fun NotificationPermissionWarningCard(
         "Izin Alarm Tepat Waktu Belum Aktif"
     }
     val message = if (!hasNotificationPermission) {
-        "Aktifkan izin notifikasi agar pengingat 5 menit sebelum ujian muncul di HP."
+        "Aktifkan izin notifikasi agar pengingat $reminderMinutesBefore menit sebelum ujian muncul di HP."
     } else if (!hasExactAlarmPermission) {
-        "Aktifkan izin Alarm & Pengingat agar notifikasi 5 menit sebelum ujian muncul tepat waktu."
+        "Aktifkan izin Alarm & Pengingat agar notifikasi $reminderMinutesBefore menit sebelum ujian muncul tepat waktu."
     } else {
         ""
     }
@@ -970,6 +973,7 @@ private fun ExamItemPrestigeCard(
     val isFinished = item.status == ExamStatus.SELESAI
     val isInProgress = item.status == ExamStatus.SEDANG_UJIAN
     val scheduleState = ExamScheduleHelper.getScheduleState(exam, nowMillis)
+    val isMakeupAvailable = scheduleState == ExamScheduleHelper.ScheduleState.EXPIRED && !isFinished && !isInProgress
     val urgencyLabel = if (!isFinished) {
         ExamScheduleHelper.getScheduleUrgencyLabel(exam, nowMillis)
     } else null
@@ -978,6 +982,10 @@ private fun ExamItemPrestigeCard(
     val (buttonText, buttonBg, buttonFg, buttonEnabled) = when {
         isFinished -> Quad("Selesai", colors.vibrantTealSoftBg, colors.deepEmerald, true)
         isInProgress -> Quad("Lanjutkan", ctaSolidBg, Color.White, true)
+        item.status == ExamStatus.BELUM_DIUNDUH &&
+            (scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE || isMakeupAvailable) -> {
+            Quad("Unduh", ctaSolidBg, Color.White, !isDownloading)
+        }
         scheduleState == ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {
             val dateCompare = ExamScheduleHelper.compareExamDateWithToday(exam.examDate)
             val label = if (dateCompare != null && dateCompare < 0) {
@@ -989,8 +997,8 @@ private fun ExamItemPrestigeCard(
             }
             Quad(label, colors.tonalSlateSurface, colors.slateMuted, false)
         }
-        scheduleState == ExamScheduleHelper.ScheduleState.EXPIRED -> {
-            Quad("Waktu Habis", colors.coralRedSoftBg, colors.coralRed, false)
+        isMakeupAvailable -> {
+            Quad("Susulan", colors.warmAmberSoftBg, colors.warmAmber, true)
         }
         item.status == ExamStatus.BELUM_DIUNDUH -> {
             Quad("Unduh", ctaSolidBg, Color.White, !isDownloading)
@@ -1204,6 +1212,33 @@ private fun ExamItemPrestigeCard(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    } else if (isMakeupAvailable) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(colors.warmAmberSoftBg)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .testTag("exam_makeup_badge_${exam.id}"),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.AdminPanelSettings,
+                                contentDescription = "Ujian Susulan",
+                                tint = colors.warmAmber,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Jadwal Terlewat • Susulan",
+                                fontFamily = JetBrainsMonoFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = colors.warmAmber,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
 
@@ -1235,7 +1270,9 @@ private fun ExamItemPrestigeCard(
                         val actionIcon = when {
                             isFinished -> Icons.Rounded.CheckCircle
                             isInProgress -> Icons.Rounded.Shield
-                            scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE && item.status == ExamStatus.BELUM_DIUNDUH -> Icons.Rounded.CloudDownload
+                            item.status == ExamStatus.BELUM_DIUNDUH &&
+                                (scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE || isMakeupAvailable) -> Icons.Rounded.CloudDownload
+                            isMakeupAvailable -> Icons.Rounded.AdminPanelSettings
                             scheduleState == ExamScheduleHelper.ScheduleState.ACTIVE -> Icons.Rounded.PlayArrow
                             else -> null
                         }

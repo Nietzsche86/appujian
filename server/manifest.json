@@ -18,7 +18,9 @@
     "Berdoalah sebelum mengerjakan soal ujian. Kejujuran adalah cerminan akhlak mulia."
   ],
   "sync_timestamp": 1792850908,
+  "reminder_minutes_before": 5,
   "master_pin_sha256": "d619e89bdaae0de8760ea721fa1ba8d9a819870b1ba82d720e7ac802270fce92",
+  "daily_pin_hashes": {},
   "exams": [
     {
       "id": "HALO-8-1792773172",

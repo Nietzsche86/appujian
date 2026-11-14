@@ -56,7 +56,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -68,9 +67,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import id.mtsrth.exam.ExamApp
-import id.mtsrth.exam.R
-import id.mtsrth.exam.data.sync.LocalSyncManager
+import id.mtsrth.exam.security.SupervisorPinHelper
 import id.mtsrth.exam.ui.components.KeyboardAwareDialog
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
@@ -255,10 +252,11 @@ fun SupervisorPinComposeDialog(
     onDismiss: () -> Unit
 ) {
     val colors = PrestigeTheme.colors
-    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val ctaSolidBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
+    val hasDailyPin = remember { SupervisorPinHelper.hasDailyPinForToday() }
+    val todayLabel = remember { SupervisorPinHelper.getTodayDayLabelId() }
 
     var pinText by remember { mutableStateOf("") }
     var pinVisible by remember { mutableStateOf(false) }
@@ -302,6 +300,8 @@ fun SupervisorPinComposeDialog(
                         Text(
                             text = if (isVerified) {
                                 "PIN valid. Pilih tindakan pengendalian sesi."
+                            } else if (hasDailyPin) {
+                                "Masukkan PIN Pengawas hari $todayLabel untuk membuka akses."
                             } else {
                                 "Masukkan Master PIN pengawas untuk membuka akses."
                             },
@@ -324,12 +324,17 @@ fun SupervisorPinComposeDialog(
                                     pinText = it
                                     errorMessage = null
                                 },
-                                label = { Text("MASTER PIN PENGAWAS") },
+                                label = {
+                                    Text(
+                                        if (hasDailyPin) "PIN PENGAWAS ($todayLabel)".uppercase()
+                                        else "MASTER PIN PENGAWAS"
+                                    )
+                                },
                                 placeholder = { Text("••••••") },
                                 singleLine = true,
                                 isError = errorMessage != null,
                                 keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.NumberPassword,
+                                    keyboardType = KeyboardType.Password,
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(
@@ -387,26 +392,16 @@ fun SupervisorPinComposeDialog(
                                 }
                                 Button(
                                     onClick = {
-                                        val pin = pinText.trim()
-                                        if (pin.isEmpty()) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            errorMessage = "Master PIN tidak boleh kosong"
-                                            return@Button
-                                        }
-                                        val expectedHash = ExamApp.instance.secureStorage.masterPinHash
-                                        val actualHash = LocalSyncManager.calculateSha256(pin)
-                                        val valid = if (expectedHash.isNotBlank()) {
-                                            actualHash.equals(expectedHash, ignoreCase = true)
-                                        } else {
-                                            pin == "888999"
-                                        }
-                                        if (valid) {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            errorMessage = null
-                                            isVerified = true
-                                        } else {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            errorMessage = context.getString(R.string.error_wrong_pin)
+                                        when (val check = SupervisorPinHelper.verifyPin(pinText)) {
+                                            is SupervisorPinHelper.PinVerifyResult.Success -> {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                errorMessage = null
+                                                isVerified = true
+                                            }
+                                            is SupervisorPinHelper.PinVerifyResult.Failure -> {
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                errorMessage = check.reason
+                                            }
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
