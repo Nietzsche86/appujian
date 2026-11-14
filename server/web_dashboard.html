@@ -1319,6 +1319,69 @@
             gap: 6px;
         }
 
+        .day-selector-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .day-chip-btn {
+            border: 1px solid var(--border);
+            background: var(--surface-subtle);
+            color: var(--text-secondary);
+            padding: 6px 11px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+
+        .day-chip-btn:hover {
+            border-color: var(--border-emerald);
+            color: var(--text-main);
+        }
+
+        .day-chip-btn.active {
+            background: var(--emerald-500);
+            border-color: var(--emerald-500);
+            color: #ffffff;
+        }
+
+        .export-preview-box {
+            background: var(--bg-app);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-size: 12.5px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .export-preview-grade {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: var(--emerald-400);
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .export-preview-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
         /* ===================================== */
         /* MOBILE BOTTOM NAVIGATION BAR          */
         /* ===================================== */
@@ -1534,9 +1597,12 @@
             </div>
         </div>
 
-        <div class="sidebar-cta">
+        <div class="sidebar-cta" style="display: flex; flex-direction: column; gap: 8px;">
             <button class="btn btn-primary btn-block" onclick="openAddModal()">
                 <i class="fa-solid fa-plus"></i> Tambah Soal PDF
+            </button>
+            <button class="btn btn-amber btn-block" onclick="openExportPdfModal()">
+                <i class="fa-solid fa-file-pdf"></i> Buat PDF Token &amp; PIN
             </button>
         </div>
 
@@ -1650,9 +1716,14 @@
                     <div class="kpi-value mono" id="displayTodayDailyPin">••••••</div>
                     <div class="kpi-sub">
                         <span id="todayPinStatusBadge" class="badge badge-neutral">Memuat...</span>
-                        <button class="btn btn-sm" style="margin-left: auto; min-height: 26px; font-size: 11px;" onclick="switchToTab('tabSettings')">
-                            Atur Jadwal
-                        </button>
+                        <div style="margin-left: auto; display: flex; gap: 5px;">
+                            <button class="btn btn-sm btn-amber" style="min-height: 26px; font-size: 11px; padding: 3px 8px;" onclick="openExportPdfModal()" title="Unduh PDF Token & PIN untuk grup guru">
+                                <i class="fa-solid fa-file-pdf"></i> PDF
+                            </button>
+                            <button class="btn btn-sm" style="min-height: 26px; font-size: 11px;" onclick="switchToTab('tabSettings')">
+                                Atur
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1722,6 +1793,9 @@
                     </div>
 
                     <div class="toolbar-actions">
+                        <button class="btn btn-sm btn-amber" onclick="openExportPdfModal()" title="Buat & Unduh PDF Token & PIN untuk grup guru">
+                            <i class="fa-solid fa-file-pdf"></i> PDF Token &amp; PIN
+                        </button>
                         <button class="btn btn-sm" onclick="rebuildAllPackages()" title="Enkripsi ulang semua PDF">
                             <i class="fa-solid fa-lock"></i> Enkripsi Ulang
                         </button>
@@ -1970,7 +2044,10 @@
                                     <i class="fa-solid fa-dice"></i> Acak Senin–Sabtu
                                 </button>
                                 <button type="button" class="btn btn-sm" onclick="copyDailyPins()">
-                                    <i class="fa-solid fa-copy"></i> Salin Jadwal PIN Harian
+                                    <i class="fa-solid fa-copy"></i> Salin Jadwal PIN
+                                </button>
+                                <button type="button" class="btn btn-sm btn-amber" onclick="openExportPdfModal()">
+                                    <i class="fa-solid fa-file-pdf"></i> Buat PDF Guru
                                 </button>
                                 <button type="button" class="btn btn-sm" onclick="clearDailyPins()">
                                     <i class="fa-solid fa-eraser"></i> Kosongkan
@@ -2270,6 +2347,75 @@
             <button type="button" class="btn" onclick="closeModal('modalChangePin')">Batal</button>
             <button type="button" class="btn btn-primary" id="btnSubmitModalPin" onclick="submitModalChangePin()">
                 <i class="fa-solid fa-check"></i> Simpan PIN Darurat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL 4: BUAT & UNDUH PDF TOKEN & PIN GURU -->
+<div class="modal-backdrop" id="modalExportPdf">
+    <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fa-solid fa-file-pdf" style="color: var(--amber-400);"></i> Buat PDF Token &amp; PIN Pengawas</span>
+            <button type="button" class="modal-close-btn" onclick="closeModal('modalExportPdf')">&times;</button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <span>Pilih Hari Pelaksanaan</span>
+                <span class="form-hint">Untuk dibagikan ke grup guru</span>
+            </label>
+            <div class="day-selector-row" id="exportPdfDayChips">
+                <button type="button" class="day-chip-btn" data-day="Senin" onclick="selectExportPdfDay('Senin')">Senin</button>
+                <button type="button" class="day-chip-btn" data-day="Selasa" onclick="selectExportPdfDay('Selasa')">Selasa</button>
+                <button type="button" class="day-chip-btn" data-day="Rabu" onclick="selectExportPdfDay('Rabu')">Rabu</button>
+                <button type="button" class="day-chip-btn" data-day="Kamis" onclick="selectExportPdfDay('Kamis')">Kamis</button>
+                <button type="button" class="day-chip-btn" data-day="Jumat" onclick="selectExportPdfDay('Jumat')">Jumat</button>
+                <button type="button" class="day-chip-btn" data-day="Sabtu" onclick="selectExportPdfDay('Sabtu')">Sabtu</button>
+                <button type="button" class="day-chip-btn" data-day="all" onclick="selectExportPdfDay('all')">Semua Hari</button>
+            </div>
+        </div>
+
+        <!-- Quick inline PIN setter jika PIN hari tersebut masih kosong -->
+        <div id="exportPdfMissingPinAlert" style="display: none; background: var(--amber-bg); border: 1px solid var(--border-amber); border-radius: var(--radius-md); padding: 12px; gap: 10px; flex-direction: column;">
+            <div style="font-size: 12px; color: var(--amber-400); font-weight: 700;">
+                <i class="fa-solid fa-triangle-exclamation"></i> PIN Pengawas Harian untuk hari <span id="exportMissingPinDayName">Sabtu</span> belum diisi!
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="exportQuickDailyPinInput" class="form-control mono" maxlength="32" placeholder="Isi PIN Harian (mis. 482910)" style="flex: 1; min-width: 150px; background: var(--surface); font-weight: 700;">
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('exportQuickDailyPinInput').value = generateRandomCode('numeric')"><i class="fa-solid fa-dice"></i> Acak</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="quickSaveDailyPinFromPdfModal()"><i class="fa-solid fa-floppy-disk"></i> Simpan PIN</button>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-secondary);">
+            <label style="display: inline-flex; align-items: center; gap: 7px; cursor: pointer;">
+                <input type="checkbox" id="exportPdfShowTime" checked onchange="updateExportPdfPreview()">
+                <span>Sertakan jam ujian di samping mapel</span>
+            </label>
+            <label style="display: inline-flex; align-items: center; gap: 7px; cursor: pointer;">
+                <input type="checkbox" id="exportPdfAllExams" onchange="updateExportPdfPreview()">
+                <span>Tampilkan semua mapel (abaikan filter hari)</span>
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                <span>Pratinjau Isi PDF</span>
+                <span class="badge badge-emerald" id="exportPdfCountBadge">0 Mapel</span>
+            </label>
+            <div class="export-preview-box" id="exportPdfPreviewBox"></div>
+        </div>
+
+        <div class="modal-actions" style="flex-wrap: wrap;">
+            <button type="button" class="btn" onclick="copyExportPdfWhatsappText()">
+                <i class="fa-brands fa-whatsapp" style="color: var(--emerald-400);"></i> Salin Teks WA
+            </button>
+            <button type="button" class="btn" onclick="previewExportPdf()">
+                <i class="fa-regular fa-eye"></i> Pratinjau PDF
+            </button>
+            <button type="button" class="btn btn-primary" onclick="downloadExportPdf()">
+                <i class="fa-solid fa-download"></i> Unduh PDF
             </button>
         </div>
     </div>
@@ -3445,6 +3591,253 @@
         } catch (e) {
             alert('Gagal menghubungi server');
         }
+    }
+
+    /* ========================================= */
+    /* EXPORT PDF TOKEN & PIN GURU               */
+    /* ========================================= */
+    let selectedExportPdfDay = 'Sabtu';
+    const EXPORT_DAY_TO_KEY = {
+        Senin: 'monday',
+        Selasa: 'tuesday',
+        Rabu: 'wednesday',
+        Kamis: 'thursday',
+        Jumat: 'friday',
+        Sabtu: 'saturday',
+        Minggu: 'sunday'
+    };
+
+    function openExportPdfModal(preferredDay) {
+        const today = getTodayDayContext().label;
+        const defaultDay = preferredDay || (EXPORT_DAY_TO_KEY[today] && today !== 'Minggu' ? today : 'Sabtu');
+        selectExportPdfDay(defaultDay);
+        openModal('modalExportPdf');
+    }
+
+    function selectExportPdfDay(day) {
+        selectedExportPdfDay = day;
+        document.querySelectorAll('#exportPdfDayChips .day-chip-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.day === day);
+        });
+        updateExportPdfPreview();
+    }
+
+    function getFilteredExamsForExport() {
+        const exams = serverData.exams || [];
+        const showAllExams = document.getElementById('exportPdfAllExams')?.checked;
+        let list;
+        if (selectedExportPdfDay === 'all' || showAllExams) {
+            list = exams.slice();
+        } else {
+            list = exams.filter(ex => String(ex.exam_day || '').trim().toLowerCase() === selectedExportPdfDay.toLowerCase());
+        }
+        list.sort((a, b) => {
+            const ga = Number(a.grade_level || 7);
+            const gb = Number(b.grade_level || 7);
+            if (ga !== gb) return ga - gb;
+            return String(a.start_time || '').localeCompare(String(b.start_time || ''))
+                || String(a.subject_name || '').localeCompare(String(b.subject_name || ''));
+        });
+        return list;
+    }
+
+    function updateExportPdfPreview() {
+        const previewBox = document.getElementById('exportPdfPreviewBox');
+        const countBadge = document.getElementById('exportPdfCountBadge');
+        const missingAlert = document.getElementById('exportPdfMissingPinAlert');
+        const missingDaySpan = document.getElementById('exportMissingPinDayName');
+        const quickInput = document.getElementById('exportQuickDailyPinInput');
+        const showTime = document.getElementById('exportPdfShowTime')?.checked;
+        const showAllExams = document.getElementById('exportPdfAllExams')?.checked;
+
+        const dailyPins = serverData.daily_pins || {};
+        const isAllDays = selectedExportPdfDay === 'all';
+        const dayKey = EXPORT_DAY_TO_KEY[selectedExportPdfDay];
+        const pinVal = isAllDays ? '' : String(dailyPins[dayKey] || '').trim();
+
+        if (!isAllDays && !pinVal && dayKey && dayKey !== 'sunday') {
+            missingAlert.style.display = 'flex';
+            missingDaySpan.textContent = selectedExportPdfDay;
+            if (quickInput && !quickInput.dataset.touched) quickInput.value = '';
+        } else {
+            missingAlert.style.display = 'none';
+        }
+
+        const exams = getFilteredExamsForExport();
+        if (countBadge) countBadge.textContent = `${exams.length} Mapel`;
+
+        const grouped = {};
+        exams.forEach(ex => {
+            const g = String(ex.grade_level || '7');
+            if (!grouped[g]) grouped[g] = [];
+            grouped[g].push(ex);
+        });
+        const grades = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+
+        const titleLine = isAllDays
+            ? 'TOKEN DAN PIN PENGAWAS (SEMUA HARI)'
+            : `TOKEN DAN PIN HARI ${selectedExportPdfDay.toUpperCase()}`;
+
+        let pinBlockHtml = '';
+        if (isAllDays) {
+            pinBlockHtml = DAILY_PIN_KEYS.map(k => {
+                const v = (dailyPins[k] || '').trim() || 'Belum diatur';
+                return `<span class="badge badge-amber mono">${DAILY_PIN_LABELS[k]}: ${escapeHtml(v)}</span>`;
+            }).join(' ');
+            pinBlockHtml = `<div style="display: flex; flex-wrap: wrap; gap: 6px;">${pinBlockHtml}</div>`;
+        } else {
+            pinBlockHtml = `
+                <div style="background: var(--amber-bg); border: 1px solid var(--border-amber); border-radius: 8px; padding: 8px 12px;">
+                    <div style="font-size: 10.5px; font-weight: 700; color: var(--amber-400);">PIN PENGAWAS</div>
+                    <div class="mono" style="font-size: 18px; font-weight: 800; color: var(--text-main); letter-spacing: 0.08em;">
+                        ${pinVal ? escapeHtml(pinVal) : '<span style="color: var(--red-400); font-size: 12.5px;">Belum Diatur</span>'}
+                    </div>
+                </div>`;
+        }
+
+        let examsHtml = '';
+        if (!grades.length) {
+            examsHtml = `<div style="color: var(--text-muted); padding: 10px 0;">Belum ada mapel terjadwal pada hari ${escapeHtml(selectedExportPdfDay)}. Centang "Tampilkan semua mapel" jika ingin menyertakan semua mapel.</div>`;
+        } else {
+            grades.forEach(g => {
+                examsHtml += `<div class="export-preview-grade">KELAS ${escapeHtml(g)}</div>`;
+                grouped[g].forEach(ex => {
+                    const tok = escapeHtml(String(ex.token || '-').toUpperCase());
+                    const sub = escapeHtml(ex.subject_name || '-');
+                    let extra = '';
+                    if (showTime && (ex.start_time || ex.end_time)) {
+                        extra = `${ex.start_time || ''} - ${ex.end_time || ''} WIB`;
+                    }
+                    if ((isAllDays || showAllExams) && ex.exam_day) {
+                        extra = extra ? `${ex.exam_day}, ${extra}` : ex.exam_day;
+                    }
+                    examsHtml += `
+                        <div class="export-preview-row">
+                            <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                                <span class="badge badge-amber mono">${tok}</span>
+                                <span style="color: var(--text-dim);">—</span>
+                                <span style="font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${sub}</span>
+                            </div>
+                            ${extra ? `<span class="mono" style="font-size: 11px; color: var(--text-muted); flex-shrink: 0;">${escapeHtml(extra)}</span>` : ''}
+                        </div>`;
+                });
+            });
+        }
+
+        previewBox.innerHTML = `
+            <div style="font-weight: 800; font-size: 13.5px; color: var(--text-main);">${escapeHtml(titleLine)}</div>
+            ${pinBlockHtml}
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-top: 4px; border-bottom: 1px solid var(--border); padding-bottom: 4px;">TOKEN MAPEL</div>
+            ${examsHtml}
+        `;
+    }
+
+    async function quickSaveDailyPinFromPdfModal() {
+        const dayKey = EXPORT_DAY_TO_KEY[selectedExportPdfDay];
+        if (!dayKey || dayKey === 'sunday') return;
+        const val = (document.getElementById('exportQuickDailyPinInput')?.value || '').trim();
+        if (!val) {
+            alert('Masukkan PIN Pengawas Harian terlebih dahulu!');
+            return;
+        }
+        const nextDailyPins = Object.assign({}, serverData.daily_pins || {});
+        nextDailyPins[dayKey] = val;
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ daily_pins: nextDailyPins })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                serverData.daily_pins = nextDailyPins;
+                const formEl = document.getElementById(`inputDailyPin_${dayKey}`);
+                if (formEl) formEl.value = val;
+                updateHeroPinWidgets();
+                updateExportPdfPreview();
+                showToast(`PIN Harian ${selectedExportPdfDay} berhasil disimpan!`, 'fa-shield-halved');
+            } else {
+                alert('Gagal menyimpan PIN: ' + (data.error || 'Terjadi kesalahan'));
+            }
+        } catch (err) {
+            alert('Kesalahan koneksi: ' + err.message);
+        }
+    }
+
+    function buildExportPdfUrl(inline) {
+        const showTime = document.getElementById('exportPdfShowTime')?.checked ? '1' : '0';
+        const allExams = document.getElementById('exportPdfAllExams')?.checked ? '1' : '0';
+        const params = new URLSearchParams({
+            day: selectedExportPdfDay,
+            show_time: showTime,
+            all_exams: allExams,
+            inline: inline ? '1' : '0'
+        });
+        return `/api/export-pdf?${params.toString()}`;
+    }
+
+    function previewExportPdf() {
+        window.open(buildExportPdfUrl(true), '_blank');
+    }
+
+    function downloadExportPdf() {
+        const url = buildExportPdfUrl(false);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = selectedExportPdfDay === 'all'
+            ? 'Token_PIN_Semua_Hari.pdf'
+            : `Token_PIN_Hari_${selectedExportPdfDay}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Mengunduh dokumen PDF Token & PIN...', 'fa-file-pdf');
+    }
+
+    function copyExportPdfWhatsappText() {
+        const dailyPins = serverData.daily_pins || {};
+        const isAllDays = selectedExportPdfDay === 'all';
+        const dayKey = EXPORT_DAY_TO_KEY[selectedExportPdfDay];
+        const showTime = document.getElementById('exportPdfShowTime')?.checked;
+        const exams = getFilteredExamsForExport();
+
+        const lines = [];
+        lines.push(isAllDays ? '*TOKEN DAN PIN PENGAWAS*' : `*TOKEN DAN PIN HARI ${selectedExportPdfDay.toUpperCase()}*`);
+        lines.push('');
+        lines.push('*PIN PENGAWAS*');
+        if (isAllDays) {
+            DAILY_PIN_KEYS.forEach(k => {
+                lines.push(`${DAILY_PIN_LABELS[k]}: ${(dailyPins[k] || '').trim() || '(Belum diatur)'}`);
+            });
+        } else {
+            lines.push((dailyPins[dayKey] || '').trim() || '(Belum diatur)');
+        }
+        lines.push('');
+        lines.push('*TOKEN MAPEL*');
+
+        const grouped = {};
+        exams.forEach(ex => {
+            const g = String(ex.grade_level || '7');
+            if (!grouped[g]) grouped[g] = [];
+            grouped[g].push(ex);
+        });
+        const grades = Object.keys(grouped).sort((a, b) => Number(a) - Number(b));
+        if (!grades.length) {
+            lines.push('(Belum ada mapel terjadwal)');
+        } else {
+            grades.forEach(g => {
+                lines.push(`*KELAS ${g}*`);
+                grouped[g].forEach(ex => {
+                    const tok = String(ex.token || '-').toUpperCase();
+                    const sub = ex.subject_name || '-';
+                    const timePart = (showTime && (ex.start_time || ex.end_time)) ? ` (${ex.start_time}-${ex.end_time})` : '';
+                    lines.push(`${tok} — ${sub}${timePart}`);
+                });
+                lines.push('');
+            });
+        }
+
+        copyTextSafe(lines.join('\n').trim(), 'Format Token & PIN siap tempel ke WhatsApp!');
     }
 
     const dropzone = document.getElementById('pdfDropzone');

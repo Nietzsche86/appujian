@@ -22,6 +22,8 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from pdf_exporter import generate_token_pin_pdf, normalize_day_selection
+
 try:
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 except ImportError:
@@ -381,7 +383,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         # Respons uji koneksi dari perangkat siswa hanya untuk endpoint valid proktor
         clean_path = urlparse(self.path).path.strip("/")
-        valid = clean_path in ("", "admin", "api/ping", "api/data", "manifest.json", "logo_sekolah.png", "favicon.ico")
+        valid = clean_path in ("", "admin", "api/ping", "api/data", "api/export-pdf", "manifest.json", "logo_sekolah.png", "favicon.ico")
         if not valid and clean_path.startswith("files/"):
             filename = clean_path.replace("files/", "")
             valid = (FILES_DIR / filename).is_file()
@@ -471,6 +473,45 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 "exams": config.get("exams", []),
                 "activity_logs": ACTIVITY_LOGS
             })
+            return
+
+        # 2b. Endpoint Ekspor PDF Token & PIN Pengawas Harian (untuk dibagikan ke grup guru)
+        if clean_path == "api/export-pdf":
+            try:
+                config = load_or_init_config()
+                day_param = (query.get("day", [""])[0] or "").strip()
+                show_time_param = (query.get("show_time", ["1"])[0] or "1").strip().lower()
+                all_exams_param = (query.get("all_exams", ["0"])[0] or "0").strip().lower()
+                inline_param = (query.get("inline", ["0"])[0] or "0").strip().lower()
+
+                show_time = show_time_param not in ("0", "false", "no")
+                include_all_exams = all_exams_param in ("1", "true", "yes")
+                is_inline = inline_param in ("1", "true", "yes")
+
+                logo_path = LOGO_FILE if LOGO_FILE.exists() else APP_LOGO_FALLBACK
+                pdf_bytes = generate_token_pin_pdf(
+                    config=config,
+                    selected_day=day_param,
+                    logo_path=logo_path,
+                    show_time=show_time,
+                    include_all_exams=include_all_exams,
+                )
+
+                _day_key, day_label, is_all_days = normalize_day_selection(day_param)
+                filename = "Token_PIN_Semua_Hari.pdf" if is_all_days else f"Token_PIN_Hari_{day_label}.pdf"
+                disposition = "inline" if is_inline else "attachment"
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/pdf")
+                self.send_header("Content-Disposition", f'{disposition}; filename="{filename}"')
+                self.send_header("Content-Length", str(len(pdf_bytes)))
+                self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(pdf_bytes)
+            except Exception as err:
+                print(f"[ERROR] Gagal membuat PDF: {err}")
+                self.send_json({"ok": False, "error": str(err)}, status=500)
             return
 
         # 3. Endpoint manifest.json (untuk HP Siswa)
