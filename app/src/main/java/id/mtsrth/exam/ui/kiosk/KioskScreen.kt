@@ -32,10 +32,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.BatteryStd
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.RemoveRedEye
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Timer
@@ -400,7 +400,7 @@ private fun KioskTopStatusBar(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.MenuBook,
+                                imageVector = Icons.AutoMirrored.Rounded.MenuBook,
                                 contentDescription = "Lompat Halaman",
                                 tint = colors.deepEmerald,
                                 modifier = Modifier.size(14.dp)

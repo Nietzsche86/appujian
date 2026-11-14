@@ -32,13 +32,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.AirplanemodeActive
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.BluetoothDisabled
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
@@ -162,7 +162,7 @@ fun DashboardOverviewTab(
                         statusDetail = if (hw.isRingerSilentOrVibrate) "Hening / Getar" else "Berdering",
                         badgeText = if (hw.isRingerSilentOrVibrate) "AMAN" else "WAJIB HENING",
                         isCompliant = hw.isRingerSilentOrVibrate,
-                        icon = Icons.Rounded.VolumeOff,
+                        icon = Icons.AutoMirrored.Rounded.VolumeOff,
                         onClick = { onOpenSystemSettings(Settings.ACTION_SOUND_SETTINGS) },
                         modifier = Modifier
                             .weight(1f)

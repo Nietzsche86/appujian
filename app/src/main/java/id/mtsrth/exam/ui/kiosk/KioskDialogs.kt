@@ -25,10 +25,10 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ExitToApp
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.LockReset
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -468,7 +468,7 @@ fun SupervisorPinComposeDialog(
                                     .testTag("btn_finish_early_action")
                             ) {
                                 Icon(
-                                    imageVector = Icons.Rounded.ExitToApp,
+                                    imageVector = Icons.AutoMirrored.Rounded.ExitToApp,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )

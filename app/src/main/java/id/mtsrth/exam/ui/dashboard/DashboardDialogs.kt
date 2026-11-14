@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.AirplanemodeActive
 import androidx.compose.material.icons.rounded.Android
 import androidx.compose.material.icons.rounded.BluetoothDisabled
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
@@ -138,7 +138,7 @@ fun DeviceRequirementComposeDialog(
                     isOk = hardwareStatus.isBluetoothOff
                 )
                 RequirementCheckRow(
-                    icon = Icons.Rounded.VolumeOff,
+                    icon = Icons.AutoMirrored.Rounded.VolumeOff,
                     label = if (hardwareStatus.isRingerSilentOrVibrate) "Mode Suara: Hening/Getar (Aman)" else "Mode Suara: Berdering (Wajib Hening!)",
                     isOk = hardwareStatus.isRingerSilentOrVibrate
                 )

@@ -6,6 +6,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.provider.Settings
+import android.util.Log
 import id.mtsrth.exam.ExamApp
 import id.mtsrth.exam.data.local.SecureStorage
 
@@ -56,6 +57,7 @@ class PenaltyManager(private val context: Context) {
         }
 
         secureStorage.remainingBanSeconds = banDurationSeconds
+        Log.w("PenaltyManager", "Pelanggaran #$newViolationCount (${reason.name}): ${reason.description}")
 
         // Berikan getaran respons
         vibrateFeedback(newViolationCount)

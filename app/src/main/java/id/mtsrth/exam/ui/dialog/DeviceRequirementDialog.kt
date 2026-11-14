@@ -2,7 +2,7 @@ package id.mtsrth.exam.ui.dialog
 
 import android.app.ActivityManager
 import android.app.Dialog
-import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -84,7 +84,8 @@ class DeviceRequirementDialog : DialogFragment() {
         val isWifiOff = wifiManager?.isWifiEnabled != true
 
         // 3. Bluetooth (Wajib MATI)
-        val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+        val bluetoothManager = ctx.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val bluetoothAdapter = bluetoothManager?.adapter
         val isBluetoothOff = bluetoothAdapter == null || !bluetoothAdapter.isEnabled
 
         // 4. Mode Suara (Wajib HENING/GETAR)

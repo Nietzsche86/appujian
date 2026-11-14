@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: 1. Checkout Source Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -32,7 +32,7 @@ jobs:
           java-version: '17'
 
       - name: 3. Setup Gradle 8.6
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.6'
           cache-read-only: false
@@ -91,7 +91,7 @@ jobs:
           3. Pastikan Mode Pesawat AKTIF dan Mode Suara Hening sebelum masuk ujian."
 
       - name: 8. Upload Artifact Backup
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: E-UJIAN-MTS-RTH-Official-Release
           path: ${{ steps.prep.outputs.APK_PATH }}

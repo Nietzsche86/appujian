@@ -1,6 +1,7 @@
 package id.mtsrth.exam.security
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -96,7 +97,8 @@ class EnvironmentMonitor(
     }
 
     private fun checkBluetooth(): Boolean {
-        val adapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val adapter = bluetoothManager?.adapter
         val isBtOn = adapter != null && adapter.isEnabled
 
         if (isBtOn) {

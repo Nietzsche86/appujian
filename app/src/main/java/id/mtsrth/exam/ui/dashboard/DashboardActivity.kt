@@ -3,11 +3,11 @@ package id.mtsrth.exam.ui.dashboard
 import android.Manifest
 import android.app.ActivityManager
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
@@ -460,7 +460,8 @@ class DashboardActivity : AppCompatActivity() {
         val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
         val isWifiOff = wifiManager?.isWifiEnabled != true
 
-        val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+        val bluetoothAdapter = bluetoothManager?.adapter
         val isBluetoothOff = bluetoothAdapter == null || !bluetoothAdapter.isEnabled
 
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
