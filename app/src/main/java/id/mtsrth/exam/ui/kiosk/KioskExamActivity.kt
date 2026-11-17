@@ -32,6 +32,7 @@ import id.mtsrth.exam.notification.ExamReminderScheduler
 import id.mtsrth.exam.security.EnvironmentMonitor
 import id.mtsrth.exam.security.KioskEnforcer
 import id.mtsrth.exam.security.PenaltyManager
+import id.mtsrth.exam.security.SecurityAlertHelper
 import id.mtsrth.exam.security.ViolationReason
 import id.mtsrth.exam.ui.theme.ExamKioskTheme
 import id.mtsrth.exam.util.ExamScheduleHelper
@@ -49,6 +50,7 @@ class KioskExamActivity : AppCompatActivity() {
     private lateinit var penaltyManager: PenaltyManager
     private lateinit var environmentMonitor: EnvironmentMonitor
     private lateinit var kioskEnforcer: KioskEnforcer
+    private lateinit var securityAlertHelper: SecurityAlertHelper
 
     private var examId: String = ""
     private var subjectName: String = ""
@@ -83,6 +85,7 @@ class KioskExamActivity : AppCompatActivity() {
     // Anti-cheat navigation guard
     private var backGestureAttemptCount = 0
     private var lastBackAttemptTimestamp = 0L
+    private var activeBackWarningToast: Toast? = null
 
     // Battery receiver
     private val batteryReceiver = object : BroadcastReceiver() {
@@ -268,6 +271,7 @@ class KioskExamActivity : AppCompatActivity() {
 
     private fun initSecurityEngines() {
         penaltyManager = PenaltyManager(this)
+        securityAlertHelper = SecurityAlertHelper(this)
 
         environmentMonitor = EnvironmentMonitor(this) { reason ->
             handleViolation(reason)
@@ -319,25 +323,43 @@ class KioskExamActivity : AppCompatActivity() {
     }
 
     private fun handleBackAttempt() {
+        if (penaltyManager.isBanActive()) {
+            securityAlertHelper.playLoudAlarmBeep(durationMs = 500)
+            showBackWarningToast("Layar sedang dikunci penalti! Hubungi pengawas ruang.")
+            return
+        }
+
         val now = SystemClock.elapsedRealtime()
-        if (now - lastBackAttemptTimestamp < 3000L) {
+        if (now - lastBackAttemptTimestamp < 15_000L) {
             backGestureAttemptCount++
         } else {
             backGestureAttemptCount = 1
         }
         lastBackAttemptTimestamp = now
 
-        // Jika siswa mencoba swipe kembali berkali-kali (>= 3 kali cepat), picu penalti pelanggaran!
-        if (backGestureAttemptCount >= 3) {
-            backGestureAttemptCount = 0
-            handleViolation(ViolationReason.UNAUTHORIZED_EXIT_ATTEMPT)
-        } else {
-            Toast.makeText(
-                this,
-                "Gestur dan tombol kembali DIKUNCI selama ujian! Hubungi pengawas untuk menyelesaikan.",
-                Toast.LENGTH_SHORT
-            ).show()
+        when (backGestureAttemptCount) {
+            1 -> {
+                // Percobaan 1: Bergetar
+                securityAlertHelper.triggerVibration(durationMs = 350L)
+                showBackWarningToast("Peringatan 1/3: Tombol kembali DIKUNCI! Percobaan ke-2 akan berbunyi keras.")
+            }
+            2 -> {
+                // Percobaan 2: Beep keras singkat 0,5 detik (tembus Mode Hening)
+                securityAlertHelper.playLoudAlarmBeep(durationMs = 500)
+                showBackWarningToast("Peringatan 2/3: Dilarang keluar! Percobaan ke-3 memicu PENALTI BAN.")
+            }
+            else -> {
+                // Percobaan 3: Ban penalti + Beep keras 1 detik (tembus Mode Hening)
+                backGestureAttemptCount = 0
+                securityAlertHelper.playLoudAlarmBeep(durationMs = 1000)
+                handleViolation(ViolationReason.UNAUTHORIZED_EXIT_ATTEMPT)
+            }
         }
+    }
+
+    private fun showBackWarningToast(message: String) {
+        activeBackWarningToast?.cancel()
+        activeBackWarningToast = Toast.makeText(this, message, Toast.LENGTH_SHORT).also { it.show() }
     }
 
     @Deprecated("Deprecated in Java")
@@ -642,6 +664,7 @@ class KioskExamActivity : AppCompatActivity() {
 
         kioskEnforcer.stopEnforcement()
         environmentMonitor.stopMonitoring()
+        securityAlertHelper.release()
     }
 
     companion object {
