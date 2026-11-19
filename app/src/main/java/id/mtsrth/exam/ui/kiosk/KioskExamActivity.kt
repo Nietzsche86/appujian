@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.pdf.PdfRenderer
 import android.os.BatteryManager
 import android.os.Bundle
@@ -59,8 +61,11 @@ class KioskExamActivity : AppCompatActivity() {
     private var endTime: String = ""
     private var saltHex: String = ""
     private var ivHex: String = ""
+    private var pbkdf2Iterations: Int = CryptoEngine.LEGACY_ITERATION_COUNT
     private var token: String = ""
     private var isMakeupExam: Boolean = false
+    private var isFinishingLegitimately: Boolean = false
+    private var clockTamperReported: Boolean = false
 
     private var pdfRenderer: PdfRenderer? = null
     private var pdfPfd: ParcelFileDescriptor? = null
@@ -82,10 +87,11 @@ class KioskExamActivity : AppCompatActivity() {
     private var timerJob: Job? = null
     private var examRemainingSeconds: Long = 0L
 
-    // Anti-cheat navigation guard
+    // Anti-cheat navigation & rotation guard
     private var backGestureAttemptCount = 0
     private var lastBackAttemptTimestamp = 0L
     private var activeBackWarningToast: Toast? = null
+    private var rotationGraceUntilElapsedMs: Long = 0L
 
     // Battery receiver
     private val batteryReceiver = object : BroadcastReceiver() {
@@ -138,6 +144,9 @@ class KioskExamActivity : AppCompatActivity() {
                         val nextComfort = !uiStateFlow.value.isComfortMode
                         ExamApp.instance.secureStorage.kioskComfortMode = nextComfort
                         uiStateFlow.update { it.copy(isComfortMode = nextComfort) }
+                    },
+                    onToggleOrientation = {
+                        toggleScreenOrientation()
                     },
                     onOpenPageJumper = {
                         if (uiStateFlow.value.totalPages > 1) {
@@ -201,8 +210,14 @@ class KioskExamActivity : AppCompatActivity() {
             }
         }
 
-        // 2. Start Kiosk Screen Pinning & Anti-Cheat
+        // 2. Start Kiosk Screen Pinning & Anti-Cheat (tetap aktif hingga ujian selesai/destroy)
         kioskEnforcer.startEnforcement()
+        environmentMonitor.startMonitoring()
+
+        // 2b. Cek Multi-Window / Split-Screen sejak awal
+        if (isInMultiWindowMode) {
+            handleViolation(ViolationReason.MULTI_WINDOW_DETECTED)
+        }
 
         // 3. Decrypt and load PDF
         loadAndDisplayPdf()
@@ -217,6 +232,9 @@ class KioskExamActivity : AppCompatActivity() {
         super.onResume()
         registerBatteryReceiver()
         environmentMonitor.startMonitoring()
+        if (isInMultiWindowMode) {
+            handleViolation(ViolationReason.MULTI_WINDOW_DETECTED)
+        }
     }
 
     override fun onPause() {
@@ -225,14 +243,54 @@ class KioskExamActivity : AppCompatActivity() {
             unregisterReceiver(batteryReceiver)
         } catch (_: Exception) {
         }
-        environmentMonitor.stopMonitoring()
+        // Jangan matikan environmentMonitor saat onPause agar perubahan Wi-Fi/Mode Pesawat/USB/Jam
+        // tetap terdeteksi meski aktivitas sempat kehilangan foreground.
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode)
+        if (isInMultiWindowMode && !isFinishingLegitimately) {
+            handleViolation(ViolationReason.MULTI_WINDOW_DETECTED)
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        rotationGraceUntilElapsedMs = SystemClock.elapsedRealtime() + 1800L
+        val isNowLandscape = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val pageBeforeRotate = uiStateFlow.value.currentPage
+        uiStateFlow.update { it.copy(isLandscape = isNowLandscape) }
+
+        // Reset zoom dan muat ulang dimensi halaman PDF agar tajam & tetap di halaman yang sedang dibaca
+        zoomableLayoutRef?.resetZoom()
+        pdfAdapter?.notifyDataSetChanged()
+        recyclerViewRef?.post {
+            val targetIndex = (pageBeforeRotate - 1).coerceAtLeast(0)
+            layoutManagerRef?.scrollToPositionWithOffset(targetIndex, 0)
+            uiStateFlow.update { it.copy(currentPage = pageBeforeRotate) }
+        }
+    }
+
+    private fun toggleScreenOrientation() {
+        // Beri masa toleransi singkat agar transisi rotasi layar tidak dianggap keluar/overlay
+        rotationGraceUntilElapsedMs = SystemClock.elapsedRealtime() + 2000L
+        val currentlyLandscape =
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        requestedOrientation = if (currentlyLandscape) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        val inGracePeriod = kioskEnforcer.isWithinGracePeriod() ||
+            SystemClock.elapsedRealtime() < rotationGraceUntilElapsedMs
         environmentMonitor.onWindowFocusChanged(
             hasFocus = hasFocus,
-            isKioskGracePeriod = kioskEnforcer.isWithinGracePeriod()
+            isKioskGracePeriod = inGracePeriod
         )
     }
 
@@ -265,8 +323,11 @@ class KioskExamActivity : AppCompatActivity() {
         endTime = intent.getStringExtra(EXTRA_END_TIME) ?: ""
         saltHex = intent.getStringExtra(EXTRA_SALT_HEX) ?: ""
         ivHex = intent.getStringExtra(EXTRA_IV_HEX) ?: ""
+        pbkdf2Iterations = intent.getIntExtra(EXTRA_PBKDF2_ITERATIONS, CryptoEngine.LEGACY_ITERATION_COUNT)
         token = intent.getStringExtra(EXTRA_TOKEN) ?: ""
         isMakeupExam = intent.getBooleanExtra(EXTRA_IS_MAKEUP_EXAM, false)
+        // Hapus token sensitif dari Intent agar tidak tertinggal di riwayat Intent memori
+        intent.removeExtra(EXTRA_TOKEN)
     }
 
     private fun initSecurityEngines() {
@@ -277,11 +338,20 @@ class KioskExamActivity : AppCompatActivity() {
             handleViolation(reason)
         }
 
-        kioskEnforcer = KioskEnforcer(this) { isPinned ->
-            runOnUiThread {
-                uiStateFlow.update { it.copy(isPinned = isPinned) }
+        kioskEnforcer = KioskEnforcer(
+            activity = this,
+            onLockStateChanged = { isPinned ->
+                runOnUiThread {
+                    uiStateFlow.update { it.copy(isPinned = isPinned) }
+                }
+            },
+            onUnpinnedAttempt = {
+                if (!isFinishingLegitimately) {
+                    securityAlertHelper.playLoudAlarmBeep(durationMs = 800)
+                    handleViolation(ViolationReason.UNAUTHORIZED_EXIT_ATTEMPT)
+                }
             }
-        }
+        )
     }
 
     private fun setupInitialExamState() {
@@ -306,7 +376,8 @@ class KioskExamActivity : AppCompatActivity() {
                 gradeLevel = gradeLevel,
                 remainingSeconds = examRemainingSeconds,
                 isDarkMode = secureStorage.isDarkMode,
-                isComfortMode = secureStorage.kioskComfortMode
+                isComfortMode = secureStorage.kioskComfortMode,
+                isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             )
         }
 
@@ -405,8 +476,11 @@ class KioskExamActivity : AppCompatActivity() {
                 encryptedFile = encFile,
                 token = token,
                 saltHex = saltHex,
-                ivHex = ivHex
+                ivHex = ivHex,
+                iterationCount = pbkdf2Iterations
             )
+            // Segera bersihkan token dari variabel memori setelah dekripsi selesai
+            token = ""
 
             decryptResult.onSuccess { session ->
                 pdfPfd = session.pfd
@@ -541,11 +615,19 @@ class KioskExamActivity : AppCompatActivity() {
 
                 uiStateFlow.update { it.copy(remainingSeconds = examRemainingSeconds) }
 
-                // Cek jam nyata di HP jika batas jam selesai ditentukan (dikecualikan untuk Ujian Susulan)
+                val secureStorage = ExamApp.instance.secureStorage
+                // Deteksi manipulasi jam HP di tengah ujian
+                if (!clockTamperReported && ExamScheduleHelper.isClockTampered(secureStorage)) {
+                    clockTamperReported = true
+                    handleViolation(ViolationReason.CLOCK_TAMPERED)
+                }
+
+                // Cek batas jam selesai berdasarkan waktu terpercaya (tahan manipulasi mundur jam HP)
                 if (!isMakeupExam && endTime.isNotBlank()) {
                     val endMin = ExamScheduleHelper.parseMinutesOfDay(endTime)
                     if (endMin != null) {
-                        val now = Calendar.getInstance()
+                        val trustedNowMillis = ExamScheduleHelper.getTrustedNowMillis(secureStorage)
+                        val now = Calendar.getInstance().apply { timeInMillis = trustedNowMillis }
                         val currentMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
                         if (currentMin >= endMin) {
                             finishExam(isExpired = true)
@@ -622,7 +704,9 @@ class KioskExamActivity : AppCompatActivity() {
     }
 
     private fun finishExam(isExpired: Boolean) {
+        isFinishingLegitimately = true
         timerJob?.cancel()
+        environmentMonitor.stopMonitoring()
 
         // 1. Tandai ujian selesai di penyimpanan persisten
         val secureStorage = ExamApp.instance.secureStorage
@@ -675,6 +759,7 @@ class KioskExamActivity : AppCompatActivity() {
         const val EXTRA_END_TIME = "extra_end_time"
         const val EXTRA_SALT_HEX = "extra_salt_hex"
         const val EXTRA_IV_HEX = "extra_iv_hex"
+        const val EXTRA_PBKDF2_ITERATIONS = "extra_pbkdf2_iterations"
         const val EXTRA_TOKEN = "extra_token"
         const val EXTRA_IS_MAKEUP_EXAM = "extra_is_makeup_exam"
     }

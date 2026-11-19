@@ -13,6 +13,7 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
@@ -20,11 +21,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import id.mtsrth.exam.ExamApp
@@ -35,6 +40,7 @@ import id.mtsrth.exam.data.model.ExamStatus
 import id.mtsrth.exam.data.sync.LocalSyncManager
 import id.mtsrth.exam.notification.ExamReminderScheduler
 import id.mtsrth.exam.ui.kiosk.KioskExamActivity
+import id.mtsrth.exam.ui.splash.BrandedSplashOverlay
 import id.mtsrth.exam.ui.theme.ExamKioskTheme
 import id.mtsrth.exam.util.ExamScheduleHelper
 import kotlinx.coroutines.Job
@@ -56,6 +62,7 @@ class DashboardActivity : AppCompatActivity() {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val uiStateFlow = MutableStateFlow(DashboardUiState())
 
+    private var showBrandedSplash by mutableStateOf(false)
     private var showDeviceRequirementDialog by mutableStateOf(false)
     private var pendingTokenExam by mutableStateOf<ExamItem?>(null)
     private var pendingMakeupExam by mutableStateOf<ExamItem?>(null)
@@ -85,15 +92,22 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         val initialDarkMode = ExamApp.instance.secureStorage.isDarkMode
         applyEdgeToEdgeTheme(initialDarkMode)
         super.onCreate(savedInstanceState)
+
+        // Tampilkan branded splash overlay hanya saat cold start (bukan saat rotasi layar)
+        val isFreshLaunch = savedInstanceState == null
+        showBrandedSplash = isFreshLaunch
 
         syncManager = LocalSyncManager(this)
         initializeStateFromStorage()
         loadCachedManifest()
         handleDeepLinkIntent(intent)
-        requestNotificationPermissionIfNeeded()
+        if (!isFreshLaunch) {
+            requestNotificationPermissionIfNeeded()
+        }
 
         setContent {
             val uiState by uiStateFlow.collectAsStateWithLifecycle()
@@ -103,7 +117,8 @@ class DashboardActivity : AppCompatActivity() {
             }
 
             ExamKioskTheme(darkTheme = uiState.isDarkMode) {
-                DashboardScreen(
+                Box(modifier = Modifier.fillMaxSize()) {
+                    DashboardScreen(
                     uiState = uiState,
                     onSelectTab = { tab ->
                         uiStateFlow.update { it.copy(currentTab = tab) }
@@ -122,7 +137,7 @@ class DashboardActivity : AppCompatActivity() {
                         } else {
                             uiStateFlow.update { it.copy(currentTab = DashboardTab.SETTINGS) }
                             Toast.makeText(
-                                this,
+                                this@DashboardActivity,
                                 "Atur alamat IP server proktor terlebih dahulu",
                                 Toast.LENGTH_SHORT
                             ).show()
@@ -233,6 +248,17 @@ class DashboardActivity : AppCompatActivity() {
                         },
                         onDismiss = { pendingGradeSwitch = null }
                     )
+                }
+
+                BrandedSplashOverlay(
+                    visible = showBrandedSplash,
+                    schoolName = uiState.schoolName,
+                    tagline = uiState.schoolTagline,
+                    onSplashFinished = {
+                        showBrandedSplash = false
+                        requestNotificationPermissionIfNeeded()
+                    }
+                )
                 }
             }
         }
@@ -612,7 +638,10 @@ class DashboardActivity : AppCompatActivity() {
                 secureStorage.reminderMinutesBefore = manifest.reminderMinutesBefore
                 secureStorage.setDailyPinHashes(manifest.dailyPinHashes)
                 if (manifest.syncTimestamp > 0L) {
-                    secureStorage.advanceMaxKnownTimestamp(manifest.syncTimestamp * 1000L)
+                    val serverMillis = manifest.syncTimestamp * 1000L
+                    secureStorage.advanceMaxKnownTimestamp(serverMillis)
+                    secureStorage.lastSyncServerMillis = serverMillis
+                    secureStorage.lastSyncElapsedRealtime = SystemClock.elapsedRealtime()
                 }
                 if (manifest.schoolName.isNotBlank()) secureStorage.schoolName = manifest.schoolName
                 if (manifest.schoolTagline.isNotBlank()) secureStorage.schoolTagline = manifest.schoolTagline
@@ -768,11 +797,12 @@ class DashboardActivity : AppCompatActivity() {
                 .thenBy { it.startTime.ifEmpty { "99:99" } }
         )
 
+        val trustedNow = ExamScheduleHelper.getTrustedNowMillis(secureStorage)
         val uiModels = sortedExams.map { exam ->
             val isDownloaded = syncManager.isExamFileValid(exam.id, exam.fileSha256)
             val isFinished = secureStorage.isExamFinished(exam.id)
             val isActive = secureStorage.activeExamId == exam.id
-            val scheduleState = ExamScheduleHelper.getScheduleState(exam)
+            val scheduleState = ExamScheduleHelper.getScheduleState(exam, trustedNow)
 
             val status = when {
                 isFinished -> ExamStatus.SELESAI
@@ -819,7 +849,17 @@ class DashboardActivity : AppCompatActivity() {
             return
         }
 
-        when (ExamScheduleHelper.getScheduleState(exam)) {
+        if (ExamScheduleHelper.isClockTampered(secureStorage)) {
+            Toast.makeText(
+                this,
+                "Jam/tanggal perangkat terdeteksi tidak sesuai atau dimundurkan! Aktifkan Tanggal & Waktu Otomatis lalu sinkronisasi ulang.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        val trustedNow = ExamScheduleHelper.getTrustedNowMillis(secureStorage)
+        when (ExamScheduleHelper.getScheduleState(exam, trustedNow)) {
             ExamScheduleHelper.ScheduleState.NOT_STARTED_YET -> {
                 val dateMsg = if (exam.examDate.isNotBlank()) {
                     val formatted = ExamScheduleHelper.formatDisplayDate(exam.examDate, exam.examDay)
@@ -904,6 +944,7 @@ class DashboardActivity : AppCompatActivity() {
             putExtra(KioskExamActivity.EXTRA_END_TIME, exam.endTime)
             putExtra(KioskExamActivity.EXTRA_SALT_HEX, exam.pbkdf2SaltHex)
             putExtra(KioskExamActivity.EXTRA_IV_HEX, exam.gcmIvHex)
+            putExtra(KioskExamActivity.EXTRA_PBKDF2_ITERATIONS, exam.pbkdf2Iterations)
             putExtra(KioskExamActivity.EXTRA_TOKEN, token)
             putExtra(KioskExamActivity.EXTRA_IS_MAKEUP_EXAM, isMakeup)
         }

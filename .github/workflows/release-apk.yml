@@ -79,10 +79,16 @@ jobs:
             --title "Aplikasi Ujian MTS RTH $TAG (Official Release)" \
             --notes "### Aplikasi Ujian Kiosk Semi-Online MTS ROUDHOTUT THOWALIB $TAG
 
-          **Paket Rilis Resmi:**
+          **Pembaruan Versi Terbaru:**
+          - **Rotasi Layar Saat Ujian (Portrait ↔ Landscape):** Tombol putar layar langsung di ruang ujian tanpa me-restart soal, menjaga posisi halaman terakhir, dengan proteksi anti-cheat tetap aktif.
+          - **Toolbar Ujian Ultra-Ramping:** Desain 1 baris ringkas (~48dp) yang ramah untuk HP layar kecil maupun mode Landscape agar lembar soal tampil jauh lebih luas.
+          - **Peningkatan Keamanan Menyeluruh:** Penandatanganan manifest digital ECDSA P-256, penguatan PBKDF2-HMAC-SHA256 (210.000 iterasi) + AES-256-GCM, pembatasan Admin API localhost + CSRF token, deteksi manipulasi jam perangkat & multi-window, serta penghapusan PIN default tidak aman.
+          - **Pembaruan UI/UX & Splash Screen Modern:** Tipografi Outfit, tata letak adaptif (*NavigationRail* untuk tablet), kartu jadwal interaktif dengan *pull-to-refresh*, tombol aksesibel minimal 48dp, serta perbaikan logo splash screen agar tampil utuh dan proporsional.
+          - **Dashboard Server Proktor 100% Offline:** Seluruh ikon dan aset dashboard web kini tertanam langsung tanpa bergantung pada CDN internet.
+
+          **Fitur Utama Paket Rilis Resmi:**
           - Berkas APK bertanda tangan digital resmi (*Signed Release APK*).
-          - Mode Kiosk Kunci Layar Penuh (*LockTask Mode*).
-          - Proteksi Anti-Curang Kriptografi AES-256-GCM.
+          - Mode Kiosk Kunci Layar Penuh (*LockTask Mode*) & Mode Nyaman Mata.
           - Pemeriksaan Kesiapan Perangkat & Spesifikasi Siswa (Android min. 8 Oreo, RAM min. 2 GB).
 
           **Petunjuk Instalasi Siswa & Proktor:**
@@ -96,3 +102,8 @@ jobs:
           name: E-UJIAN-MTS-RTH-Official-Release
           path: ${{ steps.prep.outputs.APK_PATH }}
           retention-days: 30
+
+      - name: 9. Cleanup Temporary Keystore
+        if: always()
+        run: rm -f app/release-key.jks
+

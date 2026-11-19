@@ -1,5 +1,6 @@
 package id.mtsrth.exam.ui.dashboard
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -7,10 +8,16 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,10 +27,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,11 +60,16 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,6 +85,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +100,7 @@ import id.mtsrth.exam.ui.components.ShimmerExamSkeletonList
 import id.mtsrth.exam.ui.components.StatusPillBadge
 import id.mtsrth.exam.ui.components.TonalPrestigeCard
 import id.mtsrth.exam.ui.components.bounceClick
+import id.mtsrth.exam.ui.components.pressBounce
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 import id.mtsrth.exam.util.ExamScheduleHelper
@@ -129,6 +146,11 @@ fun RulesGuideTab(
         animationSpec = tween(300),
         label = "rules_confirm_bg"
     )
+    val confirmBorder by animateColorAsState(
+        targetValue = if (rulesAcknowledged) colors.softMintBorder else colors.cardBorder,
+        animationSpec = tween(300),
+        label = "rules_confirm_border"
+    )
     val ctaSolidBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
 
     Box(
@@ -139,7 +161,7 @@ fun RulesGuideTab(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 680.dp)
+                .widthIn(max = 720.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -147,7 +169,8 @@ fun RulesGuideTab(
             TonalPrestigeCard(
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = colors.softMintContainer,
-                shadowElevation = 1.dp
+                borderColor = colors.softMintBorder,
+                shadowElevation = 0.dp
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -195,12 +218,14 @@ fun RulesGuideTab(
                     val accent = if (isPenalty) colors.coralRed else colors.warmAmber
                     val badgeBg = if (isPenalty) colors.coralSolidAction else Color(0xFFD97706)
                     val cardBg = if (isPenalty) colors.coralRedSoftBg else colors.warmAmberSoftBg
+                    val cardBorder = if (isPenalty) colors.coralRedSoftBorder else colors.warmAmberSoftBorder
                     val icon = if (isPenalty) Icons.Rounded.Security else Icons.Rounded.Lock
 
                     TonalPrestigeCard(
                         modifier = Modifier.fillMaxWidth(),
                         containerColor = cardBg,
-                        shadowElevation = 1.dp
+                        borderColor = cardBorder,
+                        shadowElevation = 0.dp
                     ) {
                         Row(
                             modifier = Modifier.padding(14.dp),
@@ -247,16 +272,15 @@ fun RulesGuideTab(
 
             TonalPrestigeCard(
                 modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 2.dp
+                shadowElevation = 1.dp
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     activeRules.forEachIndexed { index, ruleText ->
                         val isCrucial = crucialIndices.contains(index)
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.Top
                         ) {
                             Box(
@@ -286,6 +310,12 @@ fun RulesGuideTab(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        if (index < activeRules.lastIndex) {
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = colors.tonalSlateSurface
+                            )
+                        }
                     }
                 }
             }
@@ -293,13 +323,15 @@ fun RulesGuideTab(
             TonalPrestigeCard(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
                     .testTag("card_rules_acknowledge")
                     .bounceClick {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onToggleAcknowledged(!rulesAcknowledged)
                     },
                 containerColor = confirmBg,
-                shadowElevation = 2.dp
+                borderColor = confirmBorder,
+                shadowElevation = 1.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -338,30 +370,39 @@ fun RulesGuideTab(
                         }
                     }
 
-                    if (rulesAcknowledged) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = onGoToExamsTab,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
-                                .testTag("btn_rules_to_exams"),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ctaSolidBg,
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Lanjut ke Daftar Paket Soal",
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                    AnimatedVisibility(
+                        visible = rulesAcknowledged,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            val proceedInteraction = remember { MutableInteractionSource() }
+                            Button(
+                                onClick = onGoToExamsTab,
+                                interactionSource = proceedInteraction,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .pressBounce(proceedInteraction)
+                                    .testTag("btn_rules_to_exams"),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ctaSolidBg,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.CheckCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Lanjut ke Daftar Paket Soal",
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
                         }
                     }
                 }
@@ -372,11 +413,13 @@ fun RulesGuideTab(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExamsScheduleTab(
     uiState: DashboardUiState,
     onSelectFilter: (ExamFilterOption) -> Unit,
     onExamAction: (ExamItemUiModel) -> Unit,
+    onPullToRefresh: () -> Unit,
     onGoToDashboardTab: () -> Unit,
     onGoToRulesTab: () -> Unit,
     onGoToSettingsTab: () -> Unit,
@@ -387,6 +430,18 @@ fun ExamsScheduleTab(
     val haptic = LocalHapticFeedback.current
     val isSyncing = uiState.syncState is SyncState.Syncing
 
+    val pullToRefreshState = rememberPullToRefreshState()
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            onPullToRefresh()
+        }
+    }
+    LaunchedEffect(isSyncing) {
+        if (!isSyncing && pullToRefreshState.isRefreshing) {
+            pullToRefreshState.endRefresh()
+        }
+    }
+
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         while (isActive) {
@@ -395,12 +450,18 @@ fun ExamsScheduleTab(
         }
     }
 
-    val activeItems = uiState.examItems.filter { it.status != ExamStatus.SELESAI }
-    val finishedItems = uiState.examItems.filter { it.status == ExamStatus.SELESAI }
-    val displayedItems = when (uiState.examFilter) {
-        ExamFilterOption.ALL -> uiState.examItems
-        ExamFilterOption.ACTIVE -> activeItems
-        ExamFilterOption.FINISHED -> finishedItems
+    val activeItems = remember(uiState.examItems) {
+        uiState.examItems.filter { it.status != ExamStatus.SELESAI }
+    }
+    val finishedItems = remember(uiState.examItems) {
+        uiState.examItems.filter { it.status == ExamStatus.SELESAI }
+    }
+    val displayedItems = remember(uiState.examItems, uiState.examFilter, activeItems, finishedItems) {
+        when (uiState.examFilter) {
+            ExamFilterOption.ALL -> uiState.examItems
+            ExamFilterOption.ACTIVE -> activeItems
+            ExamFilterOption.FINISHED -> finishedItems
+        }
     }
 
     val hw = uiState.hardwareStatus
@@ -414,169 +475,185 @@ fun ExamsScheduleTab(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .nestedScroll(pullToRefreshState.nestedScrollConnection),
         contentAlignment = Alignment.TopCenter
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
-                .widthIn(max = 680.dp)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .widthIn(max = 720.dp)
+                .fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Hero Agenda Banner
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                shadowElevation = if (colors.isDark) 0.dp else 4.dp
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    colors.bannerGradientStart,
-                                    colors.bannerGradientEnd
-                                )
-                            )
-                        )
+            item(key = "hero_agenda_banner") {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    shadowElevation = if (colors.isDark) 0.dp else 4.dp
                 ) {
-                    Canvas(modifier = Modifier.matchParentSize()) {
-                        drawCircle(
-                            color = Color.White.copy(alpha = 0.06f),
-                            radius = size.height * 0.65f,
-                            center = Offset(size.width * 0.92f, size.height * 0.15f),
-                            style = Stroke(width = 2.dp.toPx())
-                        )
-                        drawCircle(
-                            color = Color.White.copy(alpha = 0.05f),
-                            radius = size.height * 0.42f,
-                            center = Offset(size.width * 0.08f, size.height * 0.9f),
-                            style = Stroke(width = 1.5.dp.toPx())
-                        )
-                    }
-
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        colors.bannerGradientStart,
+                                        colors.bannerGradientEnd
+                                    )
+                                )
+                            )
                     ) {
-                        StatusPillBadge(
-                            text = "AGENDA UJIAN AKTIF • KELAS ${uiState.selectedGrade}",
-                            contentColor = if (colors.isDark) colors.darkForest else Color(0xFF064E3B),
-                            containerColor = colors.softMintContainer
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = uiState.examTitle,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Pilih dan kerjakan paket soal sesuai jadwal dan arahan pengawas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFA7F3D0),
-                            textAlign = TextAlign.Center
-                        )
+                        Canvas(modifier = Modifier.matchParentSize()) {
+                            drawCircle(
+                                color = Color.White.copy(alpha = 0.06f),
+                                radius = size.height * 0.65f,
+                                center = Offset(size.width * 0.92f, size.height * 0.15f),
+                                style = Stroke(width = 2.dp.toPx())
+                            )
+                            drawCircle(
+                                color = Color.White.copy(alpha = 0.05f),
+                                radius = size.height * 0.42f,
+                                center = Offset(size.width * 0.08f, size.height * 0.9f),
+                                style = Stroke(width = 1.5.dp.toPx())
+                            )
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            StatusPillBadge(
+                                text = "AGENDA UJIAN AKTIF • KELAS ${uiState.selectedGrade}",
+                                contentColor = if (colors.isDark) colors.darkForest else Color(0xFF064E3B),
+                                containerColor = colors.softMintContainer
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = uiState.examTitle,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Tarik layar ke bawah untuk sinkronisasi cepat dengan Server Proktor",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFA7F3D0),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
 
-            // Pre-Flight Check Status Strip
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                PreFlightStatusPill(
-                    title = "Sensor Perangkat",
-                    statusText = if (hw.isAllCompliant) "4/4 Siap" else "$readySensorCount/4 Siap",
-                    isOk = hw.isAllCompliant,
-                    onClick = onGoToDashboardTab,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("preflight_sensor_pill")
-                )
-                PreFlightStatusPill(
-                    title = "Tata Tertib",
-                    statusText = if (uiState.rulesAcknowledged) "Disetujui" else "Belum Baca",
-                    isOk = uiState.rulesAcknowledged,
-                    onClick = onGoToRulesTab,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("preflight_rules_pill")
-                )
+            item(key = "preflight_strip") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    PreFlightStatusPill(
+                        title = "Sensor Perangkat",
+                        statusText = if (hw.isAllCompliant) "4/4 Siap" else "$readySensorCount/4 Siap",
+                        isOk = hw.isAllCompliant,
+                        onClick = onGoToDashboardTab,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("preflight_sensor_pill")
+                    )
+                    PreFlightStatusPill(
+                        title = "Tata Tertib",
+                        statusText = if (uiState.rulesAcknowledged) "Disetujui" else "Belum Baca",
+                        isOk = uiState.rulesAcknowledged,
+                        onClick = onGoToRulesTab,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("preflight_rules_pill")
+                    )
+                }
             }
 
             if (uiState.reminderMinutesBefore > 0 && (!uiState.isNotificationPermissionGranted || !uiState.isExactAlarmAllowed)) {
-                NotificationPermissionWarningCard(
-                    reminderMinutesBefore = uiState.reminderMinutesBefore,
-                    hasNotificationPermission = uiState.isNotificationPermissionGranted,
-                    hasExactAlarmPermission = uiState.isExactAlarmAllowed,
-                    onFixClick = onFixNotificationPermission
+                item(key = "notification_permission_warning") {
+                    NotificationPermissionWarningCard(
+                        reminderMinutesBefore = uiState.reminderMinutesBefore,
+                        hasNotificationPermission = uiState.isNotificationPermissionGranted,
+                        hasExactAlarmPermission = uiState.isExactAlarmAllowed,
+                        onFixClick = onFixNotificationPermission
+                    )
+                }
+            }
+
+            item(key = "exam_statistics_card") {
+                ExamStatisticsCard(
+                    selectedGrade = uiState.selectedGrade,
+                    totalExams = uiState.totalExams,
+                    finishedExams = uiState.finishedExams,
+                    remainingExams = uiState.remainingExams
                 )
             }
 
-            // Statistik Pelaksanaan Ujian
-            ExamStatisticsCard(
-                selectedGrade = uiState.selectedGrade,
-                totalExams = uiState.totalExams,
-                finishedExams = uiState.finishedExams,
-                remainingExams = uiState.remainingExams
-            )
+            item(key = "section_header_and_filters") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SectionHeader(
+                        title = "Daftar Paket Soal Ujian",
+                        subtitle = if (uiState.examItems.isNotEmpty()) {
+                            "${displayedItems.size} dari ${uiState.examItems.size} paket soal"
+                        } else null
+                    )
 
-            // Section Title + Filter Chips
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionHeader(
-                    title = "Daftar Paket Soal Ujian",
-                    subtitle = if (uiState.examItems.isNotEmpty()) {
-                        "${displayedItems.size} dari ${uiState.examItems.size} paket soal"
-                    } else null
-                )
-
-                if (uiState.examItems.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val counts = mapOf(
-                            ExamFilterOption.ALL to uiState.examItems.size,
-                            ExamFilterOption.ACTIVE to activeItems.size,
-                            ExamFilterOption.FINISHED to finishedItems.size
-                        )
-                        ExamFilterOption.entries.forEach { option ->
-                            val selected = uiState.examFilter == option
-                            val chipBg by animateColorAsState(
-                                targetValue = if (selected) colors.softMintContainer else colors.pureCrispWhite,
-                                animationSpec = tween(200),
-                                label = "filter_chip_bg"
+                    if (uiState.examItems.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val counts = mapOf(
+                                ExamFilterOption.ALL to uiState.examItems.size,
+                                ExamFilterOption.ACTIVE to activeItems.size,
+                                ExamFilterOption.FINISHED to finishedItems.size
                             )
-                            val chipFg = if (selected) colors.deepEmerald else colors.slateSecondary
-
-                            Surface(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .testTag("filter_chip_${option.name.lowercase()}")
-                                    .clickable {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        onSelectFilter(option)
-                                    },
-                                shape = RoundedCornerShape(50),
-                                color = chipBg,
-                                shadowElevation = if (colors.isDark) 0.dp else 1.dp
-                            ) {
-                                Text(
-                                    text = "${option.label} (${counts[option] ?: 0})",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = chipFg,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                            ExamFilterOption.entries.forEach { option ->
+                                val selected = uiState.examFilter == option
+                                val chipBg by animateColorAsState(
+                                    targetValue = if (selected) colors.softMintContainer else colors.pureCrispWhite,
+                                    animationSpec = tween(200),
+                                    label = "filter_chip_bg"
                                 )
+                                val chipFg = if (selected) colors.deepEmerald else colors.slateSecondary
+
+                                Surface(
+                                    modifier = Modifier
+                                        .minimumInteractiveComponentSize()
+                                        .heightIn(min = 42.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .testTag("filter_chip_${option.name.lowercase()}")
+                                        .clickable {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onSelectFilter(option)
+                                        },
+                                    shape = RoundedCornerShape(50),
+                                    color = chipBg,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (selected) colors.softMintBorder else colors.cardBorder
+                                    ),
+                                    shadowElevation = 0.dp
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                                    ) {
+                                        Text(
+                                            text = "${option.label} (${counts[option] ?: 0})",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = chipFg,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -585,107 +662,123 @@ fun ExamsScheduleTab(
 
             when {
                 isSyncing -> {
-                    ShimmerExamSkeletonList(count = 3)
+                    item(key = "shimmer_loading") {
+                        ShimmerExamSkeletonList(count = 3)
+                    }
                 }
                 uiState.examItems.isEmpty() -> {
-                    TonalPrestigeCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shadowElevation = 1.dp
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                    item(key = "empty_exams_state") {
+                        TonalPrestigeCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shadowElevation = 0.dp
                         ) {
-                            Box(
+                            Column(
                                 modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(RoundedCornerShape(18.dp))
-                                    .background(colors.softMintContainer),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
-                                    contentDescription = "Belum Ada Soal",
-                                    tint = colors.deepEmerald,
-                                    modifier = Modifier.size(32.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(colors.softMintContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Rounded.MenuBook,
+                                        contentDescription = "Belum Ada Soal",
+                                        tint = colors.deepEmerald,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Text(
+                                    text = "Belum Ada Paket Soal",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = colors.inkSlate
                                 )
-                            }
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Text(
-                                text = "Belum Ada Paket Soal",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = colors.inkSlate
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Hubungkan perangkat ke Server Proktor di menu Pengaturan untuk menyinkronkan soal ujian.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colors.slateSecondary,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            OutlinedButton(
-                                onClick = onGoToSettingsTab,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.height(48.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Settings,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Hubungkan perangkat ke Server Proktor di menu Pengaturan untuk menyinkronkan soal ujian.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.slateSecondary,
+                                    textAlign = TextAlign.Center
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Buka Pengaturan Server")
+                                Spacer(modifier = Modifier.height(16.dp))
+                                OutlinedButton(
+                                    onClick = onGoToSettingsTab,
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.height(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Settings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Buka Pengaturan Server")
+                                }
                             }
                         }
                     }
                 }
                 displayedItems.isEmpty() -> {
-                    TonalPrestigeCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shadowElevation = 1.dp
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                    item(key = "empty_filter_state") {
+                        TonalPrestigeCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            shadowElevation = 0.dp
                         ) {
-                            Text(
-                                text = "Tidak ada soal di kategori \"${uiState.examFilter.label}\"",
-                                style = MaterialTheme.typography.titleSmall,
-                                color = colors.inkSlate
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Pilih filter \"Semua\" untuk melihat seluruh paket ujian.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = colors.slateSecondary
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Tidak ada soal di kategori \"${uiState.examFilter.label}\"",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = colors.inkSlate
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Pilih filter \"Semua\" untuk melihat seluruh paket ujian.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = colors.slateSecondary
+                                )
+                            }
                         }
                     }
                 }
                 else -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        displayedItems.forEach { item ->
-                            ExamItemPrestigeCard(
-                                item = item,
-                                nowMillis = nowMillis,
-                                isDownloading = uiState.downloadingExamId == item.exam.id,
-                                onActionClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onExamAction(item)
-                                }
-                            )
-                        }
+                    items(
+                        items = displayedItems,
+                        key = { it.exam.id }
+                    ) { item ->
+                        ExamItemPrestigeCard(
+                            item = item,
+                            nowMillis = nowMillis,
+                            isDownloading = uiState.downloadingExamId == item.exam.id,
+                            onActionClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                onExamAction(item)
+                            }
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            item(key = "bottom_spacer") {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
+
+        PullToRefreshContainer(
+            state = pullToRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            containerColor = colors.pureCrispWhite,
+            contentColor = colors.deepEmerald
+        )
     }
 }
 
@@ -699,13 +792,18 @@ private fun PreFlightStatusPill(
 ) {
     val colors = PrestigeTheme.colors
     val bg = if (isOk) colors.vibrantTealSoftBg else colors.warmAmberSoftBg
+    val border = if (isOk) colors.softMintBorder else colors.warmAmberSoftBorder
     val fg = if (isOk) colors.deepEmerald else colors.warmAmber
     val icon = if (isOk) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber
 
     TonalPrestigeCard(
-        modifier = modifier.bounceClick(onClick = onClick),
+        modifier = modifier
+            .heightIn(min = 52.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .bounceClick(onClick = onClick),
         containerColor = bg,
-        shadowElevation = 1.dp,
+        borderColor = border,
+        shadowElevation = 0.dp,
         cornerRadius = 14.dp
     ) {
         Row(
@@ -755,7 +853,7 @@ private fun ExamStatisticsCard(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("card_exam_statistics"),
-        shadowElevation = 2.dp
+        shadowElevation = 1.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -888,7 +986,8 @@ private fun NotificationPermissionWarningCard(
             .fillMaxWidth()
             .testTag("card_notification_permission_warning"),
         containerColor = colors.warmAmberSoftBg,
-        shadowElevation = 1.dp,
+        borderColor = colors.warmAmberSoftBorder,
+        shadowElevation = 0.dp,
         cornerRadius = 16.dp
     ) {
         Row(
@@ -1024,7 +1123,8 @@ private fun ExamItemPrestigeCard(
             .fillMaxWidth()
             .testTag("exam_card_${exam.id}"),
         containerColor = if (isInProgress) colors.softMintContainer.copy(alpha = 0.45f) else colors.pureCrispWhite,
-        shadowElevation = if (isInProgress) 4.dp else 2.dp
+        borderColor = if (isInProgress) colors.softMintBorder else colors.cardBorder,
+        shadowElevation = if (isInProgress) 2.dp else 1.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             if (isInProgress) {
@@ -1113,11 +1213,9 @@ private fun ExamItemPrestigeCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(colors.tonalSlateSurface)
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = colors.tonalSlateSurface
             )
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -1244,13 +1342,15 @@ private fun ExamItemPrestigeCard(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
+                val actionInteraction = remember { MutableInteractionSource() }
                 Button(
                     onClick = onActionClick,
                     enabled = buttonEnabled,
+                    interactionSource = actionInteraction,
                     modifier = Modifier
-                        .height(42.dp)
-                        .testTag("btn_exam_action_${exam.id}")
-                        .bounceClick(enabled = buttonEnabled, onClick = onActionClick),
+                        .height(48.dp)
+                        .pressBounce(actionInteraction, enabled = buttonEnabled)
+                        .testTag("btn_exam_action_${exam.id}"),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = buttonBg,

@@ -2,6 +2,9 @@ package id.mtsrth.exam.data.sync
 
 import android.content.Context
 import android.os.Build
+import id.mtsrth.exam.ExamApp
+import id.mtsrth.exam.data.crypto.ManifestSignatureVerifier
+import id.mtsrth.exam.data.local.SecureStorage
 import id.mtsrth.exam.data.model.ExamManifest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -51,18 +54,30 @@ class LocalSyncManager(private val context: Context) {
         }
 
     fun getExamFile(examId: String): File {
-        return File(examsDirectory, "$examId.enc")
+        require(SAFE_EXAM_ID_REGEX.matches(examId)) {
+            "Format ID ujian tidak valid."
+        }
+        val dirCanonical = examsDirectory.canonicalFile
+        val target = File(dirCanonical, "$examId.enc").canonicalFile
+        require(target.parentFile == dirCanonical) {
+            "Path berkas ujian tidak diizinkan."
+        }
+        return target
     }
 
     fun isExamFileValid(examId: String, expectedSha256: String): Boolean {
+        if (!SAFE_EXAM_ID_REGEX.matches(examId)) return false
+        val cleanExpected = expectedSha256.trim()
+        // Wajib memiliki checksum SHA-256 yang valid — jangan pernah melewati verifikasi integritas
+        if (!SHA256_HEX_REGEX.matches(cleanExpected)) return false
         val file = getExamFile(examId)
         if (!file.exists() || file.length() == 0L) return false
-        if (expectedSha256.isBlank()) return true
         val actualSha256 = calculateSha256(file)
-        return actualSha256.equals(expectedSha256, ignoreCase = true)
+        return actualSha256.equals(cleanExpected, ignoreCase = true)
     }
 
     fun isExamFileDownloaded(examId: String): Boolean {
+        if (!SAFE_EXAM_ID_REGEX.matches(examId)) return false
         val file = getExamFile(examId)
         return file.exists() && file.length() > 0
     }
@@ -92,6 +107,20 @@ class LocalSyncManager(private val context: Context) {
         return URLEncoder.encode(raw, "UTF-8")
     }
 
+    private fun readLimitedTextBody(response: okhttp3.Response, maxBytes: Long = MAX_JSON_RESPONSE_BYTES): String {
+        val body = response.body ?: throw IllegalStateException("Respons server kosong")
+        val contentLength = body.contentLength()
+        if (contentLength > maxBytes) {
+            throw IllegalStateException("Ukuran respons server melebihi batas aman.")
+        }
+        val source = body.source()
+        source.request(maxBytes + 1)
+        if (source.buffer.size > maxBytes) {
+            throw IllegalStateException("Ukuran respons server melebihi batas aman.")
+        }
+        return source.readUtf8()
+    }
+
     suspend fun testConnection(serverUrl: String): Result<ServerPingResult> = withContext(Dispatchers.IO) {
         runCatching {
             val normalizedBase = normalizeUrl(serverUrl).trimEnd('/')
@@ -106,7 +135,7 @@ class LocalSyncManager(private val context: Context) {
 
                 client.newCall(pingReq).execute().use { resp ->
                     if (resp.isSuccessful) {
-                        val body = resp.body?.string().orEmpty()
+                        val body = readLimitedTextBody(resp)
                         val ping = json.decodeFromString<ServerPingResult>(body)
                         if (ping.ok && (ping.app.isBlank() || ping.app == "e-ujian-mts-rth")) {
                             return@runCatching ping
@@ -126,8 +155,7 @@ class LocalSyncManager(private val context: Context) {
                 if (!resp.isSuccessful) {
                     throw IllegalStateException("Server merespons HTTP ${resp.code}")
                 }
-                val body = resp.body?.string()
-                    ?: throw IllegalStateException("Respons server kosong")
+                val body = readLimitedTextBody(resp)
                 val manifest = json.decodeFromString<ExamManifest>(body)
                 ServerPingResult(
                     ok = true,
@@ -142,7 +170,8 @@ class LocalSyncManager(private val context: Context) {
 
     suspend fun fetchManifest(
         serverUrl: String,
-        gradeLevel: Int? = null
+        gradeLevel: Int? = null,
+        storage: SecureStorage = ExamApp.instance.secureStorage
     ): Result<ExamManifest> = withContext(Dispatchers.IO) {
         runCatching {
             val normalizedBase = normalizeUrl(serverUrl).trimEnd('/')
@@ -161,8 +190,19 @@ class LocalSyncManager(private val context: Context) {
                 if (!response.isSuccessful) {
                     throw IllegalStateException("Gagal mengunduh manifest (HTTP ${response.code})")
                 }
-                val bodyString = response.body?.string()
-                    ?: throw IllegalStateException("Manifest response body kosong")
+                val bodyString = readLimitedTextBody(response)
+
+                // Verifikasi tanda tangan digital ECDSA-P256 & Trust-On-First-Use (TOFU) public key pinning
+                when (val sigCheck = ManifestSignatureVerifier.verifyAndCheckPinning(bodyString, storage)) {
+                    is ManifestSignatureVerifier.VerifyResult.Invalid -> {
+                        throw SecurityException(sigCheck.reason)
+                    }
+                    is ManifestSignatureVerifier.VerifyResult.Valid -> {
+                        if (sigCheck.isNewlyPinned) {
+                            storage.trustedServerPublicKey = sigCheck.publicKeySpkiBase64
+                        }
+                    }
+                }
 
                 json.decodeFromString<ExamManifest>(bodyString)
             }
@@ -176,6 +216,14 @@ class LocalSyncManager(private val context: Context) {
         onProgress: ((Int) -> Unit)? = null
     ): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
+            require(SAFE_EXAM_ID_REGEX.matches(examId)) {
+                "ID paket soal tidak valid."
+            }
+            val cleanExpectedSha256 = expectedSha256.trim()
+            if (!SHA256_HEX_REGEX.matches(cleanExpectedSha256)) {
+                throw SecurityException("Checksum SHA-256 berkas soal wajib tersedia dan valid.")
+            }
+
             val destFile = getExamFile(examId)
             val tempFile = File(examsDirectory, "$examId.tmp")
 
@@ -191,6 +239,9 @@ class LocalSyncManager(private val context: Context) {
 
                 val body = response.body ?: throw IllegalStateException("Response body kosong")
                 val totalLength = body.contentLength()
+                if (totalLength > MAX_EXAM_FILE_BYTES) {
+                    throw IllegalStateException("Ukuran berkas soal melebihi batas maksimum (60 MB).")
+                }
                 var downloadedBytes = 0L
 
                 body.byteStream().use { input ->
@@ -198,8 +249,11 @@ class LocalSyncManager(private val context: Context) {
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
                             downloadedBytes += bytesRead
+                            if (downloadedBytes > MAX_EXAM_FILE_BYTES) {
+                                throw IllegalStateException("Ukuran berkas soal melebihi batas maksimum (60 MB).")
+                            }
+                            output.write(buffer, 0, bytesRead)
                             if (totalLength > 0 && onProgress != null) {
                                 val progress = ((downloadedBytes * 100) / totalLength).toInt()
                                 onProgress(progress)
@@ -210,11 +264,11 @@ class LocalSyncManager(private val context: Context) {
                 }
             }
 
-            // Validasi checksum SHA-256
+            // Validasi checksum SHA-256 secara wajib
             val actualChecksum = calculateSha256(tempFile)
-            if (expectedSha256.isNotBlank() && !actualChecksum.equals(expectedSha256, ignoreCase = true)) {
+            if (!actualChecksum.equals(cleanExpectedSha256, ignoreCase = true)) {
                 tempFile.delete()
-                throw IllegalStateException("Checksum berkas tidak valid! File kemungkinan korup.")
+                throw IllegalStateException("Checksum berkas tidak valid! File kemungkinan korup atau dimodifikasi.")
             }
 
             // Ganti nama ke file .enc final
@@ -222,7 +276,6 @@ class LocalSyncManager(private val context: Context) {
                 destFile.delete()
             }
             if (!tempFile.renameTo(destFile)) {
-                // Fallback copy if rename fails
                 tempFile.copyTo(destFile, overwrite = true)
                 tempFile.delete()
             }
@@ -234,6 +287,11 @@ class LocalSyncManager(private val context: Context) {
     private fun normalizeUrl(url: String): String = Companion.normalizeUrl(url)
 
     companion object {
+        private val SAFE_EXAM_ID_REGEX = Regex("^[A-Za-z0-9_-]{1,80}$")
+        private val SHA256_HEX_REGEX = Regex("^[0-9a-fA-F]{64}$")
+        private const val MAX_JSON_RESPONSE_BYTES = 2L * 1024L * 1024L // 2 MB
+        private const val MAX_EXAM_FILE_BYTES = 60L * 1024L * 1024L    // 60 MB
+
         fun normalizeUrl(url: String): String {
             var trimmed = url.trim()
             if (trimmed.isEmpty()) return ""

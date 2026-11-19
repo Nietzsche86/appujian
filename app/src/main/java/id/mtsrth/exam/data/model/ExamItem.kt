@@ -41,6 +41,9 @@ data class ExamItem(
     @SerialName("pbkdf2_salt_hex")
     val pbkdf2SaltHex: String,
 
+    @SerialName("pbkdf2_iterations")
+    val pbkdf2Iterations: Int = 10000,
+
     @SerialName("gcm_iv_hex")
     val gcmIvHex: String
 )

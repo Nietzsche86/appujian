@@ -22,7 +22,14 @@
         <item name="android:windowLightNavigationBar">false</item>
     </style>
 
-    <!-- Theme for Splash Screen (Bright white background, dark status bar icons) -->
+    <!-- Modern AndroidX SplashScreen Theme (Inset logo prevents Android 12+ circular clipping) -->
+    <style name="Theme.ExamKiosk.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo_inset</item>
+        <item name="postSplashScreenTheme">@style/Theme.ExamKiosk</item>
+    </style>
+
+    <!-- Legacy Splash Activity fallback theme -->
     <style name="Theme.ExamKiosk.Splash" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:statusBarColor">#FFFFFF</item>
         <item name="android:windowLightStatusBar">true</item>

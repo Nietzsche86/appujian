@@ -3,13 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="proctor-csrf" content="__PROCTOR_CSRF_TOKEN__">
     <title>Proktor Command Center — E-UJIAN MTS RTH</title>
     <link rel="icon" type="image/png" href="/logo_sekolah.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* 100% Offline-Resilient Vector Icons & Tabular Typography */
+        .fa-solid, .fa-regular, .fa-brands {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1em;
+            height: 1em;
+            line-height: 1;
+            vertical-align: -0.125em;
+            flex-shrink: 0;
+        }
+        .fa-solid svg, .fa-regular svg, .fa-brands svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .fa-spin {
+            animation: proctor-spin 0.9s linear infinite;
+        }
+        @keyframes proctor-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .mono, .stat-value, .clock-time, .pin-code, code {
+            font-variant-numeric: tabular-nums;
+        }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--emerald-500);
+            outline-offset: 2px;
+        }
+
         :root, [data-theme="dark"] {
             --bg-app: #070B12;
             --bg-mesh: radial-gradient(circle at 12% 10%, rgba(16, 185, 129, 0.14), transparent 36%),
@@ -1963,7 +1996,7 @@
                                 <span class="badge badge-amber">Semua Hari</span>
                             </label>
                             <div class="input-group-pass">
-                                <input type="password" id="inputMasterPin" class="form-control mono" maxlength="32" placeholder="888999" style="font-weight: 700; letter-spacing: 0.14em; background: var(--surface);">
+                                <input type="password" id="inputMasterPin" class="form-control mono" maxlength="32" placeholder="Minimal 6 karakter" style="font-weight: 700; letter-spacing: 0.14em; background: var(--surface);">
                                 <button type="button" class="pass-toggle-btn" onclick="toggleInputPinVisibility()" title="Lihat/Sembunyikan">
                                     <i class="fa-regular fa-eye" id="inputPinToggleIcon"></i>
                                 </button>
@@ -2328,7 +2361,7 @@
                 <span class="form-hint">Angka atau huruf</span>
             </label>
             <div class="input-group-pass">
-                <input type="password" id="modalInputMasterPin" class="form-control mono" maxlength="32" placeholder="Contoh: 888999" style="font-size: 17px; font-weight: 700; letter-spacing: 0.14em;">
+                <input type="password" id="modalInputMasterPin" class="form-control mono" maxlength="32" placeholder="Minimal 6 karakter acak" style="font-size: 17px; font-weight: 700; letter-spacing: 0.14em;">
                 <button type="button" class="pass-toggle-btn" onclick="toggleModalPinVisibility()" title="Lihat/Sembunyikan">
                     <i class="fa-regular fa-eye" id="modalPinToggleIcon"></i>
                 </button>
@@ -2501,6 +2534,15 @@
     /* ========================================= */
     /* UTILITIES & TOASTS                        */
     /* ========================================= */
+    function getProctorCsrfToken() {
+        const meta = document.querySelector('meta[name="proctor-csrf"]');
+        return meta ? (meta.getAttribute('content') || '') : '';
+    }
+
+    function proctorPostHeaders(extra = {}) {
+        return Object.assign({ 'X-Proctor-Token': getProctorCsrfToken() }, extra);
+    }
+
     function escapeHtml(str) {
         if (!str) return '';
         return String(str)
@@ -2626,10 +2668,10 @@
     /* TWO-TIER PIN MANAGEMENT                   */
     /* ========================================= */
     function updateHeroPinWidgets() {
-        const masterPin = serverData.master_pin || '888999';
+        const masterPin = serverData.master_pin || '';
         const masterEl = document.getElementById('displayMasterPin');
         if (masterEl) {
-            masterEl.textContent = isPinRevealed ? masterPin : '••••••';
+            masterEl.textContent = masterPin ? (isPinRevealed ? masterPin : '••••••••') : 'Belum Diatur';
         }
 
         const today = getTodayDayContext();
@@ -2693,7 +2735,7 @@
     }
 
     function openChangePinModal() {
-        const currentPin = serverData.master_pin || document.getElementById('inputMasterPin').value || '888999';
+        const currentPin = serverData.master_pin || document.getElementById('inputMasterPin').value || '';
         const input = document.getElementById('modalInputMasterPin');
         input.value = currentPin;
         input.type = 'password';
@@ -2711,29 +2753,36 @@
         icon.className = isModalPinRevealed ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
     }
 
-    function generateRandomCode(type) {
+    function generateRandomCode(type, length = 8) {
+        const charset = (type === 'number' || type === 'numeric')
+            ? '0123456789'
+            : 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const maxValid = Math.floor(256 / charset.length) * charset.length;
         let res = '';
-        if (type === 'number' || type === 'numeric') {
-            for (let i = 0; i < 6; i++) res += Math.floor(Math.random() * 10);
-        } else {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            for (let i = 0; i < 6; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+        const buf = new Uint8Array(length * 2);
+        while (res.length < length) {
+            window.crypto.getRandomValues(buf);
+            for (let i = 0; i < buf.length && res.length < length; i++) {
+                if (buf[i] < maxValid) {
+                    res += charset.charAt(buf[i] % charset.length);
+                }
+            }
         }
         return res;
     }
 
     function modalGeneratePin(type) {
-        const res = generateRandomCode(type);
+        const res = generateRandomCode(type, 8);
         const input = document.getElementById('modalInputMasterPin');
         input.value = res;
         input.type = 'text';
         isModalPinRevealed = true;
         document.getElementById('modalPinToggleIcon').className = 'fa-regular fa-eye-slash';
-        showToast('PIN Darurat acak dibuat: ' + res, 'fa-wand-magic-sparkles');
+        showToast('PIN Darurat acak kuat dibuat: ' + res, 'fa-wand-magic-sparkles');
     }
 
     function quickRandomPin(type) {
-        const res = generateRandomCode(type);
+        const res = generateRandomCode(type, 8);
         const input = document.getElementById('inputMasterPin');
         input.value = res;
         input.type = 'text';
@@ -2744,8 +2793,8 @@
 
     async function submitModalChangePin() {
         const newPin = document.getElementById('modalInputMasterPin').value.trim();
-        if (!newPin) {
-            alert('PIN Darurat Permanen tidak boleh kosong!');
+        if (!newPin || newPin.length < 6) {
+            alert('PIN Darurat Permanen minimal 6 karakter!');
             return;
         }
         const btn = document.getElementById('btnSubmitModalPin');
@@ -2756,7 +2805,7 @@
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ master_pin: newPin })
             });
             const data = await res.json();
@@ -2780,7 +2829,11 @@
     }
 
     function copyMasterPin() {
-        const pin = serverData.master_pin || document.getElementById('inputMasterPin').value || '888999';
+        const pin = serverData.master_pin || document.getElementById('inputMasterPin').value || '';
+        if (!pin) {
+            showToast('PIN Darurat belum diatur.', 'fa-circle-info');
+            return;
+        }
         copyTextSafe(pin, 'PIN Darurat Permanen berhasil disalin (jaga kerahasiaannya)!');
     }
 
@@ -2796,9 +2849,9 @@
     function generateRandomDailyPins() {
         DAILY_PIN_KEYS.forEach(day => {
             const el = document.getElementById(`inputDailyPin_${day}`);
-            if (el) el.value = generateRandomCode('numeric');
+            if (el) el.value = generateRandomCode('alpha', 8);
         });
-        showToast('PIN Harian Senin–Sabtu dibuat acak! Klik Simpan untuk menerapkan.', 'fa-wand-magic-sparkles');
+        showToast('PIN Harian Senin–Sabtu (8 karakter acak) dibuat! Klik Simpan untuk menerapkan.', 'fa-wand-magic-sparkles');
     }
 
     function clearDailyPins() {
@@ -2911,7 +2964,7 @@
     }
 
     function generateRandomToken() {
-        document.getElementById('addTokenInput').value = generateRandomCode('alpha');
+        document.getElementById('addTokenInput').value = generateRandomCode('alpha', 8);
     }
 
     function handleFileSelected(input) {
@@ -3016,7 +3069,7 @@
             if (data.all_ips && data.all_ips.length > 0) {
                 altBox.innerHTML = data.all_ips.map(ip => {
                     const fullIpUrl = `http://${ip}:${parsedPort}`;
-                    return `<span class="ip-chip" onclick="copyServerUrl('${fullIpUrl}')" title="Klik untuk salin"><i class="fa-solid fa-wifi"></i> ${escapeHtml(ip)}</span>`;
+                    return `<span class="ip-chip" data-action="copy-server-url" data-url="${escapeHtml(fullIpUrl)}" title="Klik untuk salin"><i class="fa-solid fa-wifi"></i> ${escapeHtml(ip)}</span>`;
                 }).join('');
             } else {
                 altBox.innerHTML = '';
@@ -3035,7 +3088,7 @@
                     { id: 'inputSchoolNsm', val: data.school_nsm ?? '121232050172' },
                     { id: 'inputSchoolAddress', val: data.school_address ?? '' },
                     { id: 'inputExamTitle', val: data.exam_title ?? 'Penilaian Akhir Semester (PAS) Ganjil' },
-                    { id: 'inputMasterPin', val: data.master_pin ?? '888999' },
+                    { id: 'inputMasterPin', val: data.master_pin ?? '' },
                     { id: 'inputReminderMinutes', val: String(reminderMins) }
                 ];
                 DAILY_PIN_KEYS.forEach(day => {
@@ -3164,24 +3217,24 @@
                         <div style="font-weight: 700;">${safeSub}</div>
                         <div class="mono" style="font-size: 11px; color: var(--text-muted);">ID: ${safeId}</div>
                     </td>
-                    <td><span class="badge badge-sky">Kelas ${ex.grade_level}</span></td>
+                    <td><span class="badge badge-sky">Kelas ${escapeHtml(ex.grade_level)}</span></td>
                     <td>
-                        <button type="button" class="duration-chip" onclick="openEditDuration('${safeId}')" title="Ubah jadwal & durasi">
+                        <button type="button" class="duration-chip" data-action="edit-duration" data-exam-id="${safeId}" title="Ubah jadwal & durasi">
                             <i class="fa-solid fa-stopwatch" style="color: var(--emerald-400);"></i>
-                            <span>${ex.duration_minutes} Menit</span>
+                            <span>${escapeHtml(ex.duration_minutes)} Menit</span>
                             <i class="fa-solid fa-pen" style="font-size: 10px; opacity: 0.7;"></i>
                         </button>
                     </td>
                     <td>
-                        <button type="button" class="token-chip" onclick="copyExamToken('${safeToken}')" title="Klik untuk salin token">
+                        <button type="button" class="token-chip" data-action="copy-token" data-token="${safeToken}" title="Klik untuk salin token">
                             <i class="fa-solid fa-key" style="font-size: 10px;"></i>
                             <span>${safeToken}</span>
                         </button>
                     </td>
                     <td style="text-align: right;">
                         <div style="display: inline-flex; gap: 6px;">
-                            <button class="btn btn-sm" onclick="openEditDuration('${safeId}')" title="Ubah Jadwal"><i class="fa-solid fa-pen"></i></button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteExam('${safeId}')" title="Hapus Soal"><i class="fa-solid fa-trash-can"></i></button>
+                            <button class="btn btn-sm" data-action="edit-duration" data-exam-id="${safeId}" title="Ubah Jadwal"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-danger" data-action="delete-exam" data-exam-id="${safeId}" title="Hapus Soal"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </td>
                 </tr>`;
@@ -3192,12 +3245,12 @@
                         <div>
                             <div class="mobile-exam-meta" style="margin-bottom: 6px;">
                                 <span class="badge badge-emerald mono">${escapeHtml(shortName)}</span>
-                                <span class="badge badge-sky">Kelas ${ex.grade_level}</span>
+                                <span class="badge badge-sky">Kelas ${escapeHtml(ex.grade_level)}</span>
                                 <span class="badge ${st.cls}"><i class="fa-solid ${st.icon}"></i> ${st.text}</span>
                             </div>
                             <div style="font-size: 15px; font-weight: 700;">${safeSub}</div>
                         </div>
-                        <button type="button" class="token-chip" onclick="copyExamToken('${safeToken}')">
+                        <button type="button" class="token-chip" data-action="copy-token" data-token="${safeToken}">
                             <i class="fa-solid fa-key" style="font-size: 10px;"></i> ${safeToken}
                         </button>
                     </div>
@@ -3206,12 +3259,12 @@
                         <span class="mono"><i class="fa-regular fa-clock" style="color: var(--amber-400);"></i> ${escapeHtml(startTime)} – ${escapeHtml(endTime)} WIB</span>
                     </div>
                     <div class="mobile-exam-footer">
-                        <button type="button" class="duration-chip" onclick="openEditDuration('${safeId}')">
-                            <i class="fa-solid fa-stopwatch" style="color: var(--emerald-400);"></i> ${ex.duration_minutes} Menit
+                        <button type="button" class="duration-chip" data-action="edit-duration" data-exam-id="${safeId}">
+                            <i class="fa-solid fa-stopwatch" style="color: var(--emerald-400);"></i> ${escapeHtml(ex.duration_minutes)} Menit
                         </button>
                         <div style="display: flex; gap: 8px;">
-                            <button class="btn btn-sm" onclick="openEditDuration('${safeId}')"><i class="fa-solid fa-pen"></i> Jadwal</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteExam('${safeId}')"><i class="fa-solid fa-trash-can"></i></button>
+                            <button class="btn btn-sm" data-action="edit-duration" data-exam-id="${safeId}"><i class="fa-solid fa-pen"></i> Jadwal</button>
+                            <button class="btn btn-sm btn-danger" data-action="delete-exam" data-exam-id="${safeId}"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                     </div>
                 </div>`;
@@ -3346,7 +3399,7 @@
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     exam_title: examTitle,
                     master_pin: masterPin,
@@ -3396,7 +3449,7 @@
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     school_name: schoolName,
                     school_tagline: schoolTagline,
@@ -3436,7 +3489,7 @@
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ exam_rules: rawRules })
             });
             const data = await res.json();
@@ -3489,7 +3542,7 @@
         try {
             const res = await fetch('/api/update-duration', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({
                     id: examId,
                     duration_minutes: duration,
@@ -3540,7 +3593,11 @@
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengenkripsi AES-256...';
 
         try {
-            const res = await fetch('/api/upload-exam', { method: 'POST', body: formData });
+            const res = await fetch('/api/upload-exam', {
+                method: 'POST',
+                headers: proctorPostHeaders(),
+                body: formData
+            });
             const data = await res.json();
             if (data.ok) {
                 closeModal('modalAddExam');
@@ -3564,7 +3621,7 @@
         try {
             const res = await fetch('/api/delete-exam', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ id })
             });
             const data = await res.json();
@@ -3582,7 +3639,10 @@
     async function rebuildAllPackages() {
         if (!confirm('Enkripsi ulang seluruh paket soal dan bangun ulang manifest.json?')) return;
         try {
-            const res = await fetch('/api/rebuild', { method: 'POST' });
+            const res = await fetch('/api/rebuild', {
+                method: 'POST',
+                headers: proctorPostHeaders()
+            });
             const data = await res.json();
             if (data.ok) {
                 showToast('Seluruh paket soal berhasil dienkripsi ulang!', 'fa-shield-halved');
@@ -3746,7 +3806,7 @@
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: proctorPostHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ daily_pins: nextDailyPins })
             });
             const data = await res.json();
@@ -3846,7 +3906,132 @@
         ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('dragover'); }));
     }
 
+    // Delegated click handler aman (menggantikan inline onclick dengan interpolasi string)
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+        const action = target.dataset.action;
+        if (action === 'copy-server-url') {
+            copyServerUrl(target.dataset.url || '');
+        } else if (action === 'copy-token') {
+            copyExamToken(target.dataset.token || '');
+        } else if (action === 'edit-duration') {
+            openEditDuration(target.dataset.examId || '');
+        } else if (action === 'delete-exam') {
+            deleteExam(target.dataset.examId || '');
+        }
+    });
+
+    // =========================================================================
+    // 100% OFFLINE VECTOR ICON ENGINE (Zero CDN — Crisp SVG on Air-Gapped LAN)
+    // =========================================================================
+    const OFFLINE_SVG_ICONS = {
+        'fa-arrows-rotate': '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>',
+        'fa-bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+        'fa-bell-slash': '<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" y1="2" x2="22" y2="22"/>',
+        'fa-book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+        'fa-box-archive': '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+        'fa-calendar': '<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+        'fa-calendar-check': '<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="m9 16 2 2 4-4"/>',
+        'fa-calendar-day': '<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect width="4" height="4" x="8" y="14" rx="0.5"/>',
+        'fa-calendar-week': '<rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="7" y1="15" x2="17" y2="15"/>',
+        'fa-check': '<polyline points="20 6 9 17 4 12"/>',
+        'fa-circle-check': '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+        'fa-circle-info': '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+        'fa-circle-play': '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
+        'fa-clock': '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        'fa-cloud-arrow-down': '<path d="M4 14.9A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.24"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>',
+        'fa-copy': '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+        'fa-crown': '<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>',
+        'fa-dice': '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor"/>',
+        'fa-download': '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+        'fa-eraser': '<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
+        'fa-eye': '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+        'fa-eye-slash': '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/>',
+        'fa-file-circle-plus': '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>',
+        'fa-file-pdf': '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2a1.5 1.5 0 0 1 0 3H8v-3Z"/><path d="M14 13h2"/><path d="M14 16h2"/>',
+        'fa-file-shield': '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"/><polyline points="14 2 14 8 20 8"/><path d="M18 11s-4 1.5-4 4v2c0 2 2 3.5 4 4 2-.5 4-2 4-4v-2c0-2.5-4-4-4-4Z"/>',
+        'fa-floppy-disk': '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+        'fa-folder-open': '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+        'fa-hourglass-half': '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+        'fa-key': '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
+        'fa-lock': '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+        'fa-magnifying-glass': '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+        'fa-mobile-screen': '<rect width="14" height="20" x="5" y="2" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+        'fa-moon': '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+        'fa-network-wired': '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>',
+        'fa-pause': '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+        'fa-pen': '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+        'fa-pen-to-square': '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/>',
+        'fa-play': '<polygon points="6 4 20 12 6 20 6 4"/>',
+        'fa-plus': '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+        'fa-rotate': '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+        'fa-rotate-left': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+        'fa-school': '<path d="m4 6 8-4 8 4"/><path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/><path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/><path d="M18 5v17"/><path d="M6 5v17"/><circle cx="12" cy="9" r="2"/>',
+        'fa-shield-halved': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 22V2"/>',
+        'fa-shuffle': '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
+        'fa-signal': '<path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 4v16"/>',
+        'fa-spinner': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+        'fa-stopwatch': '<line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="15" y2="11"/><circle cx="12" cy="14" r="8"/>',
+        'fa-sun': '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+        'fa-tower-broadcast': '<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>',
+        'fa-trash-can': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+        'fa-triangle-exclamation': '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+        'fa-user-shield': '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16.5c.8-1.5 2-2.2 3.5-2.2s2.7.7 3.5 2.2"/>',
+        'fa-wand-magic-sparkles': '<path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>',
+        'fa-whatsapp': '<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/>',
+        'fa-wifi': '<path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>',
+        'fa-xmark': '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+    };
+
+    function hydrateOfflineIcon(el) {
+        if (!el || !el.classList) return;
+        let iconKey = null;
+        for (const cls of el.classList) {
+            if (OFFLINE_SVG_ICONS[cls]) {
+                iconKey = cls;
+                break;
+            }
+        }
+        if (!iconKey) return;
+        if (el.dataset.svgIcon === iconKey && el.firstElementChild && el.firstElementChild.tagName.toLowerCase() === 'svg') {
+            return;
+        }
+        el.dataset.svgIcon = iconKey;
+        el.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + OFFLINE_SVG_ICONS[iconKey] + '</svg>';
+    }
+
+    function hydrateAllOfflineIcons(root) {
+        const container = root || document;
+        if (container.nodeType === 1 && container.matches && container.matches('i.fa-solid, i.fa-regular, i.fa-brands')) {
+            hydrateOfflineIcon(container);
+        }
+        if (container.querySelectorAll) {
+            container.querySelectorAll('i.fa-solid, i.fa-regular, i.fa-brands').forEach(hydrateOfflineIcon);
+        }
+    }
+
+    const iconObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.type === 'attributes' && m.target) {
+                hydrateOfflineIcon(m.target);
+            } else if (m.type === 'childList') {
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) hydrateAllOfflineIcons(node);
+                });
+            }
+        }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
+        hydrateAllOfflineIcons(document);
+        iconObserver.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class']
+        });
+
         loadData(true);
         startPolling();
 

@@ -11,9 +11,12 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -67,14 +70,15 @@ import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 
 /**
- * Tactile scale-down bounce modifier for buttons and interactive cards.
+ * Pure visual spring scale-down modifier driven by an existing InteractionSource.
+ * Use this on M3 Button / OutlinedButton / Surface(onClick = ...) so click handling
+ * and Material 3 ripples are never duplicated.
  */
-fun Modifier.bounceClick(
+fun Modifier.pressBounce(
+    interactionSource: InteractionSource,
     enabled: Boolean = true,
-    pressedScale: Float = 0.965f,
-    onClick: () -> Unit
+    pressedScale: Float = 0.97f
 ): Modifier = composed {
-    val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) pressedScale else 1f,
@@ -82,16 +86,29 @@ fun Modifier.bounceClick(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
         ),
-        label = "bounce_scale"
+        label = "press_bounce_scale"
     )
+    this.graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+    }
+}
+
+/**
+ * Tactile scale-down bounce + modern M3 ripple for custom clickable containers (cards, pills).
+ * Do NOT combine with Button(onClick = ...); use pressBounce(interactionSource) instead.
+ */
+fun Modifier.bounceClick(
+    enabled: Boolean = true,
+    pressedScale: Float = 0.97f,
+    onClick: () -> Unit
+): Modifier = composed {
+    val interactionSource = remember { MutableInteractionSource() }
     this
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        }
+        .pressBounce(interactionSource = interactionSource, enabled = enabled, pressedScale = pressedScale)
         .clickable(
             interactionSource = interactionSource,
-            indication = androidx.compose.material.ripple.rememberRipple(),
+            indication = LocalIndication.current,
             enabled = enabled,
             onClick = onClick
         )
@@ -124,23 +141,29 @@ fun Modifier.shimmerEffect(): Modifier = composed {
 }
 
 /**
- * Tonal Elevation card without heavy outlines, using surface tint & soft elevation.
+ * Crisp modern elevated/bordered card with hairline editorial definition in both Light & Dark modes.
  */
 @Composable
 fun TonalPrestigeCard(
     modifier: Modifier = Modifier,
     containerColor: Color = PrestigeTheme.colors.pureCrispWhite,
-    shadowElevation: Dp = 2.dp,
+    borderColor: Color? = PrestigeTheme.colors.cardBorder,
+    shadowElevation: Dp = 1.dp,
     cornerRadius: Dp = 18.dp,
     content: @Composable () -> Unit
 ) {
-    val effectiveShadow = if (PrestigeTheme.colors.isDark) 0.dp else shadowElevation
+    val colors = PrestigeTheme.colors
+    val effectiveShadow = if (colors.isDark) 0.dp else shadowElevation
+    val effectiveBorder = borderColor?.let {
+        BorderStroke(1.dp, it.copy(alpha = if (colors.isDark) 0.85f else 0.72f))
+    }
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(cornerRadius),
         color = containerColor,
+        border = effectiveBorder,
         shadowElevation = effectiveShadow,
-        tonalElevation = 1.dp,
+        tonalElevation = 0.dp,
         content = content
     )
 }
@@ -195,7 +218,7 @@ fun AnimatedGradeSegmentedControl(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(52.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(colors.tonalSlateSurface)
             .padding(4.dp)
@@ -217,6 +240,10 @@ fun AnimatedGradeSegmentedControl(
                 .fillMaxHeight(),
             shape = RoundedCornerShape(10.dp),
             color = if (colors.isDark) colors.softMintContainer else colors.pureCrispWhite,
+            border = BorderStroke(
+                1.dp,
+                if (colors.isDark) colors.softMintBorder.copy(alpha = 0.45f) else colors.cardBorder
+            ),
             shadowElevation = if (colors.isDark) 0.dp else 2.dp
         ) {}
 
@@ -398,8 +425,8 @@ fun ShimmerExamSkeletonList(
                         Box(
                             modifier = Modifier
                                 .width(92.dp)
-                                .height(38.dp)
-                                .clip(CircleShape)
+                                .height(44.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .shimmerEffect()
                         )
                     }
@@ -464,4 +491,3 @@ fun KeyboardAwareDialog(
         }
     }
 }
-

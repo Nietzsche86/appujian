@@ -12,7 +12,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:name=".ExamApp"
@@ -25,31 +24,33 @@
         android:theme="@style/Theme.ExamKiosk"
         android:usesCleartextTraffic="true">
 
-        <!-- Splash Screen Activity (Launcher) -->
+        <!-- Legacy Splash Activity (forwards immediately if invoked) -->
         <activity
             android:name=".ui.splash.SplashActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExamKiosk.Splash" />
+
+        <!-- Main Navigation Activity (Launcher with AndroidX SplashScreen API & Adaptive Layout) -->
+        <activity
+            android:name=".ui.dashboard.DashboardActivity"
             android:exported="true"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.ExamKiosk.Splash">
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.ExamKiosk.Starting"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <!-- Main Navigation Activity -->
-        <activity
-            android:name=".ui.dashboard.DashboardActivity"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize" />
-
         <!-- Kiosk Exam Activity -->
         <activity
             android:name=".ui.kiosk.KioskExamActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
+            android:resizeableActivity="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ExamKiosk.Fullscreen"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />

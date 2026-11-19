@@ -39,5 +39,11 @@ data class ExamManifest(
     val examRules: List<String> = emptyList(),
 
     @SerialName("exams")
-    val exams: List<ExamItem> = emptyList()
+    val exams: List<ExamItem> = emptyList(),
+
+    @SerialName("manifest_signature")
+    val manifestSignature: String = "",
+
+    @SerialName("manifest_public_key_spki")
+    val manifestPublicKeySpki: String = ""
 )

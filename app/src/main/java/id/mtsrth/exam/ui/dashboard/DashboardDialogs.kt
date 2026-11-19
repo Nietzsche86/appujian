@@ -402,7 +402,8 @@ fun TokenInputComposeDialog(
                                     encryptedFile = encFile,
                                     token = resolvedToken,
                                     saltHex = exam.pbkdf2SaltHex,
-                                    ivHex = exam.gcmIvHex
+                                    ivHex = exam.gcmIvHex,
+                                    iterationCount = exam.pbkdf2Iterations
                                 )
                                 val upper = trimmed.uppercase(Locale.ROOT)
                                 if (result.isFailure && upper != trimmed) {
@@ -410,7 +411,8 @@ fun TokenInputComposeDialog(
                                         encryptedFile = encFile,
                                         token = upper,
                                         saltHex = exam.pbkdf2SaltHex,
-                                        ivHex = exam.gcmIvHex
+                                        ivHex = exam.gcmIvHex,
+                                        iterationCount = exam.pbkdf2Iterations
                                     )
                                     if (upperResult.isSuccess) {
                                         resolvedToken = upper
@@ -683,7 +685,8 @@ fun MakeupExamComposeDialog(
                                     encryptedFile = encFile,
                                     token = resolvedToken,
                                     saltHex = exam.pbkdf2SaltHex,
-                                    ivHex = exam.gcmIvHex
+                                    ivHex = exam.gcmIvHex,
+                                    iterationCount = exam.pbkdf2Iterations
                                 )
                                 val upper = trimmedToken.uppercase(Locale.ROOT)
                                 if (result.isFailure && upper != trimmedToken) {
@@ -691,7 +694,8 @@ fun MakeupExamComposeDialog(
                                         encryptedFile = encFile,
                                         token = upper,
                                         saltHex = exam.pbkdf2SaltHex,
-                                        ivHex = exam.gcmIvHex
+                                        ivHex = exam.gcmIvHex,
+                                        iterationCount = exam.pbkdf2Iterations
                                     )
                                     if (upperResult.isSuccess) {
                                         resolvedToken = upper

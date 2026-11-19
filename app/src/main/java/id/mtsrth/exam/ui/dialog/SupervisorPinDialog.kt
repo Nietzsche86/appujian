@@ -9,10 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import androidx.fragment.app.DialogFragment
-import id.mtsrth.exam.ExamApp
-import id.mtsrth.exam.R
-import id.mtsrth.exam.data.sync.LocalSyncManager
 import id.mtsrth.exam.databinding.DialogSupervisorPinBinding
+import id.mtsrth.exam.security.SupervisorPinHelper
 
 class SupervisorPinDialog : DialogFragment() {
 
@@ -52,30 +50,17 @@ class SupervisorPinDialog : DialogFragment() {
 
         binding.btnVerifyPin.setOnClickListener {
             val pin = binding.etMasterPin.text?.toString()?.trim() ?: ""
-            if (pin.isEmpty()) {
-                binding.tvPinError.text = "Master PIN tidak boleh kosong"
-                binding.tvPinError.visibility = View.VISIBLE
-                return@setOnClickListener
-            }
-
-            val expectedHash = ExamApp.instance.secureStorage.masterPinHash
-            val actualHash = LocalSyncManager.calculateSha256(pin)
-
-            // Validasi PIN (cocokkan hash atau default bypass '888999' jika belum diset dari manifest)
-            val isValid = if (expectedHash.isNotBlank()) {
-                actualHash.equals(expectedHash, ignoreCase = true)
-            } else {
-                pin == "888999"
-            }
-
-            if (isValid) {
-                binding.tvPinError.visibility = View.GONE
-                binding.tilMasterPin.visibility = View.GONE
-                binding.layoutVerifyButtons.visibility = View.GONE
-                binding.layoutSupervisorActions.visibility = View.VISIBLE
-            } else {
-                binding.tvPinError.text = getString(R.string.error_wrong_pin)
-                binding.tvPinError.visibility = View.VISIBLE
+            when (val result = SupervisorPinHelper.verifyPin(pin)) {
+                is SupervisorPinHelper.PinVerifyResult.Success -> {
+                    binding.tvPinError.visibility = View.GONE
+                    binding.tilMasterPin.visibility = View.GONE
+                    binding.layoutVerifyButtons.visibility = View.GONE
+                    binding.layoutSupervisorActions.visibility = View.VISIBLE
+                }
+                is SupervisorPinHelper.PinVerifyResult.Failure -> {
+                    binding.tvPinError.text = result.reason
+                    binding.tvPinError.visibility = View.VISIBLE
+                }
             }
         }
 

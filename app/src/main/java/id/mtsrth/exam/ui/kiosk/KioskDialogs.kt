@@ -184,15 +184,15 @@ fun JumpToPageDialog(
                         val isSelected = selectedPage.roundToInt() == page
                         Surface(
                             modifier = Modifier
-                                .size(width = 48.dp, height = 40.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .testTag("jump_page_pill_$page")
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     onJumpToPage(page)
                                     onDismiss()
                                 },
-                            shape = RoundedCornerShape(10.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) ctaSolidBg else colors.tonalSlateSurface
                         ) {
                             Box(contentAlignment = Alignment.Center) {

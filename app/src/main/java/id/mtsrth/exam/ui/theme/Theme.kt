@@ -39,6 +39,7 @@ data class PrestigeColorPalette(
     val pureCrispWhite: Color,
     val tonalSlateSurface: Color,
     val subtleDivider: Color,
+    val cardBorder: Color,
     val inkSlate: Color,
     val slateSecondary: Color,
     val slateMuted: Color,
@@ -64,14 +65,15 @@ val LightPrestigePalette = PrestigeColorPalette(
     softMintContainer = Color(0xFFE6F4EF),
     softMintBorder = Color(0xFFA7F3D0),
     bannerGradientStart = Color(0xFF064E3B),
-    bannerGradientEnd = Color(0xFF0B6E4F),
-    coolAlabaster = Color(0xFFF4F7F6),
+    bannerGradientEnd = Color(0xFF0E7C5B),
+    coolAlabaster = Color(0xFFF3F6F5),
     pureCrispWhite = Color(0xFFFFFFFF),
-    tonalSlateSurface = Color(0xFFEBF0EE),
+    tonalSlateSurface = Color(0xFFEAF0EE),
     subtleDivider = Color(0xFFE2E8F0),
+    cardBorder = Color(0xFFDCE5E2),
     inkSlate = Color(0xFF0F172A),
     slateSecondary = Color(0xFF475569),
-    slateMuted = Color(0xFF94A3B8),
+    slateMuted = Color(0xFF8395A7),
     vibrantTeal = Color(0xFF10B981),
     vibrantTealSoftBg = Color(0xFFECFDF5),
     coralRed = Color(0xFFDC2626),
@@ -81,7 +83,7 @@ val LightPrestigePalette = PrestigeColorPalette(
     warmAmber = Color(0xFFD97706),
     warmAmberSoftBg = Color(0xFFFFFBEB),
     warmAmberSoftBorder = Color(0xFFFDE68A),
-    shimmerBase = Color(0xFFEBF0EE),
+    shimmerBase = Color(0xFFE7EEEC),
     shimmerHighlight = Color(0xFFFFFFFF)
 )
 
@@ -95,15 +97,16 @@ val DarkPrestigePalette = PrestigeColorPalette(
     darkForest = Color(0xFF6EE7B7),
     softMintContainer = Color(0xFF17362D),
     softMintBorder = Color(0xFF2B6B56),
-    bannerGradientStart = Color(0xFF0B2B22),
-    bannerGradientEnd = Color(0xFF134839),
-    coolAlabaster = Color(0xFF0C1412),
-    pureCrispWhite = Color(0xFF14201D),
-    tonalSlateSurface = Color(0xFF1D2D29),
-    subtleDivider = Color(0xFF283C36),
-    inkSlate = Color(0xFFE6EFEA),
-    slateSecondary = Color(0xFFA0B3AC),
-    slateMuted = Color(0xFF6E827B),
+    bannerGradientStart = Color(0xFF0A2920),
+    bannerGradientEnd = Color(0xFF145240),
+    coolAlabaster = Color(0xFF0B1311),
+    pureCrispWhite = Color(0xFF131F1C),
+    tonalSlateSurface = Color(0xFF1B2B27),
+    subtleDivider = Color(0xFF263B35),
+    cardBorder = Color(0xFF243832),
+    inkSlate = Color(0xFFE8F1EC),
+    slateSecondary = Color(0xFFA0B4AD),
+    slateMuted = Color(0xFF728780),
     vibrantTeal = Color(0xFF34D399),
     vibrantTealSoftBg = Color(0xFF112922),
     coralRed = Color(0xFFF87171),
@@ -113,8 +116,8 @@ val DarkPrestigePalette = PrestigeColorPalette(
     warmAmber = Color(0xFFFBBF24),
     warmAmberSoftBg = Color(0xFF282012),
     warmAmberSoftBorder = Color(0xFF52401E),
-    shimmerBase = Color(0xFF1D2D29),
-    shimmerHighlight = Color(0xFF293E38)
+    shimmerBase = Color(0xFF1B2B27),
+    shimmerHighlight = Color(0xFF283E38)
 )
 
 val LocalPrestigeColors = staticCompositionLocalOf { LightPrestigePalette }
@@ -126,18 +129,96 @@ object PrestigeTheme {
         get() = LocalPrestigeColors.current
 }
 
+/**
+ * Static Regular-weight TTF font families.
+ * Only register FontWeight.Normal so Compose/Android properly synthesizes
+ * Bold & SemiBold optical weights instead of flattening all weights to 400.
+ */
+val OutfitDisplayFontFamily = FontFamily(
+    Font(R.font.outfit, FontWeight.Normal)
+)
+
 val PlusJakartaFontFamily = FontFamily(
-    Font(R.font.plus_jakarta_sans, FontWeight.Normal),
-    Font(R.font.plus_jakarta_sans, FontWeight.Medium),
-    Font(R.font.plus_jakarta_sans, FontWeight.SemiBold),
-    Font(R.font.plus_jakarta_sans, FontWeight.Bold),
-    Font(R.font.plus_jakarta_sans, FontWeight.ExtraBold)
+    Font(R.font.plus_jakarta_sans, FontWeight.Normal)
 )
 
 val JetBrainsMonoFontFamily = FontFamily(
-    Font(R.font.jetbrains_mono, FontWeight.Normal),
-    Font(R.font.jetbrains_mono, FontWeight.Medium),
-    Font(R.font.jetbrains_mono, FontWeight.Bold)
+    Font(R.font.jetbrains_mono, FontWeight.Normal)
+)
+
+val ExamTypography = Typography(
+    displaySmall = TextStyle(
+        fontFamily = OutfitDisplayFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 26.sp,
+        lineHeight = 32.sp,
+        letterSpacing = (-0.4).sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = OutfitDisplayFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.3).sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = OutfitDisplayFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
+        letterSpacing = (-0.2).sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = OutfitDisplayFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 15.5.sp,
+        lineHeight = 21.sp,
+        letterSpacing = (-0.1).sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.5.sp,
+        lineHeight = 19.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.5.sp,
+        lineHeight = 21.sp
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 13.5.sp,
+        lineHeight = 20.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 17.sp
+    ),
+    labelLarge = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 13.5.sp,
+        lineHeight = 18.sp,
+        letterSpacing = 0.1.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    ),
+    labelSmall = TextStyle(
+        fontFamily = PlusJakartaFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 10.5.sp,
+        lineHeight = 14.sp,
+        letterSpacing = 0.45.sp
+    )
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -157,14 +238,14 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White,
     errorContainer = Color(0xFFFEF2F2),
     onErrorContainer = Color(0xFFDC2626),
-    background = Color(0xFFF4F7F6),
+    background = Color(0xFFF3F6F5),
     onBackground = Color(0xFF0F172A),
     surface = Color(0xFFFFFFFF),
     onSurface = Color(0xFF0F172A),
-    surfaceVariant = Color(0xFFEBF0EE),
+    surfaceVariant = Color(0xFFEAF0EE),
     onSurfaceVariant = Color(0xFF475569),
-    outline = Color(0xFFE2E8F0),
-    outlineVariant = Color(0xFFEBF0EE)
+    outline = Color(0xFFDCE5E2),
+    outlineVariant = Color(0xFFEAF0EE)
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -184,79 +265,14 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color(0xFF3B0C0E),
     errorContainer = Color(0xFF2B181A),
     onErrorContainer = Color(0xFFFECACA),
-    background = Color(0xFF0C1412),
-    onBackground = Color(0xFFE6EFEA),
-    surface = Color(0xFF14201D),
-    onSurface = Color(0xFFE6EFEA),
-    surfaceVariant = Color(0xFF1D2D29),
-    onSurfaceVariant = Color(0xFFA0B3AC),
-    outline = Color(0xFF283C36),
-    outlineVariant = Color(0xFF1D2D29)
-)
-
-val ExamTypography = Typography(
-    headlineMedium = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = (-0.3).sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 18.sp,
-        lineHeight = 24.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 15.sp,
-        lineHeight = 20.sp
-    ),
-    titleSmall = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 13.sp,
-        lineHeight = 18.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 13.sp,
-        lineHeight = 19.sp
-    ),
-    bodySmall = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 11.5.sp,
-        lineHeight = 16.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        lineHeight = 18.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 11.5.sp,
-        lineHeight = 15.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = PlusJakartaFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 10.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 0.4.sp
-    )
+    background = Color(0xFF0B1311),
+    onBackground = Color(0xFFE8F1EC),
+    surface = Color(0xFF131F1C),
+    onSurface = Color(0xFFE8F1EC),
+    surfaceVariant = Color(0xFF1B2B27),
+    onSurfaceVariant = Color(0xFFA0B4AD),
+    outline = Color(0xFF263B35),
+    outlineVariant = Color(0xFF1B2B27)
 )
 
 val ExamShapes = Shapes(

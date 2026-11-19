@@ -60,10 +60,10 @@ class PdfPageAdapter(
             recycleBitmap()
             binding.pbPageLoading.visibility = View.VISIBLE
 
-            // Berikan minimum height estimasi (rasio A4) agar layout tidak collapsible saat loading
+            // Berikan minimum height estimasi agar layout tidak collapsible saat loading
             val displayMetrics = binding.root.resources.displayMetrics
             val screenWidth = displayMetrics.widthPixels
-            val estimatedHeight = (screenWidth * 1.414f).toInt()
+            val estimatedHeight = (screenWidth * 1.35f).toInt().coerceAtLeast(320)
             binding.ivPdfPage.minimumHeight = estimatedHeight
 
             renderJob = scope.launch(Dispatchers.Default) {
@@ -72,6 +72,7 @@ class PdfPageAdapter(
                     binding.pbPageLoading.visibility = View.GONE
                     if (bitmap != null) {
                         currentBitmap = bitmap
+                        binding.ivPdfPage.minimumHeight = 0
                         binding.ivPdfPage.setImageBitmap(bitmap)
                     } else {
                         Log.e("PdfPageAdapter", "Gagal merender halaman $pageIndex, bitmap null")
@@ -87,10 +88,10 @@ class PdfPageAdapter(
                     val displayMetrics = binding.root.resources.displayMetrics
                     val screenWidth = displayMetrics.widthPixels
 
-                    // Lebar target render (dibatasi maksimal 1080 untuk hemat memori)
-                    val targetWidth = if (screenWidth in 1..1080) screenWidth else 1080
+                    // Lebar target render (maksimal 1280 agar tetap tajam di mode landscape namun aman memori)
+                    val targetWidth = screenWidth.coerceIn(1, 1280)
                     val pageAspectRatio = page.height.toFloat() / page.width.toFloat()
-                    val targetHeight = (targetWidth * pageAspectRatio).toInt()
+                    val targetHeight = (targetWidth * pageAspectRatio).toInt().coerceAtLeast(1)
 
                     // PENTING: Android PdfRenderer.Page.render() WAJIB menggunakan Bitmap.Config.ARGB_8888.
                     // Jika menggunakan RGB_565, Android akan melempar IllegalArgumentException ("Unsupported pixel format").

@@ -15,3 +15,11 @@ __pycache__/
 *.keystore
 keystore_base64.txt
 keystore_info.txt
+
+# Sensitive Server Proktor runtime files (keys, PINs, tokens, raw & encrypted exam PDFs)
+server/exams_config.json
+server/manifest.json
+server/proctor_signing_key.pem
+server/raw_pdfs/*.pdf
+server/files/*.enc
+

@@ -5,11 +5,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +22,9 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +59,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,7 +93,7 @@ import androidx.compose.ui.unit.sp
 import id.mtsrth.exam.R
 import id.mtsrth.exam.ui.components.AnimatedGradeSegmentedControl
 import id.mtsrth.exam.ui.components.TonalPrestigeCard
-import id.mtsrth.exam.ui.components.bounceClick
+import id.mtsrth.exam.ui.components.pressBounce
 import id.mtsrth.exam.ui.components.shimmerEffect
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
@@ -143,29 +148,22 @@ fun SettingsSyncTab(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 680.dp)
+                .widthIn(max = 720.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MadrasahIdentityCard(
-                schoolName = uiState.schoolName,
-                tagline = uiState.schoolTagline,
-                npsn = uiState.schoolNpsn,
-                nsm = uiState.schoolNsm,
-                address = uiState.schoolAddress
-            )
-
+            // Prioritas 1: Jenjang Kelas Peserta (langsung dijangkau tanpa scroll)
             TonalPrestigeCard(
                 modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 2.dp
+                shadowElevation = 1.dp
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(colors.softMintContainer),
                             contentAlignment = Alignment.Center
                         ) {
@@ -176,7 +174,7 @@ fun SettingsSyncTab(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
                                 text = "Jenjang Kelas Peserta",
@@ -201,16 +199,17 @@ fun SettingsSyncTab(
                 }
             }
 
+            // Prioritas 2: Server Proktor LAN & Sinkronisasi (aksi paling sering dipakai)
             TonalPrestigeCard(
                 modifier = Modifier.fillMaxWidth(),
-                shadowElevation = 2.dp
+                shadowElevation = 1.dp
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .size(38.dp)
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(colors.softMintContainer),
                             contentAlignment = Alignment.Center
                         ) {
@@ -221,7 +220,7 @@ fun SettingsSyncTab(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Server Proktor LAN",
@@ -238,13 +237,12 @@ fun SettingsSyncTab(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Sync & Offline Metadata Strip
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(colors.coolAlabaster)
-                            .padding(horizontal = 12.dp, vertical = 9.dp),
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -357,176 +355,199 @@ fun SettingsSyncTab(
                             )
                         }
 
-                    // Quick Server Preset Chips
-                    if (quickPresets.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Cepat:",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = colors.slateMuted
-                            )
-                            quickPresets.forEach { preset ->
-                                val hostPart = preset.substringBefore(":")
-                                val portPart = preset.substringAfter(":", "8080")
-                                val isCurrent = uiState.serverHost == hostPart && uiState.serverPort == portPart
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(50))
-                                        .clickable {
-                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            onSelectServerPreset(hostPart, portPart)
-                                        },
-                                    shape = RoundedCornerShape(50),
-                                    color = if (isCurrent) colors.softMintContainer else colors.tonalSlateSurface
-                                ) {
-                                    Text(
-                                        text = preset,
-                                        fontFamily = JetBrainsMonoFontFamily,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isCurrent) colors.deepEmerald else colors.slateSecondary,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        val testBtnColors = when (uiState.connectionTestState) {
-                            is ConnectionTestState.Success -> ButtonDefaults.outlinedButtonColors(
-                                containerColor = colors.vibrantTealSoftBg,
-                                contentColor = colors.deepEmerald
-                            )
-                            is ConnectionTestState.Failed -> ButtonDefaults.outlinedButtonColors(
-                                containerColor = colors.coralRedSoftBg,
-                                contentColor = colors.coralRed
-                            )
-                            else -> ButtonDefaults.outlinedButtonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = colors.deepEmerald
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = onTestConnection,
-                            enabled = !isTesting && !isSyncing,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = testBtnColors,
-                            contentPadding = PaddingValues(horizontal = 12.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .testTag("btn_test_connection")
-                                .bounceClick(enabled = !isTesting && !isSyncing, onClick = onTestConnection)
-                        ) {
-                            AnimatedContent(
-                                targetState = uiState.connectionTestState,
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                label = "test_btn_state"
-                            ) { state ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    when (state) {
-                                        is ConnectionTestState.Testing -> {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(16.dp),
-                                                strokeWidth = 2.dp,
-                                                color = colors.deepEmerald
+                        // Quick Server Preset Chips (minimum 48dp accessible touch target)
+                        if (quickPresets.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Cepat:",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = colors.slateMuted
+                                )
+                                quickPresets.forEach { preset ->
+                                    val hostPart = preset.substringBefore(":")
+                                    val portPart = preset.substringAfter(":", "8080")
+                                    val isCurrent = uiState.serverHost == hostPart && uiState.serverPort == portPart
+                                    Surface(
+                                        modifier = Modifier
+                                            .minimumInteractiveComponentSize()
+                                            .heightIn(min = 38.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .clickable {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                onSelectServerPreset(hostPart, portPart)
+                                            },
+                                        shape = RoundedCornerShape(50),
+                                        color = if (isCurrent) colors.softMintContainer else colors.tonalSlateSurface,
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (isCurrent) colors.softMintBorder else colors.cardBorder
+                                        )
+                                    ) {
+                                        Box(
+                                            contentAlignment = Alignment.Center,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        ) {
+                                            Text(
+                                                text = preset,
+                                                fontFamily = JetBrainsMonoFontFamily,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isCurrent) colors.deepEmerald else colors.slateSecondary
                                             )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Menguji...", style = MaterialTheme.typography.labelMedium)
-                                        }
-                                        is ConnectionTestState.Success -> {
-                                            Icon(
-                                                imageVector = Icons.Rounded.CheckCircle,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Terhubung", style = MaterialTheme.typography.labelMedium)
-                                        }
-                                        is ConnectionTestState.Failed -> {
-                                            Icon(
-                                                imageVector = Icons.Rounded.ErrorOutline,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Gagal", style = MaterialTheme.typography.labelMedium)
-                                        }
-                                        ConnectionTestState.Idle -> {
-                                            Icon(
-                                                imageVector = Icons.Rounded.WifiFind,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Tes Koneksi", style = MaterialTheme.typography.labelMedium)
                                         }
                                     }
                                 }
                             }
                         }
 
-                        Button(
-                            onClick = onSyncExams,
-                            enabled = !isSyncing,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ctaSolidBg,
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 14.dp),
-                            modifier = Modifier
-                                .weight(1.25f)
-                                .height(48.dp)
-                                .testTag("btn_sync_exams")
-                                .bounceClick(enabled = !isSyncing, onClick = onSyncExams)
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            if (isSyncing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp,
-                                    color = Color.White
+                            val testBtnColors = when (uiState.connectionTestState) {
+                                is ConnectionTestState.Success -> ButtonDefaults.outlinedButtonColors(
+                                    containerColor = colors.vibrantTealSoftBg,
+                                    contentColor = colors.deepEmerald
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Menyinkronkan...", style = MaterialTheme.typography.labelLarge)
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Rounded.Sync,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                is ConnectionTestState.Failed -> ButtonDefaults.outlinedButtonColors(
+                                    containerColor = colors.coralRedSoftBg,
+                                    contentColor = colors.coralRed
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Sinkronkan Soal", style = MaterialTheme.typography.labelLarge)
+                                else -> ButtonDefaults.outlinedButtonColors(
+                                    containerColor = Color.Transparent,
+                                    contentColor = colors.deepEmerald
+                                )
+                            }
+                            val testInteraction = remember { MutableInteractionSource() }
+                            val syncInteraction = remember { MutableInteractionSource() }
+
+                            OutlinedButton(
+                                onClick = onTestConnection,
+                                enabled = !isTesting && !isSyncing,
+                                interactionSource = testInteraction,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = testBtnColors,
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .pressBounce(testInteraction, enabled = !isTesting && !isSyncing)
+                                    .testTag("btn_test_connection")
+                            ) {
+                                AnimatedContent(
+                                    targetState = uiState.connectionTestState,
+                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    label = "test_btn_state"
+                                ) { state ->
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        when (state) {
+                                            is ConnectionTestState.Testing -> {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(16.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = colors.deepEmerald
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Menguji...", style = MaterialTheme.typography.labelMedium)
+                                            }
+                                            is ConnectionTestState.Success -> {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.CheckCircle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Terhubung", style = MaterialTheme.typography.labelMedium)
+                                            }
+                                            is ConnectionTestState.Failed -> {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.ErrorOutline,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Gagal", style = MaterialTheme.typography.labelMedium)
+                                            }
+                                            ConnectionTestState.Idle -> {
+                                                Icon(
+                                                    imageVector = Icons.Rounded.WifiFind,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Tes Koneksi", style = MaterialTheme.typography.labelMedium)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Button(
+                                onClick = onSyncExams,
+                                enabled = !isSyncing,
+                                interactionSource = syncInteraction,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ctaSolidBg,
+                                    contentColor = Color.White
+                                ),
+                                contentPadding = PaddingValues(horizontal = 14.dp),
+                                modifier = Modifier
+                                    .weight(1.25f)
+                                    .height(50.dp)
+                                    .pressBounce(syncInteraction, enabled = !isSyncing)
+                                    .testTag("btn_sync_exams")
+                            ) {
+                                if (isSyncing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Menyinkronkan...", style = MaterialTheme.typography.labelLarge)
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Sync,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Sinkronkan Soal", style = MaterialTheme.typography.labelLarge)
+                                }
                             }
                         }
-                    }
 
-                    ServerStatusFeedbackBanner(
-                        connectionTestState = uiState.connectionTestState,
-                        syncState = uiState.syncState
-                    )
+                        ServerStatusFeedbackBanner(
+                            connectionTestState = uiState.connectionTestState,
+                            syncState = uiState.syncState
+                        )
                     }
                 }
             }
 
+            // Prioritas 3: Identitas Lembaga Penyelenggara (di bawah aksi utama)
+            MadrasahIdentityCard(
+                schoolName = uiState.schoolName,
+                tagline = uiState.schoolTagline,
+                npsn = uiState.schoolNpsn,
+                nsm = uiState.schoolNsm,
+                address = uiState.schoolAddress
+            )
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -557,14 +578,14 @@ private fun MadrasahIdentityCard(
 
     TonalPrestigeCard(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 3.dp,
+        shadowElevation = 1.dp,
         cornerRadius = 22.dp
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(66.dp)
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
@@ -573,8 +594,8 @@ private fun MadrasahIdentityCard(
                             )
                         )
                     )
-                    .padding(horizontal = 18.dp),
-                contentAlignment = Alignment.CenterStart
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                contentAlignment = Alignment.TopCenter
             ) {
                 Text(
                     text = "IDENTITAS LEMBAGA PENYELENGGARA",
@@ -587,14 +608,16 @@ private fun MadrasahIdentityCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 16.dp),
+                    .offset(y = (-26).dp)
+                    .padding(horizontal = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Surface(
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier.size(68.dp),
                     shape = RoundedCornerShape(18.dp),
                     color = if (colors.isDark) colors.tonalSlateSurface else colors.pureCrispWhite,
-                    shadowElevation = if (colors.isDark) 0.dp else 3.dp
+                    border = BorderStroke(2.dp, colors.pureCrispWhite),
+                    shadowElevation = if (colors.isDark) 0.dp else 4.dp
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.logo_sekolah),
@@ -606,7 +629,7 @@ private fun MadrasahIdentityCard(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = schoolName,

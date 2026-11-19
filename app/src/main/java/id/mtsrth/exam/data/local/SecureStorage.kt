@@ -5,20 +5,48 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.json.JSONObject
+import java.io.File
+import java.io.IOException
+import java.security.GeneralSecurityException
 
 class SecureStorage(context: Context) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    private val prefs: SharedPreferences = createEncryptedPrefsSafely(context.applicationContext)
 
-    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        PREFS_FILENAME,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private fun createEncryptedPrefsSafely(appContext: Context): SharedPreferences {
+        return try {
+            buildEncryptedPrefs(appContext)
+        } catch (_: GeneralSecurityException) {
+            recoverCorruptedPrefs(appContext)
+            buildEncryptedPrefs(appContext)
+        } catch (_: IOException) {
+            recoverCorruptedPrefs(appContext)
+            buildEncryptedPrefs(appContext)
+        }
+    }
+
+    private fun buildEncryptedPrefs(appContext: Context): SharedPreferences {
+        val masterKey = MasterKey.Builder(appContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            appContext,
+            PREFS_FILENAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    private fun recoverCorruptedPrefs(appContext: Context) {
+        runCatching {
+            val prefsFile = File(appContext.filesDir.parentFile, "shared_prefs/$PREFS_FILENAME.xml")
+            if (prefsFile.exists()) {
+                prefsFile.delete()
+            }
+            appContext.deleteSharedPreferences(PREFS_FILENAME)
+        }
+    }
 
     var schoolName: String
         get() = prefs.getString(KEY_SCHOOL_NAME, "MTS ROUDHOTUT THOWALIB") ?: "MTS ROUDHOTUT THOWALIB"
@@ -44,6 +72,10 @@ class SecureStorage(context: Context) {
         get() = prefs.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trim()).apply()
 
+    var trustedServerPublicKey: String
+        get() = prefs.getString(KEY_TRUSTED_SERVER_PUBLIC_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_TRUSTED_SERVER_PUBLIC_KEY, value.trim()).apply()
+
     var masterPinHash: String
         get() = prefs.getString(KEY_MASTER_PIN_HASH, "") ?: ""
         set(value) = prefs.edit().putString(KEY_MASTER_PIN_HASH, value).apply()
@@ -55,6 +87,22 @@ class SecureStorage(context: Context) {
     var maxKnownTimestampMillis: Long
         get() = prefs.getLong(KEY_MAX_KNOWN_TIMESTAMP_MILLIS, 0L)
         private set(value) = prefs.edit().putLong(KEY_MAX_KNOWN_TIMESTAMP_MILLIS, value).apply()
+
+    var lastSyncServerMillis: Long
+        get() = prefs.getLong(KEY_LAST_SYNC_SERVER_MILLIS, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_SYNC_SERVER_MILLIS, value).apply()
+
+    var lastSyncElapsedRealtime: Long
+        get() = prefs.getLong(KEY_LAST_SYNC_ELAPSED_REALTIME, 0L)
+        set(value) = prefs.edit().putLong(KEY_LAST_SYNC_ELAPSED_REALTIME, value).apply()
+
+    var pinFailedAttempts: Int
+        get() = prefs.getInt(KEY_PIN_FAILED_ATTEMPTS, 0)
+        set(value) = prefs.edit().putInt(KEY_PIN_FAILED_ATTEMPTS, value.coerceAtLeast(0)).apply()
+
+    var pinLockoutUntilMillis: Long
+        get() = prefs.getLong(KEY_PIN_LOCKOUT_UNTIL_MILLIS, 0L)
+        set(value) = prefs.edit().putLong(KEY_PIN_LOCKOUT_UNTIL_MILLIS, value.coerceAtLeast(0L)).apply()
 
     fun advanceMaxKnownTimestamp(candidateMillis: Long) {
         if (candidateMillis > maxKnownTimestampMillis) {
@@ -216,10 +264,15 @@ class SecureStorage(context: Context) {
         private const val KEY_SCHOOL_NSM = "school_nsm"
         private const val KEY_SCHOOL_ADDRESS = "school_address"
         private const val KEY_SERVER_URL = "server_url"
+        private const val KEY_TRUSTED_SERVER_PUBLIC_KEY = "trusted_server_public_key"
         private const val KEY_MASTER_PIN_HASH = "master_pin_hash"
         private const val KEY_REMINDER_MINUTES_BEFORE = "reminder_minutes_before"
         private const val KEY_DAILY_PIN_HASHES = "daily_pin_hashes"
         private const val KEY_MAX_KNOWN_TIMESTAMP_MILLIS = "max_known_timestamp_millis"
+        private const val KEY_LAST_SYNC_SERVER_MILLIS = "last_sync_server_millis"
+        private const val KEY_LAST_SYNC_ELAPSED_REALTIME = "last_sync_elapsed_realtime"
+        private const val KEY_PIN_FAILED_ATTEMPTS = "pin_failed_attempts"
+        private const val KEY_PIN_LOCKOUT_UNTIL_MILLIS = "pin_lockout_until_millis"
         private const val KEY_ACTIVE_EXAM_ID = "active_exam_id"
         private const val KEY_ACTIVE_EXAM_IS_MAKEUP = "active_exam_is_makeup"
         private const val KEY_REMAINING_EXAM_SECONDS = "remaining_exam_seconds"

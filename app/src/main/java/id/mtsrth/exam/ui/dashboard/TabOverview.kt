@@ -6,6 +6,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -13,7 +14,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,10 +31,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.AirplanemodeActive
 import androidx.compose.material.icons.rounded.Android
@@ -44,6 +49,7 @@ import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -56,7 +62,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -65,10 +75,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import id.mtsrth.exam.ui.components.StatusPillBadge
 import id.mtsrth.exam.ui.components.TonalPrestigeCard
 import id.mtsrth.exam.ui.components.bounceClick
+import id.mtsrth.exam.ui.components.pressBounce
+import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
 import id.mtsrth.exam.ui.theme.PrestigeTheme
 
 @Composable
@@ -82,6 +93,13 @@ fun DashboardOverviewTab(
     val hw = uiState.hardwareStatus
     val haptic = LocalHapticFeedback.current
     var wasCompliant by remember { mutableStateOf(hw.isAllCompliant) }
+
+    val sensorReadyCount = listOf(
+        hw.isAirplaneOn,
+        hw.isWifiOff,
+        hw.isBluetoothOff,
+        hw.isRingerSilentOrVibrate
+    ).count { it }
 
     LaunchedEffect(hw.isAllCompliant) {
         if (!wasCompliant && hw.isAllCompliant) {
@@ -98,19 +116,21 @@ fun DashboardOverviewTab(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(max = 680.dp)
+                .widthIn(max = 720.dp)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             DeviceReadinessHeroBanner(
                 isAllCompliant = hw.isAllCompliant,
+                readySensorCount = sensorReadyCount,
+                totalSensorCount = 4,
                 onQuickFixClick = { onOpenSystemSettings(Settings.ACTION_SETTINGS) }
             )
 
             SectionHeader(
                 title = "Pemeriksaan Perangkat Real-Time",
-                subtitle = "Ketuk kartu untuk menyesuaikan pengaturan"
+                subtitle = "Ketuk kartu sensor untuk langsung membuka pengaturan sistem"
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -132,7 +152,7 @@ fun DashboardOverviewTab(
                     BentoSensorCard(
                         title = "Koneksi Wi-Fi",
                         statusDetail = if (hw.isWifiOff) "Nonaktif" else "Aktif",
-                        badgeText = if (hw.isWifiOff) "AMAN" else "WAJIB MATIKAN",
+                        badgeText = if (hw.isWifiOff) "AMAN" else "MATIKAN",
                         isCompliant = hw.isWifiOff,
                         icon = Icons.Rounded.WifiOff,
                         onClick = { onOpenSystemSettings(Settings.ACTION_WIFI_SETTINGS) },
@@ -149,7 +169,7 @@ fun DashboardOverviewTab(
                     BentoSensorCard(
                         title = "Bluetooth",
                         statusDetail = if (hw.isBluetoothOff) "Nonaktif" else "Aktif",
-                        badgeText = if (hw.isBluetoothOff) "AMAN" else "WAJIB MATIKAN",
+                        badgeText = if (hw.isBluetoothOff) "AMAN" else "MATIKAN",
                         isCompliant = hw.isBluetoothOff,
                         icon = Icons.Rounded.BluetoothDisabled,
                         onClick = { onOpenSystemSettings(Settings.ACTION_BLUETOOTH_SETTINGS) },
@@ -160,7 +180,7 @@ fun DashboardOverviewTab(
                     BentoSensorCard(
                         title = "Mode Suara",
                         statusDetail = if (hw.isRingerSilentOrVibrate) "Hening / Getar" else "Berdering",
-                        badgeText = if (hw.isRingerSilentOrVibrate) "AMAN" else "WAJIB HENING",
+                        badgeText = if (hw.isRingerSilentOrVibrate) "AMAN" else "HENINGKAN",
                         isCompliant = hw.isRingerSilentOrVibrate,
                         icon = Icons.AutoMirrored.Rounded.VolumeOff,
                         onClick = { onOpenSystemSettings(Settings.ACTION_SOUND_SETTINGS) },
@@ -199,13 +219,15 @@ fun DashboardOverviewTab(
             }
 
             val ctaBg = if (colors.isDark) Color(0xFF147A58) else colors.deepEmerald
+            val ctaInteraction = remember { MutableInteractionSource() }
             Button(
                 onClick = onGoToExamsTab,
+                interactionSource = ctaInteraction,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .testTag("btn_go_to_exams")
-                    .bounceClick(onClick = onGoToExamsTab),
+                    .height(52.dp)
+                    .pressBounce(ctaInteraction)
+                    .testTag("btn_go_to_exams"),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ctaBg,
@@ -233,33 +255,32 @@ fun DashboardOverviewTab(
 @Composable
 private fun DeviceReadinessHeroBanner(
     isAllCompliant: Boolean,
+    readySensorCount: Int,
+    totalSensorCount: Int,
     onQuickFixClick: () -> Unit
 ) {
     val colors = PrestigeTheme.colors
-    val bgColor by animateColorAsState(
-        targetValue = if (isAllCompliant) colors.vibrantTealSoftBg else colors.coralRedSoftBg,
-        animationSpec = tween(350),
-        label = "banner_bg"
+    val progress by animateFloatAsState(
+        targetValue = readySensorCount.toFloat() / totalSensorCount.coerceAtLeast(1).toFloat(),
+        animationSpec = tween(420),
+        label = "readiness_progress"
     )
-    val accentColor by animateColorAsState(
-        targetValue = if (isAllCompliant) colors.deepEmerald else colors.coralRed,
+
+    val startColor by animateColorAsState(
+        targetValue = if (isAllCompliant) colors.bannerGradientStart else Color(0xFF7F1D1D),
         animationSpec = tween(350),
-        label = "banner_accent"
+        label = "hero_grad_start"
     )
-    val iconBgColor by animateColorAsState(
-        targetValue = if (isAllCompliant) {
-            colors.softMintContainer
-        } else {
-            colors.coralRedSoftBorder.copy(alpha = 0.7f)
-        },
+    val endColor by animateColorAsState(
+        targetValue = if (isAllCompliant) colors.bannerGradientEnd else Color(0xFFB91C1C),
         animationSpec = tween(350),
-        label = "banner_icon_bg"
+        label = "hero_grad_end"
     )
 
     val infiniteTransition = rememberInfiniteTransition(label = "warning_pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (isAllCompliant) 1f else 1.12f,
+        targetValue = if (isAllCompliant) 1f else 1.09f,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -267,92 +288,142 @@ private fun DeviceReadinessHeroBanner(
         label = "pulse_scale"
     )
 
-    TonalPrestigeCard(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("readiness_banner"),
-        containerColor = bgColor,
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(22.dp),
+        shadowElevation = if (colors.isDark) 0.dp else 4.dp
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .graphicsLayer {
-                            scaleX = pulseScale
-                            scaleY = pulseScale
-                        }
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(iconBgColor),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isAllCompliant) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber,
-                        contentDescription = if (isAllCompliant) "Perangkat Siap" else "Peringatan Kesiapan",
-                        tint = accentColor,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(14.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isAllCompliant) {
-                            "Perangkat Siap Ujian"
-                        } else {
-                            "Pengaturan Belum Sesuai Standar"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = accentColor
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = if (isAllCompliant) {
-                            "Seluruh sensor & keamanan perangkat memenuhi standar madrasah."
-                        } else {
-                            "Aktifkan Mode Pesawat & Mode Hening, serta matikan Wi-Fi & Bluetooth."
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.slateSecondary
-                    )
-                }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Brush.linearGradient(listOf(startColor, endColor)))
+        ) {
+            Canvas(modifier = Modifier.matchParentSize()) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.08f),
+                    radius = size.height * 0.72f,
+                    center = Offset(size.width * 0.94f, size.height * 0.14f),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.05f),
+                    radius = size.height * 0.45f,
+                    center = Offset(size.width * 0.06f, size.height * 0.92f),
+                    style = Stroke(width = 1.5.dp.toPx())
+                )
             }
 
-            AnimatedVisibility(
-                visible = !isAllCompliant,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Surface(
+            Column(modifier = Modifier.padding(18.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("btn_quick_fix_settings")
-                            .bounceClick(onClick = onQuickFixClick),
-                        shape = RoundedCornerShape(12.dp),
-                        color = colors.coralSolidAction
+                            .size(48.dp)
+                            .graphicsLayer {
+                                scaleX = pulseScale
+                                scaleY = pulseScale
+                            }
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
+                        Icon(
+                            imageVector = if (isAllCompliant) Icons.Rounded.CheckCircle else Icons.Rounded.WarningAmber,
+                            contentDescription = if (isAllCompliant) "Perangkat Siap" else "Peringatan Kesiapan",
+                            tint = Color.White,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isAllCompliant) {
+                                "Perangkat Siap Ujian"
+                            } else {
+                                "Pengaturan Belum Sesuai Standar"
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (isAllCompliant) {
+                                "Seluruh sensor & keamanan perangkat memenuhi standar madrasah."
+                            } else {
+                                "Aktifkan Mode Pesawat & Mode Hening, serta matikan Wi-Fi & Bluetooth."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.86f)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Kesiapan Sensor Perangkat",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                    Text(
+                        text = "$readySensorCount / $totalSensorCount AMAN",
+                        fontFamily = JetBrainsMonoFontFamily,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(CircleShape),
+                    color = Color.White,
+                    trackColor = Color.White.copy(alpha = 0.24f),
+                    strokeCap = StrokeCap.Round
+                )
+
+                AnimatedVisibility(
+                    visible = !isAllCompliant,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        val quickFixInteraction = remember { MutableInteractionSource() }
+                        Button(
+                            onClick = onQuickFixClick,
+                            interactionSource = quickFixInteraction,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 11.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                                .height(48.dp)
+                                .pressBounce(quickFixInteraction)
+                                .testTag("btn_quick_fix_settings"),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color(0xFFB91C1C)
+                            )
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Settings,
                                 contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Perbaiki Pengaturan Perangkat",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = Color.White
+                                text = "Buka Pengaturan Perangkat",
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
@@ -378,6 +449,11 @@ private fun BentoSensorCard(
         animationSpec = tween(300),
         label = "bento_bg"
     )
+    val cardBorder by animateColorAsState(
+        targetValue = if (isCompliant) colors.cardBorder else colors.coralRedSoftBorder,
+        animationSpec = tween(300),
+        label = "bento_border"
+    )
     val iconTint by animateColorAsState(
         targetValue = if (isCompliant) colors.vibrantTeal else colors.coralRed,
         animationSpec = tween(300),
@@ -396,9 +472,12 @@ private fun BentoSensorCard(
     val badgeFg = if (isCompliant) colors.deepEmerald else Color.White
 
     TonalPrestigeCard(
-        modifier = modifier.bounceClick(onClick = onClick),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .bounceClick(onClick = onClick),
         containerColor = cardBg,
-        shadowElevation = if (isCompliant) 2.dp else 1.dp,
+        borderColor = cardBorder,
+        shadowElevation = if (isCompliant) 1.dp else 0.dp,
         cornerRadius = 18.dp
     ) {
         Column(
@@ -414,8 +493,8 @@ private fun BentoSensorCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
                         .background(iconContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -434,22 +513,35 @@ private fun BentoSensorCard(
                 )
             }
 
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = colors.inkSlate,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = statusDetail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isCompliant) colors.deepEmerald else colors.coralRed,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = colors.inkSlate,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = statusDetail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isCompliant) colors.deepEmerald else colors.coralRed,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = "Ubah $title",
+                    tint = if (isCompliant) colors.slateMuted else colors.coralRed,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
@@ -471,7 +563,7 @@ private fun HardwareSpecCard(
 
     TonalPrestigeCard(
         modifier = modifier,
-        shadowElevation = 2.dp,
+        shadowElevation = 1.dp,
         cornerRadius = 16.dp
     ) {
         Column(
@@ -485,7 +577,7 @@ private fun HardwareSpecCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(34.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(colors.softMintContainer),
                     contentAlignment = Alignment.Center

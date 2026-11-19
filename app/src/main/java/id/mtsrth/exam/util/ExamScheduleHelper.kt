@@ -1,16 +1,67 @@
 package id.mtsrth.exam.util
 
+import android.os.SystemClock
+import id.mtsrth.exam.data.local.SecureStorage
 import id.mtsrth.exam.data.model.ExamItem
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.abs
 
 object ExamScheduleHelper {
+
+    private const val CLOCK_DRIFT_TOLERANCE_MILLIS = 5 * 60_000L
 
     enum class ScheduleState {
         NOT_STARTED_YET, // Belum masuk tanggal/jam mulai
         ACTIVE,          // Sedang dalam rentang tanggal dan jam ujian
         EXPIRED          // Tanggal atau jam selesai telah lewat
+    }
+
+    /**
+     * Memeriksa apakah jam perangkat dimundurkan terhadap timestamp terakhir yang diketahui
+     * atau menyimpang jauh dari waktu sinkronisasi server + waktu monotonik (elapsedRealtime).
+     */
+    fun isClockTampered(
+        storage: SecureStorage,
+        nowMillis: Long = System.currentTimeMillis()
+    ): Boolean {
+        val maxKnown = storage.maxKnownTimestampMillis
+        if (maxKnown > 0L && nowMillis + CLOCK_DRIFT_TOLERANCE_MILLIS < maxKnown) {
+            return true
+        }
+
+        val syncServerMs = storage.lastSyncServerMillis
+        val syncElapsedMs = storage.lastSyncElapsedRealtime
+        if (syncServerMs > 0L && syncElapsedMs > 0L) {
+            val currentElapsed = runCatching { SystemClock.elapsedRealtime() }.getOrDefault(0L)
+            if (currentElapsed >= syncElapsedMs) {
+                val estimatedServerNow = syncServerMs + (currentElapsed - syncElapsedMs)
+                if (abs(nowMillis - estimatedServerNow) > CLOCK_DRIFT_TOLERANCE_MILLIS) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /**
+     * Mengembalikan waktu saat ini yang terpercaya (menggunakan jam monotonik sejak sinkronisasi server
+     * jika jam perangkat tidak di-reboot dan jam sistem tampak dimanipulasi).
+     */
+    fun getTrustedNowMillis(
+        storage: SecureStorage,
+        wallNowMillis: Long = System.currentTimeMillis()
+    ): Long {
+        val syncServerMs = storage.lastSyncServerMillis
+        val syncElapsedMs = storage.lastSyncElapsedRealtime
+        if (syncServerMs > 0L && syncElapsedMs > 0L) {
+            val currentElapsed = runCatching { SystemClock.elapsedRealtime() }.getOrDefault(0L)
+            if (currentElapsed >= syncElapsedMs) {
+                return syncServerMs + (currentElapsed - syncElapsedMs)
+            }
+        }
+        return maxOf(wallNowMillis, storage.maxKnownTimestampMillis)
     }
 
     fun parseMinutesOfDay(timeStr: String): Int? {

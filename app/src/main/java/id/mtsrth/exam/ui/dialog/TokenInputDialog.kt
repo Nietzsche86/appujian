@@ -94,7 +94,8 @@ class TokenInputDialog : DialogFragment() {
                 encryptedFile = encFile,
                 token = token,
                 saltHex = examItem.pbkdf2SaltHex,
-                ivHex = examItem.gcmIvHex
+                ivHex = examItem.gcmIvHex,
+                iterationCount = examItem.pbkdf2Iterations
             )
 
             binding.pbDecrypting.visibility = View.GONE

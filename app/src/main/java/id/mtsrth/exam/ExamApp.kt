@@ -1,6 +1,7 @@
 package id.mtsrth.exam
 
 import android.app.Application
+import id.mtsrth.exam.data.crypto.CryptoEngine
 import id.mtsrth.exam.data.local.SecureStorage
 import id.mtsrth.exam.notification.ExamReminderScheduler
 
@@ -12,6 +13,7 @@ class ExamApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        CryptoEngine.cleanupStaleTempPdfs(applicationContext)
         secureStorage = SecureStorage(applicationContext)
         ExamReminderScheduler.ensureChannel(applicationContext)
     }
