@@ -450,17 +450,31 @@ fun ExamsScheduleTab(
         }
     }
 
-    val activeItems = remember(uiState.examItems) {
-        uiState.examItems.filter { it.status != ExamStatus.SELESAI }
-    }
+    val scheduleBucketTick = nowMillis / 5_000L
     val finishedItems = remember(uiState.examItems) {
         uiState.examItems.filter { it.status == ExamStatus.SELESAI }
     }
-    val displayedItems = remember(uiState.examItems, uiState.examFilter, activeItems, finishedItems) {
+    val makeupItems = remember(uiState.examItems, scheduleBucketTick) {
+        uiState.examItems.filter { item ->
+            item.status != ExamStatus.SELESAI &&
+                item.status != ExamStatus.SEDANG_UJIAN &&
+                ExamScheduleHelper.getScheduleState(item.exam, nowMillis) == ExamScheduleHelper.ScheduleState.EXPIRED
+        }
+    }
+    val activeItems = remember(uiState.examItems, scheduleBucketTick) {
+        uiState.examItems.filter { item ->
+            item.status != ExamStatus.SELESAI && (
+                item.status == ExamStatus.SEDANG_UJIAN ||
+                    ExamScheduleHelper.getScheduleState(item.exam, nowMillis) != ExamScheduleHelper.ScheduleState.EXPIRED
+                )
+        }
+    }
+    val displayedItems = remember(uiState.examItems, uiState.examFilter, activeItems, makeupItems, finishedItems) {
         when (uiState.examFilter) {
-            ExamFilterOption.ALL -> uiState.examItems
             ExamFilterOption.ACTIVE -> activeItems
+            ExamFilterOption.MAKEUP -> makeupItems
             ExamFilterOption.FINISHED -> finishedItems
+            ExamFilterOption.ALL -> uiState.examItems
         }
     }
 
@@ -525,7 +539,7 @@ fun ExamsScheduleTab(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             StatusPillBadge(
-                                text = "AGENDA UJIAN AKTIF • KELAS ${uiState.selectedGrade}",
+                                text = "AGENDA UJIAN AKTIF",
                                 contentColor = if (colors.isDark) colors.darkForest else Color(0xFF064E3B),
                                 containerColor = colors.softMintContainer
                             )
@@ -599,7 +613,7 @@ fun ExamsScheduleTab(
                     SectionHeader(
                         title = "Daftar Paket Soal Ujian",
                         subtitle = if (uiState.examItems.isNotEmpty()) {
-                            "${displayedItems.size} dari ${uiState.examItems.size} paket soal • Urut tanggal & jam"
+                            "${displayedItems.size} dari ${uiState.examItems.size} paket soal"
                         } else null
                     )
 
@@ -611,9 +625,10 @@ fun ExamsScheduleTab(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             val counts = mapOf(
-                                ExamFilterOption.ALL to uiState.examItems.size,
                                 ExamFilterOption.ACTIVE to activeItems.size,
-                                ExamFilterOption.FINISHED to finishedItems.size
+                                ExamFilterOption.MAKEUP to makeupItems.size,
+                                ExamFilterOption.FINISHED to finishedItems.size,
+                                ExamFilterOption.ALL to uiState.examItems.size
                             )
                             ExamFilterOption.entries.forEach { option ->
                                 val selected = uiState.examFilter == option
@@ -735,16 +750,23 @@ fun ExamsScheduleTab(
                                     .padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+                                val emptySubtitle = when (uiState.examFilter) {
+                                    ExamFilterOption.ACTIVE -> "Tidak ada soal yang sedang atau akan berlangsung. Cek tab Susulan, Selesai, atau Semua."
+                                    ExamFilterOption.MAKEUP -> "Tidak ada soal tertinggal untuk ujian susulan."
+                                    ExamFilterOption.FINISHED -> "Belum ada soal ujian yang telah diselesaikan."
+                                    ExamFilterOption.ALL -> "Belum ada paket soal ujian tersedia."
+                                }
                                 Text(
-                                    text = "Tidak ada soal di kategori \"${uiState.examFilter.label}\"",
+                                    text = "Tidak ada soal di tab \"${uiState.examFilter.label}\"",
                                     style = MaterialTheme.typography.titleSmall,
                                     color = colors.inkSlate
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = "Pilih filter \"Semua\" untuk melihat seluruh paket ujian.",
+                                    text = emptySubtitle,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = colors.slateSecondary
+                                    color = colors.slateSecondary,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -1202,14 +1224,6 @@ private fun ExamItemPrestigeCard(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                StatusPillBadge(
-                    text = "Kls ${exam.gradeLevel}",
-                    contentColor = colors.slateSecondary,
-                    containerColor = colors.tonalSlateSurface
-                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

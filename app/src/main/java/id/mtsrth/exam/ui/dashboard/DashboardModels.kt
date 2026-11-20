@@ -45,9 +45,10 @@ sealed interface SyncState {
 }
 
 enum class ExamFilterOption(val label: String) {
-    ALL("Semua"),
     ACTIVE("Aktif"),
-    FINISHED("Selesai")
+    MAKEUP("Susulan"),
+    FINISHED("Selesai"),
+    ALL("Semua")
 }
 
 data class DashboardUiState(
@@ -64,7 +65,7 @@ data class DashboardUiState(
     val finishedExams: Int = 0,
     val remainingExams: Int = 0,
     val examItems: List<ExamItemUiModel> = emptyList(),
-    val examFilter: ExamFilterOption = ExamFilterOption.ALL,
+    val examFilter: ExamFilterOption = ExamFilterOption.ACTIVE,
     val examRules: List<String> = emptyList(),
     val rulesAcknowledged: Boolean = false,
     val serverHost: String = "",
