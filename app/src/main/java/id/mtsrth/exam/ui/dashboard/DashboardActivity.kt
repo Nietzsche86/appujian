@@ -792,10 +792,7 @@ class DashboardActivity : AppCompatActivity() {
         val targetGrade = secureStorage.selectedGrade
         val filtered = allExams.filter { it.gradeLevel == targetGrade }
 
-        val sortedExams = filtered.sortedWith(
-            compareBy<ExamItem> { it.examDate.ifEmpty { "9999-99-99" } }
-                .thenBy { it.startTime.ifEmpty { "99:99" } }
-        )
+        val sortedExams = filtered.sortedWith(ExamScheduleHelper.examChronologicalComparator)
 
         val trustedNow = ExamScheduleHelper.getTrustedNowMillis(secureStorage)
         val uiModels = sortedExams.map { exam ->

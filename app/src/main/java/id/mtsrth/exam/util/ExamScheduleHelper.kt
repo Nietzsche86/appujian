@@ -78,6 +78,35 @@ object ExamScheduleHelper {
         return null
     }
 
+    /**
+     * Mengubah tanggal "YYYY-MM-DD" menjadi kunci numerik YYYYMMDD agar pengurutan akurat
+     * meskipun ada angka bulan/hari 1 digit atau spasi. Nilai kosong/tidak valid diletakkan paling akhir.
+     */
+    fun parseDateSortKey(dateStr: String): Int {
+        if (dateStr.isBlank()) return Int.MAX_VALUE
+        val parts = dateStr.trim().split("-")
+        if (parts.size != 3) return Int.MAX_VALUE
+        val year = parts[0].toIntOrNull() ?: return Int.MAX_VALUE
+        val month = parts[1].toIntOrNull() ?: return Int.MAX_VALUE
+        val day = parts[2].toIntOrNull() ?: return Int.MAX_VALUE
+        if (month !in 1..12 || day !in 1..31) return Int.MAX_VALUE
+        return (year * 10_000) + (month * 100) + day
+    }
+
+    /**
+     * Comparator kronologis untuk mengurutkan daftar soal berdasarkan:
+     * 1. Tanggal pelaksanaan (terawal -> terakhir)
+     * 2. Jam mulai (menit numerik, akurat untuk format 7:30 vs 10:00 maupun 07.30)
+     * 3. Jam selesai
+     * 4. Nama mata pelajaran (A-Z) & ID
+     */
+    val examChronologicalComparator: Comparator<ExamItem> =
+        compareBy<ExamItem> { parseDateSortKey(it.examDate) }
+            .thenBy { parseMinutesOfDay(it.startTime) ?: Int.MAX_VALUE }
+            .thenBy { parseMinutesOfDay(it.endTime) ?: Int.MAX_VALUE }
+            .thenBy { it.subjectName.trim().lowercase(Locale("id", "ID")) }
+            .thenBy { it.id }
+
     fun getExamStartMillis(exam: ExamItem, nowMillis: Long = System.currentTimeMillis()): Long? {
         val startMin = parseMinutesOfDay(exam.startTime) ?: return null
         val hour = startMin / 60

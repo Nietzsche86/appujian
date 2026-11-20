@@ -599,7 +599,7 @@ fun ExamsScheduleTab(
                     SectionHeader(
                         title = "Daftar Paket Soal Ujian",
                         subtitle = if (uiState.examItems.isNotEmpty()) {
-                            "${displayedItems.size} dari ${uiState.examItems.size} paket soal"
+                            "${displayedItems.size} dari ${uiState.examItems.size} paket soal • Urut tanggal & jam"
                         } else null
                     )
 

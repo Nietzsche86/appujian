@@ -402,6 +402,52 @@ def calculate_duration_from_times(start_time: str, end_time: str, fallback_durat
     return fallback_duration
 
 
+def _parse_date_sort_key(date_str: str) -> tuple:
+    raw = str(date_str or "").strip()
+    if raw:
+        parts = raw.split("-")
+        if len(parts) == 3:
+            try:
+                y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                if 1 <= m <= 12 and 1 <= d <= 31:
+                    return (y, m, d)
+            except Exception:
+                pass
+    return (9999, 12, 31)
+
+
+def _parse_time_sort_minutes(time_str: str) -> int:
+    raw = str(time_str or "").strip().replace(".", ":")
+    if raw and ":" in raw:
+        parts = raw.split(":")
+        try:
+            h, m = int(parts[0]), int(parts[1])
+            if 0 <= h <= 23 and 0 <= m <= 59:
+                return h * 60 + m
+        except Exception:
+            pass
+    return 9999
+
+
+def exam_schedule_sort_key(ex: dict) -> tuple:
+    """
+    Kunci pengurutan kronologis jadwal ujian:
+    Tanggal (terlama -> terbaru), Jam Mulai, Jam Selesai, Tingkat Kelas, Nama Mapel, ID.
+    """
+    try:
+        grade = int(ex.get("grade_level", 99))
+    except Exception:
+        grade = 99
+    return (
+        _parse_date_sort_key(ex.get("exam_date", "")),
+        _parse_time_sort_minutes(ex.get("start_time", "")),
+        _parse_time_sort_minutes(ex.get("end_time", "")),
+        grade,
+        str(ex.get("subject_name", "") or "").strip().lower(),
+        str(ex.get("id", "") or "").strip().lower(),
+    )
+
+
 def rebuild_manifest(server_base_url: str, force_reencrypt: bool = False):
     """
     Membangun ulang berkas .enc dan manifest.json bertanda tangan digital berdasarkan config terbaru.
@@ -502,6 +548,8 @@ def rebuild_manifest(server_base_url: str, force_reencrypt: bool = False):
             "pbkdf2_iterations": crypto_meta["pbkdf2_iterations"],
             "gcm_iv_hex": crypto_meta["iv_hex"],
         })
+
+    exams_manifest.sort(key=exam_schedule_sort_key)
 
     if config_dirty:
         save_config(config)
@@ -772,7 +820,7 @@ class ExamProctorWebHandler(BaseHTTPRequestHandler):
                 "daily_pins": normalize_daily_pins(config.get("daily_pins")),
                 "server_url": self.server_base_url,
                 "all_ips": get_all_local_ips(),
-                "exams": config.get("exams", []),
+                "exams": sorted(config.get("exams", []), key=exam_schedule_sort_key),
                 "activity_logs": get_logs_snapshot()
             }, allow_cors=False)
             return

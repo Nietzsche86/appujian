@@ -328,10 +328,34 @@ def generate_token_pin_pdf(
             grade = 7
         grouped.setdefault(grade, []).append(ex)
 
-    for grade in grouped:
-        grouped[grade].sort(
-            key=lambda e: (str(e.get("exam_date", "")), str(e.get("start_time", "00:00")), str(e.get("subject_name", "")))
+    def _pdf_exam_sort_key(e: dict) -> tuple:
+        raw_date = str(e.get("exam_date", "") or "").strip()
+        date_key = (9999, 12, 31)
+        if raw_date:
+            dp = raw_date.split("-")
+            if len(dp) == 3:
+                try:
+                    date_key = (int(dp[0]), int(dp[1]), int(dp[2]))
+                except Exception:
+                    pass
+        def _mins(t: str) -> int:
+            s = str(t or "").strip().replace(".", ":")
+            if ":" in s:
+                try:
+                    p = s.split(":")
+                    return int(p[0]) * 60 + int(p[1])
+                except Exception:
+                    pass
+            return 9999
+        return (
+            date_key,
+            _mins(e.get("start_time", "")),
+            _mins(e.get("end_time", "")),
+            str(e.get("subject_name", "") or "").strip().lower(),
         )
+
+    for grade in grouped:
+        grouped[grade].sort(key=_pdf_exam_sort_key)
 
     sorted_grades = sorted(grouped.keys())
 

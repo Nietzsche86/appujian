@@ -1826,6 +1826,9 @@
                     </div>
 
                     <div class="toolbar-actions">
+                        <button type="button" class="btn btn-sm" id="btnToggleExamSort" onclick="toggleExamSortOrder()" title="Urutkan berdasarkan tanggal & jam pelaksanaan">
+                            <i class="fa-solid fa-arrow-up-short-wide"></i> <span id="examSortLabel">Jadwal: Terawal</span>
+                        </button>
                         <button class="btn btn-sm btn-amber" onclick="openExportPdfModal()" title="Buat & Unduh PDF Token & PIN untuk grup guru">
                             <i class="fa-solid fa-file-pdf"></i> PDF Token &amp; PIN
                         </button>
@@ -3160,6 +3163,66 @@
         handleExamFilter();
     }
 
+    let examSortDirection = 'asc';
+
+    function parseExamDateSortValue(dateStr) {
+        const raw = String(dateStr || '').trim();
+        if (!raw) return 99991231;
+        const parts = raw.split('-');
+        if (parts.length === 3) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                return (y * 10000) + (m * 100) + d;
+            }
+        }
+        return 99991231;
+    }
+
+    function parseExamTimeSortMinutes(timeStr) {
+        const raw = String(timeStr || '').trim().replace('.', ':');
+        if (!raw || !raw.includes(':')) return 9999;
+        const parts = raw.split(':');
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        if (!isNaN(h) && !isNaN(m) && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+            return (h * 60) + m;
+        }
+        return 9999;
+    }
+
+    function compareExamsBySchedule(a, b, direction = 'asc') {
+        const mult = direction === 'desc' ? -1 : 1;
+        const dateDiff = parseExamDateSortValue(a.exam_date) - parseExamDateSortValue(b.exam_date);
+        if (dateDiff !== 0) return dateDiff * mult;
+
+        const startDiff = parseExamTimeSortMinutes(a.start_time) - parseExamTimeSortMinutes(b.start_time);
+        if (startDiff !== 0) return startDiff * mult;
+
+        const endDiff = parseExamTimeSortMinutes(a.end_time) - parseExamTimeSortMinutes(b.end_time);
+        if (endDiff !== 0) return endDiff * mult;
+
+        const gradeDiff = Number(a.grade_level || 99) - Number(b.grade_level || 99);
+        if (gradeDiff !== 0) return gradeDiff;
+
+        return String(a.subject_name || '').localeCompare(String(b.subject_name || ''), 'id')
+            || String(a.id || '').localeCompare(String(b.id || ''));
+    }
+
+    function toggleExamSortOrder() {
+        examSortDirection = examSortDirection === 'asc' ? 'desc' : 'asc';
+        const btn = document.getElementById('btnToggleExamSort');
+        if (btn) {
+            if (examSortDirection === 'asc') {
+                btn.innerHTML = '<i class="fa-solid fa-arrow-up-short-wide"></i> <span id="examSortLabel">Jadwal: Terawal</span>';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-arrow-down-wide-short"></i> <span id="examSortLabel">Jadwal: Terbaru</span>';
+            }
+        }
+        renderExams();
+    }
+
     function renderExams() {
         const tbody = document.getElementById('examTableBody');
         const mobileList = document.getElementById('examMobileCards');
@@ -3173,7 +3236,7 @@
                 if (!scope.includes(query)) return false;
             }
             return true;
-        });
+        }).sort((a, b) => compareExamsBySchedule(a, b, examSortDirection));
 
         if (!filtered.length) {
             const emptyHtml = `
@@ -3695,8 +3758,7 @@
             const ga = Number(a.grade_level || 7);
             const gb = Number(b.grade_level || 7);
             if (ga !== gb) return ga - gb;
-            return String(a.start_time || '').localeCompare(String(b.start_time || ''))
-                || String(a.subject_name || '').localeCompare(String(b.subject_name || ''));
+            return compareExamsBySchedule(a, b, 'asc');
         });
         return list;
     }
@@ -3926,6 +3988,8 @@
     // 100% OFFLINE VECTOR ICON ENGINE (Zero CDN — Crisp SVG on Air-Gapped LAN)
     // =========================================================================
     const OFFLINE_SVG_ICONS = {
+        'fa-arrow-up-short-wide': '<path d="m3 8 4-4 4 4"/><path d="M7 4v16"/><path d="M11 12h4"/><path d="M11 16h7"/><path d="M11 20h10"/>',
+        'fa-arrow-down-wide-short': '<path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 8h7"/><path d="M11 12h4"/>',
         'fa-arrows-rotate': '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>',
         'fa-bell': '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
         'fa-bell-slash': '<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><line x1="2" y1="2" x2="22" y2="22"/>',
