@@ -144,6 +144,12 @@ class KioskExamActivity : AppCompatActivity() {
                         val nextComfort = !uiStateFlow.value.isComfortMode
                         ExamApp.instance.secureStorage.kioskComfortMode = nextComfort
                         uiStateFlow.update { it.copy(isComfortMode = nextComfort) }
+                        pdfAdapter?.setOverlayFilterColor(
+                            computePdfFilterColorArgb(
+                                isComfortMode = nextComfort,
+                                isDarkMode = uiStateFlow.value.isDarkMode
+                            )
+                        )
                     },
                     onToggleOrientation = {
                         toggleScreenOrientation()
@@ -264,6 +270,13 @@ class KioskExamActivity : AppCompatActivity() {
 
         // Reset zoom dan muat ulang dimensi halaman PDF agar tajam & tetap di halaman yang sedang dibaca
         zoomableLayoutRef?.resetZoom()
+        val currentState = uiStateFlow.value
+        pdfAdapter?.setOverlayFilterColor(
+            computePdfFilterColorArgb(
+                isComfortMode = currentState.isComfortMode,
+                isDarkMode = currentState.isDarkMode
+            )
+        )
         pdfAdapter?.notifyDataSetChanged()
         recyclerViewRef?.post {
             val targetIndex = (pageBeforeRotate - 1).coerceAtLeast(0)
@@ -488,7 +501,15 @@ class KioskExamActivity : AppCompatActivity() {
                 try {
                     val renderer = PdfRenderer(session.pfd)
                     pdfRenderer = renderer
-                    pdfAdapter = PdfPageAdapter(renderer, lifecycleScope)
+                    val currentState = uiStateFlow.value
+                    pdfAdapter = PdfPageAdapter(
+                        renderer = renderer,
+                        scope = lifecycleScope,
+                        initialFilterColor = computePdfFilterColorArgb(
+                            isComfortMode = currentState.isComfortMode,
+                            isDarkMode = currentState.isDarkMode
+                        )
+                    )
 
                     val totalPages = renderer.pageCount
                     uiStateFlow.update {
@@ -530,8 +551,20 @@ class KioskExamActivity : AppCompatActivity() {
         recycler.adapter = adapter
         isRecyclerAdapterAttached = true
 
+        val currentState = uiStateFlow.value
+        adapter.setOverlayFilterColor(
+            computePdfFilterColorArgb(
+                isComfortMode = currentState.isComfortMode,
+                isDarkMode = currentState.isDarkMode
+            )
+        )
+
         val totalPages = renderer.pageCount
         updatePageIndicator(recycler, layoutManager, totalPages)
+
+        zoomableLayoutRef?.onTransformChangedListener = {
+            updatePageIndicator(recycler, layoutManager, totalPages)
+        }
 
         recycler.clearOnScrollListeners()
         recycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -551,6 +584,8 @@ class KioskExamActivity : AppCompatActivity() {
         uiStateFlow.update { it.copy(currentPage = clamped) }
     }
 
+    private val visibleBoundsScratch = IntArray(2)
+
     private fun updatePageIndicator(
         recyclerView: RecyclerView,
         layoutManager: LinearLayoutManager,
@@ -562,12 +597,15 @@ class KioskExamActivity : AppCompatActivity() {
             return
         }
 
-        if (!recyclerView.canScrollVertically(1)) {
+        val zoomable = zoomableLayoutRef
+        val isZoomed = zoomable?.isZoomedIn() == true
+
+        if (!recyclerView.canScrollVertically(1) && (!isZoomed || zoomable?.isAtBottomPanLimit() == true)) {
             uiStateFlow.update { it.copy(currentPage = totalPages, totalPages = totalPages) }
             return
         }
 
-        if (!recyclerView.canScrollVertically(-1)) {
+        if (!recyclerView.canScrollVertically(-1) && !isZoomed) {
             uiStateFlow.update { it.copy(currentPage = 1, totalPages = totalPages) }
             return
         }
@@ -576,8 +614,16 @@ class KioskExamActivity : AppCompatActivity() {
         val lastPos = layoutManager.findLastVisibleItemPosition()
         if (firstPos == RecyclerView.NO_POSITION || lastPos == RecyclerView.NO_POSITION) return
 
-        val rvTop = recyclerView.paddingTop
-        val rvBottom = recyclerView.height - recyclerView.paddingBottom
+        val rvTop: Int
+        val rvBottom: Int
+        if (zoomable != null && isZoomed) {
+            zoomable.getVisibleChildVerticalBounds(recyclerView, visibleBoundsScratch)
+            rvTop = visibleBoundsScratch[0]
+            rvBottom = visibleBoundsScratch[1]
+        } else {
+            rvTop = recyclerView.paddingTop
+            rvBottom = recyclerView.height - recyclerView.paddingBottom
+        }
 
         var maxVisibleHeight = -1
         var dominantPosition = firstPos

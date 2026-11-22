@@ -71,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -84,6 +85,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.SimpleItemAnimator
 import id.mtsrth.exam.R
 import id.mtsrth.exam.ui.components.TonalPrestigeCard
 import id.mtsrth.exam.ui.theme.JetBrainsMonoFontFamily
@@ -170,7 +172,13 @@ fun KioskExamScreen(
                             WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                         )
                     )
+                    .clipToBounds()
             ) {
+                val pdfFilterColorArgb = computePdfFilterColorArgb(
+                    isComfortMode = uiState.isComfortMode,
+                    isDarkMode = uiState.isDarkMode
+                )
+
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->
@@ -187,6 +195,7 @@ fun KioskExamScreen(
                             )
                             clipToPadding = false
                             setPadding(0, 4, 0, 16)
+                            (itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
                         }
                         zoomable.addView(recycler)
                         onAttachPdfViews(zoomable, recycler)
@@ -194,22 +203,10 @@ fun KioskExamScreen(
                     },
                     update = { zoomable ->
                         zoomable.visibility = if (shouldHideExamContent) View.INVISIBLE else View.VISIBLE
+                        val recycler = zoomable.getChildAt(0) as? RecyclerView
+                        (recycler?.adapter as? PdfPageAdapter)?.setOverlayFilterColor(pdfFilterColorArgb)
                     }
                 )
-
-                // Eye-comfort / night glare filter overlay (non-touch-blocking)
-                if (!shouldHideExamContent && (uiState.isComfortMode || uiState.isDarkMode)) {
-                    val filterColor = when {
-                        uiState.isComfortMode && uiState.isDarkMode -> Color(0x3CD49B42)
-                        uiState.isComfortMode -> Color(0x2EE6B86A)
-                        else -> Color(0x1C08110E)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(filterColor)
-                    )
-                }
 
                 if (uiState.isPdfLoading && !shouldHideExamContent) {
                     Column(
