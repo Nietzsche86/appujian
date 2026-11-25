@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Tag Versi Rilis (contoh: v1.1.0)'
+        description: 'Tag Versi Rilis (contoh: v1.1.1)'
         required: true
-        default: 'v1.1.0'
+        default: 'v1.1.1'
+      version_code:
+        description: 'Version Code numerik (kosongkan untuk memakai default di build.gradle.kts)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -37,73 +41,159 @@ jobs:
           gradle-version: '8.6'
           cache-read-only: false
 
-      - name: 4. Decode Keystore File
+      - name: 4. Resolve Release Tag & Version Metadata
+        id: meta
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          fi
+          VERSION_NAME="${TAG#v}"
+          VERSION_CODE="${{ github.event.inputs.version_code }}"
+
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_OUTPUT"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Resolved release tag=$TAG, versionName=$VERSION_NAME, versionCodeOverride=${VERSION_CODE:-<default>}"
+
+      - name: 5. Decode & Validate Release Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::Secret KEYSTORE_BASE64 belum diisi di repository secrets!"
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Secret keystore belum lengkap! Pastikan KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, dan KEY_PASSWORD terisi."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > app/release-key.jks
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > app/release-key.jks
+          if [ ! -s app/release-key.jks ]; then
+            echo "::error::File app/release-key.jks hasil decode kosong atau rusak!"
+            exit 1
+          fi
+          # Fail-fast jika password/alias/format keystore salah
+          keytool -list -keystore app/release-key.jks -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" > /dev/null
+          echo "Keystore tervalidasi untuk alias: $KEY_ALIAS"
 
-      - name: 5. Compile Signed Release APK
+      - name: 6. Compile Release APK
         env:
           KEYSTORE_FILE: app/release-key.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          gradle assembleRelease --stacktrace --no-daemon
-
-      - name: 6. Prepare Release Binary
-        id: prep
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag_name }}"
+          GRADLE_ARGS="-PAPP_VERSION_NAME=${{ steps.meta.outputs.VERSION_NAME }}"
+          if [ -n "${{ steps.meta.outputs.VERSION_CODE }}" ]; then
+            GRADLE_ARGS="$GRADLE_ARGS -PAPP_VERSION_CODE=${{ steps.meta.outputs.VERSION_CODE }}"
           fi
-          echo "RELEASE_TAG=$TAG" >> "$GITHUB_OUTPUT"
-          
-          RELEASE_APK="app/build/outputs/apk/release/E-UJIAN-MTS-RTH-${TAG}.apk"
-          cp app/build/outputs/apk/release/app-release.apk "$RELEASE_APK"
-          echo "APK_PATH=$RELEASE_APK" >> "$GITHUB_OUTPUT"
+          gradle assembleRelease $GRADLE_ARGS --stacktrace --no-daemon
 
-      - name: 7. Publish Official GitHub Release
+          if [ ! -f app/build/outputs/apk/release/app-release.apk ]; then
+            echo "::error::app-release.apk tidak ditemukan! Pastikan konfigurasi signing release aktif dan tidak menghasilkan unsigned APK."
+            ls -la app/build/outputs/apk/release/ || true
+            exit 1
+          fi
+
+      - name: 7. Align, Sign (V1+V2+V3), Verify & Checksum APK
+        id: prep
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          TAG="${{ steps.meta.outputs.RELEASE_TAG }}"
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          BUILD_TOOLS_DIR="$(ls -d "$SDK_ROOT"/build-tools/* 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "$BUILD_TOOLS_DIR" ] || [ ! -x "$BUILD_TOOLS_DIR/apksigner" ] || [ ! -x "$BUILD_TOOLS_DIR/zipalign" ]; then
+            echo "::error::Android build-tools (zipalign/apksigner) tidak ditemukan di $SDK_ROOT"
+            exit 1
+          fi
+
+          RAW_APK="app/build/outputs/apk/release/app-release.apk"
+          ALIGNED_APK="app/build/outputs/apk/release/app-release-aligned.apk"
+          RELEASE_APK="app/build/outputs/apk/release/E-UJIAN-MTS-RTH-${TAG}.apk"
+          SHA_FILE="${RELEASE_APK}.sha256"
+
+          # 1. Pastikan alignment 4-byte (page-aligned untuk shared libs) sebelum signing
+          "$BUILD_TOOLS_DIR/zipalign" -p -f -v 4 "$RAW_APK" "$ALIGNED_APK" > /dev/null
+
+          # 2. Tanda tangani eksplisit dengan skema V1 + V2 + V3 demi kompatibilitas maksimal lintas ROM OEM
+          "$BUILD_TOOLS_DIR/apksigner" sign \
+            --ks app/release-key.jks \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$RELEASE_APK" \
+            "$ALIGNED_APK"
+
+          # 3. Verifikasi tanda tangan APK secara ketat (wajib lolos sebelum rilis)
+          "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs "$RELEASE_APK"
+
+          # 4. Verifikasi metadata APK & hitung SHA-256 checksum
+          if [ -x "$BUILD_TOOLS_DIR/aapt2" ]; then
+            BADGING="$("$BUILD_TOOLS_DIR/aapt2" dump badging "$RELEASE_APK" | head -n 5)"
+            echo "$BADGING"
+            VER_CODE="$(echo "$BADGING" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" | head -n 1)"
+            VER_NAME="$(echo "$BADGING" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -n 1)"
+          fi
+          SHA256="$(sha256sum "$RELEASE_APK" | awk '{print $1}')"
+          printf '%s  %s\n' "$SHA256" "$(basename "$RELEASE_APK")" > "$SHA_FILE"
+          APK_SIZE="$(du -h "$RELEASE_APK" | awk '{print $1}')"
+
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_OUTPUT"
+          echo "APK_PATH=$RELEASE_APK" >> "$GITHUB_OUTPUT"
+          echo "SHA_PATH=$SHA_FILE" >> "$GITHUB_OUTPUT"
+          echo "APK_SHA256=$SHA256" >> "$GITHUB_OUTPUT"
+          echo "APK_SIZE=$APK_SIZE" >> "$GITHUB_OUTPUT"
+          echo "VER_CODE=${VER_CODE:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "VER_NAME=${VER_NAME:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: 8. Publish Official GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.prep.outputs.RELEASE_TAG }}
           APK_PATH: ${{ steps.prep.outputs.APK_PATH }}
+          SHA_PATH: ${{ steps.prep.outputs.SHA_PATH }}
+          APK_SHA256: ${{ steps.prep.outputs.APK_SHA256 }}
+          APK_SIZE: ${{ steps.prep.outputs.APK_SIZE }}
+          VER_CODE: ${{ steps.prep.outputs.VER_CODE }}
+          VER_NAME: ${{ steps.prep.outputs.VER_NAME }}
         run: |
-          gh release create "$TAG" "$APK_PATH" \
+          gh release create "$TAG" "$APK_PATH" "$SHA_PATH" \
             --title "Aplikasi Ujian MTS RTH $TAG (Official Release)" \
             --notes "### Aplikasi Ujian Kiosk Semi-Online MTS ROUDHOTUT THOWALIB $TAG
 
-          **Pembaruan Versi Terbaru:**
-          - **Rotasi Layar Saat Ujian (Portrait ↔ Landscape):** Tombol putar layar langsung di ruang ujian tanpa me-restart soal, menjaga posisi halaman terakhir, dengan proteksi anti-cheat tetap aktif.
-          - **Toolbar Ujian Ultra-Ramping:** Desain 1 baris ringkas (~48dp) yang ramah untuk HP layar kecil maupun mode Landscape agar lembar soal tampil jauh lebih luas.
-          - **Peningkatan Keamanan Menyeluruh:** Penandatanganan manifest digital ECDSA P-256, penguatan PBKDF2-HMAC-SHA256 (210.000 iterasi) + AES-256-GCM, pembatasan Admin API localhost + CSRF token, deteksi manipulasi jam perangkat & multi-window, serta penghapusan PIN default tidak aman.
-          - **Pembaruan UI/UX & Splash Screen Modern:** Tipografi Outfit, tata letak adaptif (*NavigationRail* untuk tablet), kartu jadwal interaktif dengan *pull-to-refresh*, tombol aksesibel minimal 48dp, serta perbaikan logo splash screen agar tampil utuh dan proporsional.
-          - **Dashboard Server Proktor 100% Offline:** Seluruh ikon dan aset dashboard web kini tertanam langsung tanpa bergantung pada CDN internet.
+          **Info Paket & Verifikasi Integritas:**
+          - **Versi:** \`${VER_NAME}\` (versionCode: \`${VER_CODE}\`)
+          - **Ukuran APK:** \`${APK_SIZE}\`
+          - **Skema Tanda Tangan:** APK Signature Scheme v1 + v2 + v3 (terverifikasi \`apksigner\`)
+          - **Minimum Android:** Android 8.0 Oreo (API 26)
+          - **SHA-256:** \`${APK_SHA256}\`
 
-          **Fitur Utama Paket Rilis Resmi:**
-          - Berkas APK bertanda tangan digital resmi (*Signed Release APK*).
-          - Mode Kiosk Kunci Layar Penuh (*LockTask Mode*) & Mode Nyaman Mata.
-          - Pemeriksaan Kesiapan Perangkat & Spesifikasi Siswa (Android min. 8 Oreo, RAM min. 2 GB).
+          **Perbaikan Kompatibilitas Instalasi:**
+          - Penandatanganan lengkap V1+V2+V3 & validasi \`zipalign\`/\`apksigner\` otomatis pada pipeline rilis.
+          - Ikon launcher adaptif resmi (\`mipmap-anydpi-v26\` + multi-densitas) agar kompatibel di seluruh perangkat.
+          - Penghapusan izin Bluetooth sensitif yang tidak diperlukan dan pengurangan *false-positive* scanner keamanan.
 
           **Petunjuk Instalasi Siswa & Proktor:**
-          1. Unduh berkas **E-UJIAN-MTS-RTH-${TAG}.apk** di bawah.
-          2. Buka dan izinkan instalasi aplikasi jika diminta oleh sistem Android.
-          3. Pastikan Mode Pesawat AKTIF dan Mode Suara Hening sebelum masuk ujian."
+          1. Unduh berkas **E-UJIAN-MTS-RTH-${TAG}.apk** di bawah (pastikan ukuran file penuh, bukan terpotong).
+          2. Jika muncul pesan *Aplikasi tidak terinstal*, hapus (uninstall) terlebih dahulu versi lama dari **Setelan > Aplikasi**.
+          3. Jika muncul peringatan Google Play Protect (karena APK diunduh di luar Play Store), pilih **Detail selengkapnya > Tetap instal**.
+          4. Pastikan **Mode Pesawat AKTIF** dan **Mode Suara Hening** sebelum masuk ujian."
 
-      - name: 8. Upload Artifact Backup
+      - name: 9. Upload Artifact Backup
         uses: actions/upload-artifact@v6
         with:
           name: E-UJIAN-MTS-RTH-Official-Release
-          path: ${{ steps.prep.outputs.APK_PATH }}
+          path: |
+            ${{ steps.prep.outputs.APK_PATH }}
+            ${{ steps.prep.outputs.SHA_PATH }}
           retention-days: 30
 
-      - name: 9. Cleanup Temporary Keystore
+      - name: 10. Cleanup Temporary Keystore & Artifacts
         if: always()
-        run: rm -f app/release-key.jks
-
+        run: rm -f app/release-key.jks app/build/outputs/apk/release/app-release-aligned.apk

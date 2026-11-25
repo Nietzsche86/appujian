@@ -12,8 +12,8 @@ android {
         applicationId = "id.mtsrth.exam"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = (project.findProperty("APP_VERSION_CODE") as? String)?.toIntOrNull() ?: 4
+        versionName = (project.findProperty("APP_VERSION_NAME") as? String)?.takeIf { it.isNotBlank() } ?: "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -91,7 +91,7 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    // implementation("androidx.constraintlayout:constraintlayout:2.1.4") // Unused after Compose migration
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")

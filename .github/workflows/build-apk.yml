@@ -27,19 +27,40 @@ jobs:
           cache-read-only: false
 
       - name: 4. Prepare Debug Keystore
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
-          if [ -f debug.keystore.base64 ]; then
+          if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
+            printf '%s' "$DEBUG_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > debug.keystore
+            echo "Menggunakan debug keystore konsisten dari GitHub Secret DEBUG_KEYSTORE_BASE64."
+          elif [ -f debug.keystore.base64 ]; then
             tr -d '\r\n ' < debug.keystore.base64 | base64 -d > debug.keystore
+            echo "Menggunakan debug.keystore.base64 dari repositori."
           else
+            echo "::warning::Secret DEBUG_KEYSTORE_BASE64 belum diatur — membuat debug.keystore sementara. Update menimpa APK debug lama mungkin gagal (signature mismatch) jika tidak di-uninstall dulu."
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
+          keytool -list -keystore debug.keystore -alias androiddebugkey -storepass android > /dev/null
 
       - name: 5. Compile Debug APK
         run: gradle assembleDebug --stacktrace --no-daemon
 
-      - name: 6. Upload APK Artifact
+      - name: 6. Verify Debug APK Signature
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          BUILD_TOOLS_DIR="$(ls -d "$SDK_ROOT"/build-tools/* 2>/dev/null | sort -V | tail -n 1)"
+          if [ -n "$BUILD_TOOLS_DIR" ] && [ -x "$BUILD_TOOLS_DIR/apksigner" ]; then
+            "$BUILD_TOOLS_DIR/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+          fi
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+
+      - name: 7. Upload APK Artifact
         uses: actions/upload-artifact@v6
         with:
           name: E-UJIAN-MTS-RTH-Debug
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+
+      - name: 8. Cleanup Temporary Keystore
+        if: always()
+        run: rm -f debug.keystore
